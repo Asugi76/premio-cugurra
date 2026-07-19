@@ -37,7 +37,7 @@ if not st.session_state.loggato:
         if nome_input and pin_input:
             # Controllo credenziali nel database
             try:
-                res = supabase.table("utents").select("id", "ruolo").eq("nome_facebook", nome_input).eq("pin_segreto", pin_input).execute()
+                res = supabase.table("utenti").select("id", "ruolo").eq("nome_facebook", nome_input).eq("pin_segreto", pin_input).execute()
                 if res.data:
                     st.session_state.loggato = True
                     st.session_state.utente_id = res.data[0]["id"]

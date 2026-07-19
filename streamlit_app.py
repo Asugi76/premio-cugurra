@@ -7,8 +7,8 @@ st.set_page_config(page_title="Premio Cugurra", page_icon="⚽", layout="centere
 # Inizializzazione della connessione a Supabase usando i dati segreti (Secrets)
 @st.cache_resource
 def init_connection():
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
+    url = st.secrets["SUPABASE_URL"].strip().rstrip("/")
+    key = st.secrets["SUPABASE_KEY"].strip()
     return create_client(url, key)
 
 try:

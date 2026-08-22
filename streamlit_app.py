@@ -650,13 +650,13 @@ with tabs[3]:
     st.header("📜 Punteggi e Regolamento del Premio Cugurra")
     st.markdown("""
     ### 1) Punteggi Classifica Generale:
-    * **15 Punti:** Risultato e marcatori di tutte e due le squadre esatti.
-    * **12 Punti:** Goleada di una squadra (>9 gol) + numero esatto dei gol della squadra che la subisce.
+    * **15 Punti:** Risultato e marcatori esatti di tutte e due le squadre.
+    * **12 Punti:** Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.
     * **10 Punti:** Risultato e marcatori SOLO del Cagliari esatti.
-    * **8 Punti:** Risultato 0-0 esatto OPPURE solo goleada di una squadra.
-    * **5 Punti:** Esito della partita indovinato.
+    * **8 Punti:** Indovini lo 0-0, OPPURE solo la goleada di una squadra.
+    * **5 Punti:** Indovini l'esito (1, X, 2).
     * **3 Punti:** Tutti i marcatori del Cagliari indovinati.
-    * **0 Punti:** Nessun riscontro utile.
+    * **0 Punti:** Non indivini nulla.
     * **Bonus Espulsioni:** +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).
 
     ### 2) Masters of Cugurras:

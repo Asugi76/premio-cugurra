@@ -233,15 +233,15 @@ if not st.session_state["autenticato"]:
                             clean_email = new_email.strip().lower()
                             clean_nome = new_nome.strip()
 
-                            # Controllo doppioni rigoroso (confronto esatto e insensibile alle maiuscole)
+                            # Controllo doppioni rigoroso sul nome utente
                             check_nome = db.table("utenti").select("nome_fb").eq("nome_fb", clean_nome).execute()
-                            check_email = db.table("utenti").select("email").execute()
                             
-                            email_esistente = any(str(u.get("email", "")).strip().lower() == clean_email for u in check_email.data) if check_email.data else False
+                            # Controllo doppioni rigoroso sull'email (interroga direttamente il DB normalizzando)
+                            check_email = db.table("utenti").select("email").eq("email", clean_email).execute()
 
                             if check_nome.data:
                                 st.warning(f"Il nome utente '{clean_nome}' è già utilizzato.")
-                            elif email_esistente:
+                            elif check_email.data:
                                 st.warning(f"L'indirizzo email '{new_email}' risulta già registrato.")
                             else:
                                 nuovo_status = "TOP" if fase_attuale == "TEST" else "STANDARD"

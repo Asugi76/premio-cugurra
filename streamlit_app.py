@@ -24,6 +24,7 @@ st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
+    /* Sfondo Globale con sovrapposizione scura per la massima leggibilità */
     .stApp {{
         background: linear-gradient(rgba(18, 22, 31, 0.88), rgba(18, 22, 31, 0.95)), 
                     url('{SFONDO_URL}') no-repeat center center fixed !important;
@@ -33,11 +34,13 @@ st.markdown(f"""
 
     h1, h2, h3 {{ color: #38bdf8 !important; }}
     
+    /* Etichette dei campi di input rese ben visibili e bianche */
     .stTextInput label, .stSelectbox label, .stDateInput label, .stTextArea label, div[data-baseweb="select"] label {{
         color: #ffffff !important;
         font-weight: 600 !important;
     }}
 
+    /* Input generici e selectbox */
     input, textarea, select, div[data-baseweb="select"] > div {{
         background-color: #1e293b !important;
         color: #f8fafc !important;
@@ -55,6 +58,7 @@ st.markdown(f"""
         background-color: #1e293b !important;
     }}
 
+    /* Input Gol Cicciotti per i Punteggi Principali */
     .big-score-input input {{
         font-size: 2.2rem !important;
         font-weight: bold !important;
@@ -66,6 +70,7 @@ st.markdown(f"""
         border-radius: 12px !important;
     }}
 
+    /* Container Box Pronostico */
     .prediction-box {{
         background-color: rgba(30, 41, 59, 0.85) !important;
         border: 1px solid #334155 !important;
@@ -74,6 +79,7 @@ st.markdown(f"""
         margin-bottom: 10px !important;
     }}
 
+    /* --- PULSANTI GENERALI STREAMLIT --- */
     .stButton button {{
         background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
         color: #fbbf24 !important;
@@ -83,7 +89,9 @@ st.markdown(f"""
         padding: 0.75rem !important;
         width: 100% !important;
     }}
-    .stButton button p {{ color: #fbbf24 !important; }}
+    .stButton button p {{
+        color: #fbbf24 !important;
+    }}
     .stButton button:hover {{
         background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
         color: #ffffff !important;
@@ -98,7 +106,9 @@ st.markdown(f"""
         border: none !important;
         width: 100% !important;
     }}
-    .btn-danger button p {{ color: #ffffff !important; }}
+    .btn-danger button p {{
+        color: #ffffff !important;
+    }}
     .btn-danger button:hover {{
         background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
     }}
@@ -112,7 +122,9 @@ st.markdown(f"""
         border: none !important;
         width: 100% !important;
     }}
-    .btn-primary-custom button p {{ color: #fbbf24 !important; }}
+    .btn-primary-custom button p {{
+        color: #fbbf24 !important;
+    }}
     .btn-primary-custom button:hover {{
         background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
     }}
@@ -192,7 +204,7 @@ if not st.session_state["autenticato"]:
         col_r1, _ = st.columns([2, 1])
         with col_r1:
             if st.session_state.get("nuovo_registrato", False):
-                st.warning("⚠️ Benvenuto nel Premio Cugurra! Conserva le tue credenziali.")
+                st.warning("⚠️ Benvenuto nel Premio Cugurra! Prima di esaltarti troppo, faresti bene a conservare e salvare le tue credenziali: nome utente, email e PIN, scriviteli da qualche parte… che poi non abbiamo voglia di venirti in soccorso se hai la memoria corta!")
                 st.markdown(f"**Utente:** `{st.session_state['reg_nome']}`")
                 st.markdown(f"**Email:** `{st.session_state['reg_email']}`")
                 st.markdown(f"**PIN:** `{st.session_state['reg_pin']}`")
@@ -211,11 +223,11 @@ if not st.session_state["autenticato"]:
                 st.markdown('</div>', unsafe_allow_html=True)
             else:
                 new_nome = st.text_input("Nome Facebook / Utente")
-                new_email = st.text_input("Indirizzo Email")
+                new_email = st.text_input("Indirizzo Email (fondamentale contro i cloni)")
                 new_pin = st.text_input("PIN Segreto", type="password")
                 if st.button("Completa Registrazione"):
                     if not new_nome or not new_email or not new_pin:
-                        st.error("Compila tutti i campi.")
+                        st.error("Compila tutti i campi inclusa l'email.")
                     else:
                         try:
                             clean_email = new_email.strip().lower()
@@ -231,6 +243,7 @@ if not st.session_state["autenticato"]:
                                 st.warning(f"L'indirizzo email '{new_email}' risulta già registrato.")
                                 st.stop()
 
+                            # Chi si iscrive in fase TEST prende status TOP
                             nuovo_status = "TOP" if fase_attuale == "TEST" else "STANDARD"
                             db.table("utenti").insert({
                                 "nome_fb": clean_nome, 
@@ -247,14 +260,18 @@ if not st.session_state["autenticato"]:
                             st.session_state["reg_status"] = nuovo_status
                             st.rerun()
                         except Exception as err:
-                            st.error(f"Errore durante la registrazione: {err}")
+                            err_str = str(err).lower()
+                            if "unique" in err_str or "duplicate" in err_str or "already exists" in err_str:
+                                st.error(f"Errore: L'indirizzo email '{new_email}' o il nome utente sono già presenti nel sistema.")
+                            else:
+                                st.error(f"Errore durante la registrazione: {err}")
     st.stop()
 
 # --- BARRA LATERALE ---
 st.sidebar.markdown(f"👤 Utente: **{st.session_state.get('utente_corrente')}**")
 st.sidebar.markdown(f"⭐ Status: **{st.session_state.get('status')}**")
-if st.session_state.get('status') == "TOP":
-    st.sidebar.caption("👑 *Privilegio TOP: Iscrizione automatica.*")
+if st.session_state.get('status') == "TOP" or st.session_state.get('status') == "ADMIN":
+    st.sidebar.caption("👑 *Privilegio TOP: Iscrizione automatica per le stagioni successive.*")
 st.sidebar.markdown(f"📌 Stagione: **{fase_attuale}**")
 if st.sidebar.button("Logout"):
     st.session_state.clear()
@@ -263,6 +280,7 @@ if st.sidebar.button("Logout"):
 # --- INTERFACCIA PRINCIPALE ---
 st.title(f"⚽ Premio Cugurra 2026/27 ({fase_attuale})")
 
+# Gestione dinamica delle schede in base ai permessi Admin
 if st.session_state["is_admin"]:
     tabs = st.tabs(["📝 Pronostici", "🏆 Classifiche", "📜 Regolamento", "⚙️ Admin"])
     tab_pronostici, tab_classifiche, tab_regolamento, tab_admin = tabs
@@ -303,22 +321,14 @@ with tab_pronostici:
                 <div id="clock" style="font-size: 1.2rem; color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6);">CALCOLO IN CORSO...</div>
             </div>
             <script>
-                const targetUtcTime = new Date("{iso_timestamp}").getTime();
+                const targetStr = "{iso_timestamp}".replace("Z", "");
+                const targetDate = new Date(targetStr).getTime();
                 
-                function getItalyOffset(date) {{
-                    const d = new Date(date);
-                    const utcDate = new Date(d.toLocaleString('en-US', {{ timeZone: 'UTC' }}));
-                    const tzDate = new Date(d.toLocaleString('en-US', {{ timeZone: 'Europe/Rome' }}));
-                    return tzDate.getTime() - utcDate.getTime();
-                }}
-
                 function updateTimer() {{
-                    const nowUtc = new Date().getTime();
-                    const italyOffset = getItalyOffset(nowUtc);
-                    const nowItaly = nowUtc + italyOffset;
+                    const nowString = new Date().toLocaleString("en-US", {{ timeZone: "Europe/Rome" }});
+                    const nowTime = new Date(nowString).getTime();
                     
-                    const diff = targetUtcTime - nowItaly;
-                    
+                    const diff = targetDate - nowTime;
                     if (diff <= 0) {{
                         document.getElementById("clock").innerHTML = "IN CORSO / TERMINATA";
                         return;
@@ -410,21 +420,19 @@ with tab_pronostici:
             with col_b2:
                 st.markdown('<div class="btn-primary-custom">', unsafe_allow_html=True)
                 if st.button("Invia Pronostico"):
-                    # Calcolo gol totali squadra 1 (somma dei suoi marcatori + autogol fatti dagli avversari a favore di s1)
                     tot_gol_s1_calcolati = 0
                     if not is_goleada_1:
                         for m in marc1:
                             tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"g_s1_{m}_{partita['id']}", 1)
-                    for a in auto1:
-                        tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"auto_s1_{a}_{partita['id']}", 1)
+                    for a in auto2:
+                        tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"auto_s2_{a}_{partita['id']}", 1)
 
-                    # Calcolo gol totali squadra 2 (somma dei suoi marcatori + autogol fatti dagli avversari a favore di s2)
                     tot_gol_s2_calcolati = 0
                     if not is_goleada_2:
                         for m in marc2:
                             tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"g_s2_{m}_{partita['id']}", 1)
-                    for a in auto2:
-                        tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"auto_s2_{a}_{partita['id']}", 1)
+                    for a in auto1:
+                        tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"auto_s1_{a}_{partita['id']}", 1)
 
                     errore_coerenza = False
                     if not is_goleada_1 and tot_gol_s1_calcolati != gol_s1:
@@ -438,12 +446,12 @@ with tab_pronostici:
                         if is_cagliari_left:
                             gol_cag, gol_avv = gol_s1, gol_s2
                             marc_cag, marc_avv = marc1, marc2
-                            auto_cag, auto_avv = auto1, auto2
+                            auto_cag, auto_avv = auto2, auto1
                             esp_cag, esp_avv = esp1, esp2
                         else:
                             gol_cag, gol_avv = gol_s2, gol_s1
                             marc_cag, marc_avv = marc2, marc1
-                            auto_cag, auto_avv = auto2, auto1
+                            auto_cag, auto_avv = auto1, auto2
                             esp_cag, esp_avv = esp2, esp1
 
                         db.table("pronostici").upsert({
@@ -517,6 +525,7 @@ if tab_admin is not None:
             
         st.divider()
         st.subheader("👥 Gestione Utenti & Status")
+        st.info("ℹ️ **Privilegio Utenti TOP:** Non dovranno più iscriversi nelle stagioni successive.")
         try:
             utenti_db = db.table("utenti").select("*").execute().data
         except:
@@ -535,10 +544,11 @@ if tab_admin is not None:
                     try:
                         if azione == "Elimina Utente":
                             db.table("utenti").delete().eq("nome_fb", utente_target).execute()
+                            st.success(f"Utente {utente_target} rimosso.")
                         else:
                             nuovo_status = "TOP" if azione == "Promuovi a TOP" else "STANDARD"
                             db.table("utenti").update({"status": nuovo_status}).eq("nome_fb", utente_target).execute()
-                        st.success("Modificata eseguita con successo!")
+                            st.success(f"Utente {utente_target} ora ha status {nuovo_status}.")
                         st.rerun()
                     except Exception as err:
                         st.error(f"Errore: {err}")
@@ -578,12 +588,16 @@ if tab_admin is not None:
 
         st.divider()
         st.subheader("🏁 Omologazione Partita")
+        st.warning("⚠️ **ATTENZIONE:** L'omologazione inserisce i risultati definitivi, calcola automaticamente tutti i punteggi e **blocca le modifiche successive** sulla partita!")
+        
         try:
             partite_non_omologate = db.table("partite").select("*").eq("omologata", False).order("data_ora").execute().data
         except:
             partite_non_omologate = []
 
-        if partite_non_omologate:
+        if not partite_non_omologate:
+            st.info("Nessuna partita in attesa di omologazione.")
+        else:
             dict_omo = {f"{p['competizione']} - Cagliari vs {p['avversario']} ({p['data_ora'][:10]}) [ID: {p['id']}]": p for p in partite_non_omologate}
             scelta_omo_str = st.selectbox("Seleziona partita da omologare", list(dict_omo.keys()), key="select_omo")
             p_omo = dict_omo[scelta_omo_str]
@@ -611,10 +625,10 @@ if tab_admin is not None:
                 for m in marc_uff_1:
                     k_m1 = f"omo_g_s1_{m}_{p_omo['id']}"
                     st.session_state.gol_omologazione[k_m1] = st.number_input(f"Gol di {m}", 1, 20, 1, key=k_m1)
-                auto_uff_1 = st.multiselect(f"Autogol a favore di {s1_omo}", options=rosa_t2, key="au_1")
-                for a in auto_uff_1:
-                    k_a1 = f"omo_auto_s1_{a}_{p_omo['id']}"
-                    st.session_state.gol_omologazione[k_a1] = st.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a1)
+                auto_uff_2 = st.multiselect(f"Autogol a favore di {s1_omo} (fatti da {s2_omo})", options=rosa_t2, key="au_2")
+                for a in auto_uff_2:
+                    k_a2 = f"omo_auto_s2_{a}_{p_omo['id']}"
+                    st.session_state.gol_omologazione[k_a2] = st.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a2)
                 esp_uff_1 = st.multiselect(f"Espulsi {s1_omo}", options=rosa_t1, key="eu_1")
 
             with col_mo2:
@@ -623,22 +637,22 @@ if tab_admin is not None:
                 for m in marc_uff_2:
                     k_m2 = f"omo_g_s2_{m}_{p_omo['id']}"
                     st.session_state.gol_omologazione[k_m2] = st.number_input(f"Gol di {m}", 1, 20, 1, key=k_m2)
-                auto_uff_2 = st.multiselect(f"Autogol a favore di {s2_omo}", options=rosa_t1, key="au_2")
-                for a in auto_uff_2:
-                    k_a2 = f"omo_auto_s2_{a}_{p_omo['id']}"
-                    st.session_state.gol_omologazione[k_a2] = st.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a2)
+                auto_uff_1 = st.multiselect(f"Autogol a favore di {s2_omo} (fatti da {s1_omo})", options=rosa_t1, key="au_1")
+                for a in auto_uff_1:
+                    k_a1 = f"omo_auto_s1_{a}_{p_omo['id']}"
+                    st.session_state.gol_omologazione[k_a1] = st.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a1)
                 esp_uff_2 = st.multiselect(f"Espulsi {s2_omo}", options=rosa_t2, key="eu_2")
 
             if st.button("Conferma e Omologa Partita"):
                 if is_cag_left_omo:
                     res_cag, res_avv = gol_uff_s1, gol_uff_s2
                     m_cag, m_avv = marc_uff_1, marc_uff_2
-                    a_cag, a_avv = auto_uff_1, auto_uff_2
+                    a_cag, a_avv = auto_uff_2, auto_uff_1
                     e_cag, e_avv = esp_uff_1, esp_uff_2
                 else:
                     res_cag, res_avv = gol_uff_s2, gol_uff_s1
                     m_cag, m_avv = marc_uff_2, marc_uff_1
-                    a_cag, a_avv = auto_uff_2, auto_uff_1
+                    a_cag, a_avv = auto_uff_1, auto_uff_2
                     e_cag, e_avv = esp_uff_2, esp_uff_1
                 
                 db.table("partite").update({
@@ -649,7 +663,169 @@ if tab_admin is not None:
                     "omologata": True
                 }).eq("id", p_omo["id"]).execute()
 
-                st.success("Partita omologata con successo!")
+                try:
+                    pronostici_utenti = db.table("pronostici").select("*").eq("id_partita", p_omo["id"]).execute().data
+                except:
+                    pronostici_utenti = []
+
+                for pron in pronostici_utenti:
+                    utente = pron["utente"]
+                    p_cag = pron.get("gol_cagliari", 0)
+                    p_avv = pron.get("gol_avversario", 0)
+                    
+                    p_marc_cag = set(pron.get("marcatori_cagliari", []) or [])
+                    p_marc_avv = set(pron.get("marcatori_avversario", []) or [])
+                    p_auto_cag = set(pron.get("autogol_cagliari", []) or [])
+                    p_auto_avv = set(pron.get("autogol_avversario", []) or [])
+                    p_esp_cag = set(pron.get("espulsi_cagliari", []) or [])
+                    p_esp_avv = set(pron.get("espulsi_avversario", []) or [])
+
+                    punti_generale = 0
+                    punti_masters = 0
+                    punti_bomber = 0
+
+                    is_goleada_cag = p_cag > 9
+                    is_goleada_avv = p_avv > 9
+                    reale_goleada_cag = res_cag > 9
+                    reale_goleada_avv = res_avv > 9
+
+                    bonus_esp = len(p_esp_cag.intersection(set(e_cag))) + len(p_esp_avv.intersection(set(e_avv)))
+
+                    if (is_goleada_cag and not reale_goleada_cag and p_avv == res_avv) or (is_goleada_avv and not reale_goleada_avv and p_cag == res_cag):
+                        punti_generale = 12
+                    elif is_goleada_cag and is_goleada_avv and reale_goleada_cag and reale_goleada_avv:
+                        punti_generale = 8
+                    elif p_cag == 0 and res_cag == 0 and p_avv == 0 and res_avv == 0:
+                        punti_generale = 8
+                    elif is_goleada_cag or is_goleada_avv:
+                        punti_generale = 8
+                    else:
+                        risultato_esatto = (p_cag == res_cag and p_avv == res_avv)
+                        marcatori_esatti_tutti = (set(m_cag) == p_marc_cag and set(m_avv) == p_marc_avv and set(a_cag) == p_auto_cag and set(a_avv) == p_auto_avv)
+                        
+                        if risultato_esatto and marcatori_esatti_tutti:
+                            punti_generale = 15
+                        elif risultato_esatto and set(m_cag) == p_marc_cag and set(a_cag) == p_auto_cag:
+                            punti_generale = 10
+                            punti_masters = 10
+                        elif (p_cag > p_avv and res_cag > res_avv) or (p_cag < p_avv and res_cag < res_avv) or (p_cag == p_avv and res_cag == res_avv):
+                            punti_generale = 5
+                        elif set(m_cag) == p_marc_cag and set(a_cag) == p_auto_cag and len(m_cag) > 0:
+                            punti_generale = 3
+                        else:
+                            punti_generale = 0
+
+                    punti_generale += bonus_esp
+
+                    for m_pron in p_marc_cag:
+                        if m_pron in m_cag:
+                            punti_bomber += 1
+
+                    db.table("punteggi_partita").upsert({
+                        "id_partita": p_omo["id"], "utente": utente,
+                        "punti_generale": punti_generale, "punti_masters": punti_masters,
+                        "punti_bomber": punti_bomber
+                    }).execute()
+
+                st.success("Partita omologata e punti assegnati automaticamente!")
                 st.rerun()
+
+        st.divider()
+        st.subheader("🛠️ Modifica o Elimina Partite Attive")
+        try:
+            partite_attive = db.table("partite").select("*").eq("omologata", False).order("data_ora").execute().data
+        except:
+            partite_attive = []
+
+        if not partite_attive:
+            st.info("Nessuna partita attiva da modificare.")
+        else:
+            dict_partite = {f"{p['competizione']} - Cagliari vs {p['avversario']} ({p['data_ora'][:10]}) [ID: {p['id']}]": p for p in partite_attive}
+            scelta_partita_str = st.selectbox("Seleziona partita attiva da modificare o eliminare", list(dict_partite.keys()))
+            p_selezionata = dict_partite[scelta_partita_str]
+
+            with st.form("form_modifica_partita"):
+                m_comp = st.text_input("Competizione", value=p_selezionata.get("competizione", ""))
+                m_avv = st.text_input("Squadra Avversaria", value=p_selezionata.get("avversario", ""))
+                
+                attuale_campo = p_selezionata.get("campo") or p_selezionata.get("casa_trasferta") or "Casa"
+                idx_campo = ["Casa", "Trasferta", "Campo Neutro"].index(attuale_campo) if attuale_campo in ["Casa", "Trasferta", "Campo Neutro"] else 0
+                m_campo = st.selectbox("Campo", ["Casa", "Trasferta", "Campo Neutro"], index=idx_campo)
+                
+                try:
+                    dt_esistente = datetime.fromisoformat(p_selezionata['data_ora'].replace("Z", "+00:00"))
+                    init_date = dt_esistente.date()
+                    init_hour = dt_esistente.hour
+                    init_minute_idx = [0, 15, 30, 45].index(dt_esistente.minute) if dt_esistente.minute in [0, 15, 30, 45] else 0
+                except:
+                    init_date = datetime.today().date()
+                    init_hour = 15
+                    init_minute_idx = 0
+
+                m_data = st.date_input("Data Partita", value=init_date)
+                m_ora = st.selectbox("Ora", list(range(0, 24)), index=init_hour)
+                m_min = st.selectbox("Minuti", [0, 15, 30, 45], index=init_minute_idx)
+                
+                m_rosa_cag = st.text_area("Convocati Cagliari", value=p_selezionata.get("rosa_cagliari", ""))
+                m_rosa_avv = st.text_area("Convocati Avversaria", value=p_selezionata.get("rosa_avversaria", ""))
+
+                col_mod1, col_mod2 = st.columns(2)
+                with col_mod1:
+                    submit_mod = st.form_submit_button("Salva Modifiche")
+                with col_mod2:
+                    submit_del = st.form_submit_button("Elimina Partita")
+
+                if submit_mod:
+                    ora_str = f"{m_ora:02d}:{m_min:02d}:00"
+                    data_ora_unita = f"{m_data.isoformat()}T{ora_str}"
+                    id_str = f"{m_comp}_{m_avv}_{m_data}".replace(" ", "_")
+                    
+                    db.table("partite").update({
+                        "competizione": m_comp, "avversario": m_avv, "campo": m_campo,
+                        "casa_trasferta": m_campo, "data_ora": data_ora_unita, "id_stringa": id_str,
+                        "rosa_cagliari": m_rosa_cag.replace(";", ","),
+                        "rosa_avversaria": m_rosa_avv.replace(";", ",")
+                    }).eq("id", p_selezionata["id"]).execute()
+                    st.success("Partita aggiornata!")
+                    st.rerun()
+
+                if submit_del:
+                    db.table("partite").delete().eq("id", p_selezionata["id"]).execute()
+                    st.success("Partita eliminata!")
+                    st.rerun()
+                    
+        st.divider()
+        st.subheader("✍️ Gestione Albo d'Oro (Admin)")
+        try:
+            res_albo_admin = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
+            if res_albo_admin.data:
+                df_albo_admin = pd.DataFrame(res_albo_admin.data)
+                edited_df = st.data_editor(
+                    df_albo_admin, 
+                    num_rows="dynamic", 
+                    use_container_width=True, 
+                    key="editor_albo_admin"
+                )
+                if st.button("Salva Modifiche Albo d'Oro"):
+                    try:
+                        records = edited_df.to_dict(orient="records")
+                        for r in records:
+                            row_id = r.get("id")
+                            data_to_save = {
+                                "stagione": r.get("stagione"),
+                                "vincitore_premio_cugurra": r.get("vincitore_premio_cugurra"),
+                                "premio_masters_of_cugurras": r.get("premio_masters_of_cugurras"),
+                                "premio_bomber_di_razza": r.get("premio_bomber_di_razza")
+                            }
+                            if pd.notna(row_id) and row_id:
+                                db.table("albo_doros").update(data_to_save).eq("id", int(row_id)).execute()
+                            else:
+                                db.table("albo_doros").insert(data_to_save).execute()
+                        st.success("Albo d'Oro aggiornato con successo!")
+                        st.rerun()
+                    except Exception as ex_albo:
+                        st.error(f"Errore durante l'aggiornamento: {ex_albo}")
+        except:
+            st.info("Impossibile caricare l'albo d'oro per la gestione.")
 
 mostra_footer()

@@ -233,34 +233,40 @@ if not st.session_state["autenticato"]:
                             clean_email = new_email.strip().lower()
                             clean_nome = new_nome.strip()
 
-                            # Controllo doppioni rigoroso sul nome utente
+                            # Controllo preventivo nome utente
                             check_nome = db.table("utenti").select("nome_fb").eq("nome_fb", clean_nome).execute()
-                            
-                            # Controllo doppioni rigoroso sull'email (interroga direttamente il DB normalizzando)
-                            check_email = db.table("utenti").select("email").eq("email", clean_email).execute()
-
                             if check_nome.data:
                                 st.warning(f"Il nome utente '{clean_nome}' è già utilizzato.")
-                            elif check_email.data:
+                                st.stop()
+
+                            # Controllo preventivo email
+                            check_email = db.table("utenti").select("email").eq("email", clean_email).execute()
+                            if check_email.data:
                                 st.warning(f"L'indirizzo email '{new_email}' risulta già registrato.")
-                            else:
-                                nuovo_status = "TOP" if fase_attuale == "TEST" else "STANDARD"
-                                db.table("utenti").insert({
-                                    "nome_fb": clean_nome, 
-                                    "email": clean_email, 
-                                    "pin": new_pin, 
-                                    "status": nuovo_status, 
-                                    "is_admin": False
-                                }).execute()
-                                
-                                st.session_state["nuovo_registrato"] = True
-                                st.session_state["reg_nome"] = clean_nome
-                                st.session_state["reg_email"] = clean_email
-                                st.session_state["reg_pin"] = new_pin
-                                st.session_state["reg_status"] = nuovo_status
-                                st.rerun()
+                                st.stop()
+
+                            # Tentativo di inserimento
+                            nuovo_status = "TOP" if fase_attuale == "TEST" else "STANDARD"
+                            db.table("utenti").insert({
+                                "nome_fb": clean_nome, 
+                                "email": clean_email, 
+                                "pin": new_pin, 
+                                "status": nuovo_status, 
+                                "is_admin": False
+                            }).execute()
+                            
+                            st.session_state["nuovo_registrato"] = True
+                            st.session_state["reg_nome"] = clean_nome
+                            st.session_state["reg_email"] = clean_email
+                            st.session_state["reg_pin"] = new_pin
+                            st.session_state["reg_status"] = nuovo_status
+                            st.rerun()
                         except Exception as err:
-                            st.error(f"Errore durante la registrazione: {err}")
+                            err_str = str(err).lower()
+                            if "unique" in err_str or "duplicate" in err_str or "already exists" in err_str:
+                                st.error(f"Errore: L'indirizzo email '{new_email}' o il nome utente sono già presenti nel sistema.")
+                            else:
+                                st.error(f"Errore durante la registrazione: {err}")
     st.stop()
 
 # --- BARRA LATERALE ---

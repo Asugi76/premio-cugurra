@@ -34,6 +34,12 @@ st.markdown(f"""
 
     h1, h2, h3 {{ color: #38bdf8 !important; }}
     
+    /* Etichette dei campi di input (es. Nome utente, Email, PIN) rese ben visibili e bianche */
+    .stTextInput label, .stSelectbox label, .stDateInput label, .stTextArea label, div[data-baseweb="select"] label {{
+        color: #ffffff !important;
+        font-weight: 600 !important;
+    }}
+
     /* Input generici e selectbox */
     input, textarea, select, div[data-baseweb="select"] > div {{
         background-color: #1e293b !important;
@@ -73,11 +79,21 @@ st.markdown(f"""
         margin-bottom: 10px !important;
     }}
 
-    /* --- PULSANTI A PROVA DI SMARTPHONE (TESTO BIANCO FORZATO) --- */
+    /* --- PULSANTI GENERALI STREAMLIT (ACCEDI, REGISTRATI, ECC.) --- */
     .stButton button {{
-        color: #ffffff !important;
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
+        color: #fbbf24 !important;
+        font-weight: bold !important;
+        border: 1px solid #38bdf8 !important;
+        border-radius: 10px !important;
+        padding: 0.75rem !important;
+        width: 100% !important;
     }}
     .stButton button p {{
+        color: #fbbf24 !important;
+    }}
+    .stButton button:hover {{
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
         color: #ffffff !important;
     }}
 
@@ -188,8 +204,9 @@ if not st.session_state["autenticato"]:
         col_r1, _ = st.columns([2, 1])
         with col_r1:
             if st.session_state.get("nuovo_registrato", False):
-                st.warning("⚠️ Benvenuto nel Premio Cugurra! Prima di esaltarti troppo, faresti bene a conservare e salvare le tue credenziali: nome utente e PIN, scriviteli da qualche parte… che poi non abbiamo voglia di venirti in soccorso se hai la memoria corta!")
+                st.warning("⚠️ Benvenuto nel Premio Cugurra! Prima di esaltarti troppo, faresti bene a conservare e salvare le tue credenziali: nome utente, email e PIN, scriviteli da qualche parte… che poi non abbiamo voglia di venirti in soccorso se hai la memoria corta!")
                 st.markdown(f"**Utente:** `{st.session_state['reg_nome']}`")
+                st.markdown(f"**Email:** `{st.session_state['reg_email']}`")
                 st.markdown(f"**PIN:** `{st.session_state['reg_pin']}`")
                 st.markdown("<br>", unsafe_allow_html=True)
                 
@@ -206,32 +223,37 @@ if not st.session_state["autenticato"]:
                 st.markdown('</div>', unsafe_allow_html=True)
             else:
                 new_nome = st.text_input("Nome Facebook / Utente")
-                new_email = st.text_input("Email")
+                new_email = st.text_input("Indirizzo Email (fondamentale contro i cloni)")
                 new_pin = st.text_input("PIN Segreto", type="password")
                 if st.button("Completa Registrazione"):
-                    if not new_nome or not new_pin or not new_email:
-                        st.error("Compila tutti i campi.")
+                    if not new_nome or not new_email or not new_pin:
+                        st.error("Compila tutti i campi inclusa l'email.")
                     else:
                         try:
+                            # Controllo doppioni per nome o email
                             check_nome = db.table("utenti").select("nome_fb").eq("nome_fb", new_nome).execute()
+                            check_email = db.table("utenti").select("email").eq("email", new_email).execute()
+                            
                             if check_nome.data:
                                 st.warning(f"Il nome utente '{new_nome}' è già utilizzato.")
+                            elif check_email.data:
+                                st.warning(f"L'indirizzo email '{new_email}' risulta già registrato.")
                             else:
-                                check_email = db.table("utenti").select("email").eq("email", new_email).execute()
-                                if check_email.data:
-                                    st.error("Attenzione: questa email risulta già associata a un altro account.")
-                                else:
-                                    nuovo_status = "TOP" if fase_attuale == "TEST" else "STANDARD"
-                                    db.table("utenti").insert({
-                                        "nome_fb": new_nome, "email": new_email, "pin": new_pin, 
-                                        "status": nuovo_status, "is_admin": False
-                                    }).execute()
-                                    
-                                    st.session_state["nuovo_registrato"] = True
-                                    st.session_state["reg_nome"] = new_nome
-                                    st.session_state["reg_pin"] = new_pin
-                                    st.session_state["reg_status"] = nuovo_status
-                                    st.rerun()
+                                nuovo_status = "TOP" if fase_attuale == "TEST" else "STANDARD"
+                                db.table("utenti").insert({
+                                    "nome_fb": new_nome, 
+                                    "email": new_email, 
+                                    "pin": new_pin, 
+                                    "status": nuovo_status, 
+                                    "is_admin": False
+                                }).execute()
+                                
+                                st.session_state["nuovo_registrato"] = True
+                                st.session_state["reg_nome"] = new_nome
+                                st.session_state["reg_email"] = new_email
+                                st.session_state["reg_pin"] = new_pin
+                                st.session_state["reg_status"] = nuovo_status
+                                st.rerun()
                         except Exception as err:
                             st.error(f"Errore durante la registrazione: {err}")
     st.stop()
@@ -239,7 +261,7 @@ if not st.session_state["autenticato"]:
 # --- BARRA LATERALE ---
 st.sidebar.markdown(f"👤 Utente: **{st.session_state.get('utente_corrente')}**")
 st.sidebar.markdown(f"⭐ Status: **{st.session_state.get('status')}**")
-if st.session_state.get('status') == "TOP":
+if st.sidebar.get('status') == "TOP":
     st.sidebar.caption("👑 *Privilegio TOP: Iscrizione automatica per le stagioni successive.*")
 st.sidebar.markdown(f"📌 Stagione: **{fase_attuale}**")
 if st.sidebar.button("Logout"):

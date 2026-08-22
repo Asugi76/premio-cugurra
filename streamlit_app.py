@@ -230,7 +230,7 @@ if not st.session_state["autenticato"]:
                         st.error("Compila tutti i campi inclusa l'email.")
                     else:
                         try:
-                            # Controllo doppioni per nome o email
+                            # Controllo doppioni per nome o email con blocco categorico
                             check_nome = db.table("utenti").select("nome_fb").eq("nome_fb", new_nome).execute()
                             check_email = db.table("utenti").select("email").eq("email", new_email).execute()
                             
@@ -261,7 +261,7 @@ if not st.session_state["autenticato"]:
 # --- BARRA LATERALE ---
 st.sidebar.markdown(f"👤 Utente: **{st.session_state.get('utente_corrente')}**")
 st.sidebar.markdown(f"⭐ Status: **{st.session_state.get('status')}**")
-if st.sidebar.get('status') == "TOP":
+if st.session_state.get('status') == "TOP":
     st.sidebar.caption("👑 *Privilegio TOP: Iscrizione automatica per le stagioni successive.*")
 st.sidebar.markdown(f"📌 Stagione: **{fase_attuale}**")
 if st.sidebar.button("Logout"):

@@ -6,59 +6,85 @@ from datetime import datetime, timezone
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Premio Cugurra", page_icon="⚽", layout="wide")
 
-# --- CSS / STYLING AVANZATO & MOBILE RESPONSIVE ---
+# --- CSS / STYLING DEFINITIVO (FORZATURA TEMA UNICO E INPUT) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #12161f; color: #f8fafc; }
+    /* Forzatura globale tema scuro fisso */
+    .stApp { background-color: #12161f !important; color: #f8fafc !important; }
     h1, h2, h3 { color: #38bdf8 !important; }
-    .stNumberInput input { font-size: 1.1em !important; height: 2.8em !important; text-align: center !important; }
-    .stButton>button { background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white !important; font-weight: bold; padding: 1rem; width: 100%; border-radius: 10px; }
-    .element-container { margin-bottom: 0.5rem; }
+    
+    /* Correzione critica campi di input e select per dispositivi mobili e desktop */
+    input, textarea, select, div[data-baseweb="select"] > div {
+        background-color: #1e293b !important;
+        color: #f8fafc !important;
+        border-color: #334155 !important;
+    }
+    
+    /* Testo e placeholder nei campi di input */
+    .stTextInput input, .stTextArea textarea, .stNumberInput input {
+        color: #f8fafc !important;
+        background-color: #1e293b !important;
+        font-size: 1.1em !important;
+        text-align: center !important;
+    }
+
+    /* Dropdown / Selectbox */
+    div[data-baseweb="select"] * {
+        color: #f8fafc !important;
+        background-color: #1e293b !important;
+    }
+
+    .stButton>button { 
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important; 
+        color: white !important; 
+        font-weight: bold !important; 
+        padding: 0.8rem !important; 
+        width: 100% !important; 
+        border-radius: 10px !important; 
+        border: none !important; 
+    }
+    .stButton>button:hover { 
+        background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%) !important; 
+    }
     
     /* Contenitore Pronostico Squadra Compatto */
     .prediction-box {
-        background-color: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 15px;
-        text-align: center;
-        margin-bottom: 10px;
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
+        padding: 15px !important;
+        text-align: center !important;
+        margin-bottom: 10px !important;
     }
     
     /* Stile Retrò per il Countdown */
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
     .retro-timer-container {
-        background-color: #090d16;
-        border: 2px solid #38bdf8;
-        border-radius: 8px;
-        padding: 12px;
-        text-align: center;
-        margin-bottom: 20px;
-        box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+        background-color: #090d16 !important;
+        border: 2px solid #38bdf8 !important;
+        border-radius: 8px !important;
+        padding: 12px !important;
+        text-align: center !important;
+        margin-bottom: 20px !important;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.3) !important;
     }
     .retro-timer-title {
-        font-family: 'Press Start 2P', monospace;
-        font-size: 0.75rem;
-        color: #94a3b8;
-        margin-bottom: 8px;
-        text-transform: uppercase;
+        font-family: 'Press Start 2P', monospace !important;
+        font-size: 0.75rem !important;
+        color: #94a3b8 !important;
+        margin-bottom: 8px !important;
+        text-transform: uppercase !important;
     }
     .retro-timer-clock {
-        font-family: 'Press Start 2P', monospace;
-        font-size: 1.1rem;
-        color: #fbbf24;
-        letter-spacing: 2px;
+        font-family: 'Press Start 2P', monospace !important;
+        font-size: 1.1rem !important;
+        color: #fbbf24 !important;
+        letter-spacing: 2px !important;
     }
 
-    /* Ottimizzazioni specifiche per Mobile */
     @media (max-width: 640px) {
-        .prediction-box {
-            padding: 8px;
-            margin-bottom: 5px;
-        }
-        h3 {
-            font-size: 1.2rem !important;
-        }
+        .prediction-box { padding: 8px !important; margin-bottom: 5px !important; }
+        h3 { font-size: 1.2rem !important; }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -322,7 +348,6 @@ with tabs[0]:
                     a_cag, a_avv = auto_uff_1, auto_uff_2
                     e_cag, e_avv = esp_uff_2, esp_uff_1
                 
-                # 1. Aggiornamento Partita
                 db.table("partite").update({
                     "risultato_cagliari": res_cag, "risultato_avversario": res_avv,
                     "marcatori_cagliari_reali": m_cag, "marcatori_avversario_reali": m_avv,
@@ -331,7 +356,6 @@ with tabs[0]:
                     "omologata": True
                 }).eq("id", p_omo["id"]).execute()
 
-                # 2. Calcolo Automatico Punti per ciascun utente
                 try:
                     pronostici_utenti = db.table("pronostici").select("*").eq("id_partita", p_omo["id"]).execute().data
                 except:
@@ -396,7 +420,7 @@ with tabs[0]:
                         "punti_bomber": punti_bomber
                     }).execute()
 
-                st.success("Partita omologata, archiviata e punti assegnati automaticamente a tutti gli utenti!")
+                st.success("Partita omologata e punti assegnati automaticamente!")
                 st.rerun()
 
         st.divider()
@@ -406,9 +430,7 @@ with tabs[0]:
         except:
             partite_admin = []
 
-        if not partite_admin:
-            st.info("Nessuna partita presente nel database.")
-        else:
+        if partite_admin:
             dict_partite = {f"{p['competizione']} - Cagliari vs {p['avversario']} ({p['data_ora'][:10]}) [ID: {p['id']}]": p for p in partite_admin}
             scelta_partita_str = st.selectbox("Seleziona partita da modificare o eliminare", list(dict_partite.keys()))
             p_selezionata = dict_partite[scelta_partita_str]
@@ -440,7 +462,7 @@ with tabs[0]:
 
                 col_mod1, col_mod2 = st.columns(2)
                 with col_mod1:
-                    submit_mod = st.form_submit_button("Salva Modifiche Partita")
+                    submit_mod = st.form_submit_button("Salva Modifiche")
                 with col_mod2:
                     submit_del = st.form_submit_button("Elimina Partita")
 
@@ -455,12 +477,12 @@ with tabs[0]:
                         "rosa_cagliari": m_rosa_cag.replace(";", ","),
                         "rosa_avversaria": m_rosa_avv.replace(";", ",")
                     }).eq("id", p_selezionata["id"]).execute()
-                    st.success("Partita aggiornata con successo!")
+                    st.success("Partita aggiornata!")
                     st.rerun()
 
                 if submit_del:
                     db.table("partite").delete().eq("id", p_selezionata["id"]).execute()
-                    st.success("Partita eliminata correttamente dal database!")
+                    st.success("Partita eliminata!")
                     st.rerun()
     else:
         st.warning("Accesso negato. Area riservata agli amministratori.")
@@ -506,7 +528,6 @@ with tabs[1]:
                 </div>
             """, unsafe_allow_html=True)
             
-            # Layout verticale racchiuso in card ottimizzate per mobile
             col_s1, col_mid, col_s2 = st.columns([2, 0.6, 2])
             
             with col_s1:
@@ -613,30 +634,16 @@ with tabs[1]:
                     keys_to_clear = [k for k in st.session_state.keys() if str(partita['id']) in k or k.startswith("gs")]
                     for k in keys_to_clear:
                         del st.session_state[k]
-                    st.success("Dati cancellati correttamente. Ricaricamento in corso...")
+                    st.success("Dati cancellati. Ricaricamento...")
                     st.rerun()
 
 # 3. CLASSIFICHE
 with tabs[2]:
     st.header("🏆 Classifiche Ufficiali")
-    sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs(["Generale", "Masters of Cugurras", "Bomber di Razza", "📜 Albo d'Oro"])
+    sub_tab1, sub_tab2, sub_tab3 = st.tabs(["Generale", "Masters of Cugurras", "Bomber di Razza"])
     with sub_tab1: st.write("In attesa delle prime partite.")
     with sub_tab2: st.write("Classifica pronostici da 10 punti.")
     with sub_tab3: st.write("Punti marcatori.")
-    with sub_tab4:
-        try:
-            res_albo = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
-            if res_albo.data:
-                df_albo = pd.DataFrame(res_albo.data)
-                df_albo = df_albo.rename(columns={
-                    "stagione": "Stagione", "vincitore_premio_cugurra": "Vincitore",
-                    "premio_masters_of_cugurras": "Masters", "premio_bomber_di_razza": "Bomber"
-                })
-                st.dataframe(df_albo, use_container_width=True, hide_index=True)
-            else:
-                st.info("Nessun dato presente nell'Albo d'Oro.")
-        except:
-            st.info("Albo d'oro non disponibile.")
 
 # 4. REGOLAMENTO
 with tabs[3]:
@@ -659,5 +666,22 @@ with tabs[3]:
     * 1 punto per ogni marcatore del Cagliari indovinato.
     * Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.
     """)
+
+# --- ALBO D'ORO IN FONDO ALLA PAGINA ---
+st.divider()
+st.header("📜 Albo d'Oro Storico")
+try:
+    res_albo = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
+    if res_albo.data:
+        df_albo = pd.DataFrame(res_albo.data)
+        df_albo = df_albo.rename(columns={
+            "stagione": "Stagione", "vincitore_premio_cugurra": "Vincitore",
+            "premio_masters_of_cugurras": "Masters", "premio_bomber_di_razza": "Bomber"
+        })
+        st.dataframe(df_albo, use_container_width=True, hide_index=True)
+    else:
+        st.info("Nessun dato presente nell'Albo d'Oro.")
+except:
+    st.info("Albo d'oro non disponibile.")
 
 mostra_footer()

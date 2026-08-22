@@ -73,7 +73,14 @@ st.markdown(f"""
         margin-bottom: 10px !important;
     }}
 
-    /* Pulsanti Personalizzati */
+    /* --- PULSANTI A PROVA DI SMARTPHONE (TESTO BIANCO FORZATO) --- */
+    .stButton button {{
+        color: #ffffff !important;
+    }}
+    .stButton button p {{
+        color: #ffffff !important;
+    }}
+
     .btn-danger button {{
         background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
         color: #ffffff !important;
@@ -82,6 +89,9 @@ st.markdown(f"""
         border-radius: 10px !important;
         border: none !important;
         width: 100% !important;
+    }}
+    .btn-danger button p {{
+        color: #ffffff !important;
     }}
     .btn-danger button:hover {{
         background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
@@ -95,6 +105,9 @@ st.markdown(f"""
         border-radius: 10px !important;
         border: none !important;
         width: 100% !important;
+    }}
+    .btn-primary-custom button p {{
+        color: #fbbf24 !important;
     }}
     .btn-primary-custom button:hover {{
         background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
@@ -610,24 +623,24 @@ with tabs[1]:
             """
             components.html(countdown_html, height=110)
             
-            # Scontro Diretto & Selettori Gol Cicciotti
+            # Scontro Diretto & Selettori Gol Ottimizzati Mobile
             col_s1, col_mid, col_s2 = st.columns([2, 0.6, 2])
             
             with col_s1:
                 st.markdown('<div class="prediction-box">', unsafe_allow_html=True)
-                st.markdown(f"<div style='display: flex; justify-content: flex-end; margin-bottom: 10px;'><img src='{get_url_scudetto(squadra_1)}' width='90'></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align: center; margin-bottom: 8px;'><img src='{get_url_scudetto(squadra_1)}' width='60'><br><b style='font-size: 0.9rem; color: #38bdf8;'>{squadra_1}</b></div>", unsafe_allow_html=True)
                 st.markdown('<div class="big-score-input">', unsafe_allow_html=True)
-                gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=0, key=f"gs1_{partita['id']}")
+                gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=0, key=f"gs1_{partita['id']}", label_visibility="collapsed")
                 st.markdown('</div></div>', unsafe_allow_html=True)
                 
             with col_mid:
-                st.markdown("<h2 style='text-align: center; margin-top: 55px;'>VS</h2>", unsafe_allow_html=True)
+                st.markdown("<h3 style='text-align: center; margin-top: 45px;'>VS</h3>", unsafe_allow_html=True)
                 
             with col_s2:
                 st.markdown('<div class="prediction-box">', unsafe_allow_html=True)
-                st.markdown(f"<div style='display: flex; justify-content: flex-start; margin-bottom: 10px;'><img src='{get_url_scudetto(squadra_2)}' width='90'></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align: center; margin-bottom: 8px;'><img src='{get_url_scudetto(squadra_2)}' width='60'><br><b style='font-size: 0.9rem; color: #38bdf8;'>{squadra_2}</b></div>", unsafe_allow_html=True)
                 st.markdown('<div class="big-score-input">', unsafe_allow_html=True)
-                gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=0, key=f"gs2_{partita['id']}")
+                gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=0, key=f"gs2_{partita['id']}", label_visibility="collapsed")
                 st.markdown('</div></div>', unsafe_allow_html=True)
 
             is_goleada_1 = gol_s1 > 9

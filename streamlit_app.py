@@ -317,21 +317,29 @@ with tab_pronostici:
 
             st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
             
-            # Tabellone Elettronico JS Responsive con fuso orario italiano forzato
+            # Tabellone Elettronico JS Responsive con fuso orario italiano forzato geometricamente
             countdown_html = f"""
             <div style="background-color: #090d16; border: 3px solid #38bdf8; border-radius: 12px; padding: 15px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);">
                 <div style="font-size: 0.75rem; color: #38bdf8; margin-bottom: 10px; text-transform: uppercase;">Quanto manca all'inizio della prossima partita?</div>
                 <div id="clock" style="font-size: 1.2rem; color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6);">CALCOLO IN CORSO...</div>
             </div>
             <script>
-                const targetStr = "{iso_timestamp}".replace("Z", "");
-                const targetDate = new Date(targetStr).getTime();
+                const targetUtcTime = new Date("{iso_timestamp}").getTime();
                 
+                function getItalyOffset(date) {{
+                    const d = new Date(date);
+                    const utcDate = new Date(d.toLocaleString('en-US', {{ timeZone: 'UTC' }}));
+                    const tzDate = new Date(d.toLocaleString('en-US', {{ timeZone: 'Europe/Rome' }}));
+                    return tzDate.getTime() - utcDate.getTime();
+                }}
+
                 function updateTimer() {{
-                    const nowString = new Date().toLocaleString("en-US", {{ timeZone: "Europe/Rome" }});
-                    const nowTime = new Date(nowString).getTime();
+                    const nowUtc = new Date().getTime();
+                    const italyOffset = getItalyOffset(nowUtc);
+                    const nowItaly = nowUtc + italyOffset;
                     
-                    const diff = targetDate - nowTime;
+                    const diff = targetUtcTime - nowItaly;
+                    
                     if (diff <= 0) {{
                         document.getElementById("clock").innerHTML = "IN CORSO / TERMINATA";
                         return;

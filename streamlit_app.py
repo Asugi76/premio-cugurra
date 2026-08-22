@@ -317,17 +317,21 @@ with tab_pronostici:
 
             st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
             
-            # Tabellone Elettronico JS Responsive
+            # Tabellone Elettronico JS Responsive con fuso orario italiano forzato
             countdown_html = f"""
             <div style="background-color: #090d16; border: 3px solid #38bdf8; border-radius: 12px; padding: 15px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);">
                 <div style="font-size: 0.75rem; color: #38bdf8; margin-bottom: 10px; text-transform: uppercase;">Quanto manca all'inizio della prossima partita?</div>
                 <div id="clock" style="font-size: 1.2rem; color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6);">CALCOLO IN CORSO...</div>
             </div>
             <script>
-                const targetDate = new Date("{iso_timestamp}").getTime();
+                const targetStr = "{iso_timestamp}".replace("Z", "");
+                const targetDate = new Date(targetStr).getTime();
+                
                 function updateTimer() {{
-                    const now = new Date().getTime();
-                    const diff = targetDate - now;
+                    const nowString = new Date().toLocaleString("en-US", {{ timeZone: "Europe/Rome" }});
+                    const nowTime = new Date(nowString).getTime();
+                    
+                    const diff = targetDate - nowTime;
                     if (diff <= 0) {{
                         document.getElementById("clock").innerHTML = "IN CORSO / TERMINATA";
                         return;

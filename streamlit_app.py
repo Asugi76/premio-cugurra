@@ -199,7 +199,7 @@ if not st.session_state["autenticato"]:
         col_l1, _ = st.columns([2, 1])
         with col_l1:
             nome_inserito = st.text_input("Nome Facebook / Utente")
-            pin_inserito = st.text_input("PIN Segreto", type="password")
+            pin_inserito = st.text_input("PIN personale", type="password")
             if st.button("Accedi"):
                 try:
                     res = db.table("utenti").select("*").eq("nome_fb", nome_inserito).eq("pin", pin_inserito).execute()
@@ -240,7 +240,7 @@ if not st.session_state["autenticato"]:
             else:
                 new_nome = st.text_input("Nome Facebook / Utente")
                 new_email = st.text_input("Indirizzo Email (fondamentale contro i cloni)")
-                new_pin = st.text_input("PIN Segreto", type="password")
+                new_pin = st.text_input("PIN personale", type="password")
                 if st.button("Completa Registrazione"):
                     if not new_nome or not new_email or not new_pin:
                         st.error("Compila tutti i campi inclusa l'email.")
@@ -376,8 +376,8 @@ with tab_pronostici:
                 url_comp = get_url_competizione(nome_competizione)
                 st.markdown(f"""
                     <div style="text-align: center; margin-top: 25px;">
-                        <img src="{url_comp}" width="42" style="margin-bottom: 5px;"><br>
                         <h3 style="margin: 0; font-size: 1.2rem;">VS</h3>
+                        <img src="{url_comp}" width="36" style="margin-top: 6px;">
                     </div>
                 """, unsafe_allow_html=True)
                 

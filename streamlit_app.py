@@ -498,7 +498,7 @@ with tab_regolamento:
     ### 1) Punteggi Classifica Generale:
     * **15 Punti:** Risultato e marcatori esatti di tutte e due le squadre.
     * **12 Punti:** Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.
-    * **10 Punti:** Risultato e marcatori SOLO del Cagliari esatti.
+    * **10 Punti:** Risultato esatto della partita e marcatori esatti del Cagliari.
     * **8 Punti:** Indovini lo 0-0, OPPURE solo la goleada di una squadra.
     * **5 Punti:** Indovini l'esito (1, X, 2).
     * **3 Punti:** Tutti i marcatori del Cagliari indovinati.

@@ -163,10 +163,24 @@ st.markdown(f"""
         background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
     }}
 
-    @media (max-width: 640px) {{
+    /* Ottimizzazioni specifiche per Smartphone (sotto i 768px) */
+    @media (max-width: 768px) {{
         .prediction-box {{ padding: 10px !important; }}
         .big-score-input input {{ font-size: 1.8rem !important; height: 55px !important; }}
         .stTabs [data-baseweb="tab"] {{ padding: 8px 10px !important; font-size: 0.85rem !important; }}
+        
+        /* Forza i blocchi delle squadre (es. loghi e input gol) a restare in linea orizzontale su mobile */
+        [data-testid="stHorizontalBlock"] {{
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }}
+        
+        [data-testid="stHorizontalBlock"] > div {{
+            flex: 1 !important;
+            min-width: auto !important;
+        }}
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -251,7 +265,6 @@ if not st.session_state["autenticato"]:
             pin_inserito = st.text_input("PIN personale (solo PIN a 4 cifre)", type="password")
             if st.button("Accedi"):
                 try:
-                    # Rimozione automatica di spazi indesiderati inseriti da mobile/tastiere
                     clean_nome = nome_inserito.strip() if nome_inserito else ""
                     clean_pin = pin_inserito.strip() if pin_inserito else ""
 

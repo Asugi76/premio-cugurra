@@ -19,7 +19,7 @@ def init_supabase():
 
 db = init_supabase()
 
-# --- CSS & JAVASCRIPT CORRETTIVO PER MOBILE E CONTRASTI ---
+# --- CSS & JAVASCRIPT CORRETTIVO PER MOBILE E PULSANTI COERENTI ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -51,7 +51,7 @@ st.markdown(f"""
     .stTextInput input, .stTextArea textarea {{
         color: #f8fafc !important;
         background-color: #1e293b !important;
-        font-size: 1em !important;
+        font-size: 16px !important;
     }}
 
     div[data-baseweb="select"] * {{
@@ -110,37 +110,37 @@ st.markdown(f"""
         color: #fbbf24 !important;
     }}
 
-    /* --- PULSANTI GENERALI --- */
-    .stButton button {{
+    /* --- PULSANTI GENERALI COERENTI E MOBILE-FRIENDLY --- */
+    div.stButton > button {{
+        width: 100% !important;
+        min-height: 48px !important;
         background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
         color: #fbbf24 !important;
         font-weight: bold !important;
+        font-size: 16px !important;
         border: 1px solid #38bdf8 !important;
         border-radius: 10px !important;
         padding: 0.75rem !important;
-        width: 100% !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease-in-out;
     }}
-    .stButton button p {{ color: #fbbf24 !important; }}
+    div.stButton > button p {{ color: #fbbf24 !important; }}
+    
+    div.stButton > button:hover {{
+        background: linear-gradient(135deg, #2563eb 100%, #1e3a8a 0%) !important;
+        border-color: #fbbf24 !important;
+    }}
     
     .btn-danger button {{
         background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
         color: #ffffff !important;
-        font-weight: bold !important;
-        padding: 0.75rem !important;
-        border-radius: 10px !important;
-        border: none !important;
-        width: 100% !important;
+        border: 1px solid #f87171 !important;
     }}
     .btn-danger button p {{ color: #ffffff !important; }}
 
     .btn-primary-custom button {{
         background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
         color: #fbbf24 !important;
-        font-weight: bold !important;
-        padding: 0.75rem !important;
-        border-radius: 10px !important;
-        border: none !important;
-        width: 100% !important;
     }}
     .btn-primary-custom button p {{ color: #fbbf24 !important; }}
 
@@ -149,6 +149,7 @@ st.markdown(f"""
         .prediction-box {{ padding: 10px !important; }}
         .big-score-input input {{ font-size: 1.8rem !important; height: 55px !important; }}
         .stTabs [data-baseweb="tab"] {{ padding: 8px 10px !important; font-size: 0.85rem !important; }}
+        div.stButton {{ margin-bottom: 8px !important; }}
         
         [data-testid="stHorizontalBlock"] {{
             display: flex !important;
@@ -164,7 +165,6 @@ st.markdown(f"""
     </style>
 
     <script>
-    /* Script di correzione dinamica dei colori per dispositivi mobili e componenti nativi */
     function fixMobileTextColors() {{
         const elements = document.querySelectorAll('label, [data-baseweb="radio"] span, [data-baseweb="tab"] span, [data-baseweb="tab"] p');
         elements.forEach(el => {{
@@ -238,7 +238,8 @@ if "autenticato" not in st.session_state:
         "status": None, 
         "gol_singoli": {}, 
         "gol_omologazione": {},
-        "nuovo_registrato": False
+        "nuovo_registrato": False,
+        "modalita_auth": "Accedi"
     })
 
 fase_attuale = get_fase()
@@ -246,14 +247,26 @@ fase_attuale = get_fase()
 # --- LOGIN / REGISTRAZIONE ---
 if not st.session_state["autenticato"]:
     st.title("⚽ Premio Cugurra - Accesso")
-    scelta_accesso = st.radio("Seleziona operazione:", ["Accedi", "Registrati"], horizontal=True)
     
-    if scelta_accesso == "Accedi":
+    # Sostituzione dei vecchi radio button con pulsanti coerenti per la scelta dell'operazione
+    col_scelta1, col_scelta2 = st.columns(2)
+    with col_scelta1:
+        if st.button("Accedi", key="btn_switch_accedi"):
+            st.session_state["modalita_auth"] = "Accedi"
+            st.rerun()
+    with col_scelta2:
+        if st.button("Registrati", key="btn_switch_registrati"):
+            st.session_state["modalita_auth"] = "Registrati"
+            st.rerun()
+            
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    if st.session_state["modalita_auth"] == "Accedi":
         col_l1, _ = st.columns([2, 1])
         with col_l1:
             nome_inserito = st.text_input("Nome Facebook / Utente")
             pin_inserito = st.text_input("PIN personale (solo PIN a 4 cifre)", type="password")
-            if st.button("Accedi"):
+            if st.button("Conferma Accesso", key="btn_submit_accedi"):
                 try:
                     clean_nome = nome_inserito.strip() if nome_inserito else ""
                     clean_pin = pin_inserito.strip() if pin_inserito else ""
@@ -285,7 +298,7 @@ if not st.session_state["autenticato"]:
                 st.markdown("<br>", unsafe_allow_html=True)
                 
                 st.markdown('<div class="btn-primary-custom">', unsafe_allow_html=True)
-                if st.button("Ajò a giocare"):
+                if st.button("Ajò a giocare", key="btn_ajo_giocare"):
                     st.session_state.update({
                         "autenticato": True,
                         "utente_corrente": st.session_state["reg_nome"],
@@ -299,7 +312,7 @@ if not st.session_state["autenticato"]:
                 new_nome = st.text_input("Nome Facebook / Utente")
                 new_email = st.text_input("Indirizzo Email (fondamentale contro i cloni)")
                 new_pin = st.text_input("PIN personale (solo PIN a 4 cifre)", type="password")
-                if st.button("Completa Registrazione"):
+                if st.button("Completa Registrazione", key="btn_submit_registrazione"):
                     if not new_nome or not new_email or not new_pin:
                         st.error("Compila tutti i campi inclusa l'email.")
                     else:
@@ -347,7 +360,7 @@ st.sidebar.markdown(f"⭐ Status: **{st.session_state.get('status')}**")
 if st.session_state.get('status') == "TOP" or st.session_state.get('status') == "ADMIN":
     st.sidebar.caption("👑 *Privilegio TOP: Iscrizione automatica per le stagioni successive.*")
 st.sidebar.markdown(f"📌 Stagione: **{fase_attuale}**")
-if st.sidebar.button("Logout"):
+if st.sidebar.button("Logout", key="sidebar_logout_btn"):
     st.session_state.clear()
     st.rerun()
 
@@ -490,7 +503,7 @@ with tab_pronostici:
             
             with col_b1:
                 st.markdown('<div class="btn-danger">', unsafe_allow_html=True)
-                if st.button("Cancella i dati inseriti"):
+                if st.button("Cancella i dati inseriti", key="btn_cancella_dati"):
                     st.session_state.gol_singoli.clear()
                     keys_to_clear = [
                         k for k in st.session_state.keys() 
@@ -505,7 +518,7 @@ with tab_pronostici:
 
             with col_b2:
                 st.markdown('<div class="btn-primary-custom">', unsafe_allow_html=True)
-                if st.button("Invia Pronostico"):
+                if st.button("Invia Pronostico", key="btn_invia_pronostico"):
                     tot_gol_s1_calcolati = 0
                     if not is_goleada_1:
                         for m in marc1:
@@ -607,7 +620,7 @@ if tab_admin is not None:
     with tab_admin:
         st.header("⚙️ Gestione Stagione")
         fase_scelta = st.selectbox("Cambia Fase Globale", ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"], index=["TEST", "STAGIONE IN CORSO", "ARCHIVIO"].index(fase_attuale) if fase_attuale in ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"] else 0)
-        if st.button("Aggiorna Fase Globale"):
+        if st.button("Aggiorna Fase Globale", key="btn_aggiorna_fase"):
             db.table("configurazione").update({"valore": fase_scelta}).eq("chiave", "fase_corrente").execute()
             st.success("Fase aggiornata!")
             st.rerun()
@@ -628,14 +641,28 @@ if tab_admin is not None:
             utenti_non_admin = [u['nome_fb'] for u in utenti_db if not u.get('is_admin', False)]
             if utenti_non_admin:
                 utente_target = st.selectbox("Seleziona Utente da gestire", utenti_non_admin)
-                azione = st.radio("Azione:", ["Promuovi a TOP", "Retrocedi a STANDARD", "Elimina Utente"])
-                if st.button("Esegui Modifica Utente"):
+                
+                # Sostituzione radio button gestione utente con pulsanti chiari
+                col_u1, col_u2, col_u3 = st.columns(3)
+                azione_utente = "Promuovi a TOP"
+                with col_u1:
+                    if st.button("Promuovi TOP", key="btn_promuovi"):
+                        azione_utente = "Promuovi a TOP"
+                with col_u2:
+                    if st.button("Retrocedi STANDARD", key="btn_retrocedi"):
+                        azione_utente = "Retrocedi a STANDARD"
+                with col_u3:
+                    if st.button("Elimina", key="btn_elimina_utente"):
+                        azione_utente = "Elimina Utente"
+                
+                st.write(f"Azione selezionata: **{azione_utente}** per l'utente **{utente_target}**")
+                if st.button("Esegui Modifica Utente", key="btn_esegui_mod_utente"):
                     try:
-                        if azione == "Elimina Utente":
+                        if azione_utente == "Elimina Utente":
                             db.table("utenti").delete().eq("nome_fb", utente_target).execute()
                             st.success(f"Utente {utente_target} rimosso.")
                         else:
-                            nuovo_status = "TOP" if azione == "Promuovi a TOP" else "STANDARD"
+                            nuovo_status = "TOP" if azione_utente == "Promuovi a TOP" else "STANDARD"
                             db.table("utenti").update({"status": nuovo_status}).eq("nome_fb", utente_target).execute()
                             st.success(f"Utente {utente_target} ora ha status {nuovo_status}.")
                         st.rerun()
@@ -732,7 +759,7 @@ if tab_admin is not None:
                     st.session_state.gol_omologazione[k_a1] = st.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a1)
                 esp_uff_2 = st.multiselect(f"Espulsi {s2_omo}", options=rosa_t2, key="eu_2")
 
-            if st.button("Conferma e Omologa Partita"):
+            if st.button("Conferma e Omologa Partita", key="btn_conferma_omologa"):
                 if is_cag_left_omo:
                     res_cag, res_avv = gol_uff_s1, gol_uff_s2
                     m_cag, m_avv = marc_uff_1, marc_uff_2
@@ -895,7 +922,7 @@ if tab_admin is not None:
                     use_container_width=True, 
                     key="editor_albo_admin"
                 )
-                if st.button("Salva Modifiche Albo d'Oro"):
+                if st.button("Salva Modifiche Albo d'Oro", key="btn_salva_albo"):
                     try:
                         records = edited_df.to_dict(orient="records")
                         for r in records:

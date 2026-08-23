@@ -79,6 +79,31 @@ st.markdown(f"""
         margin-bottom: 10px !important;
     }}
 
+    /* Stile personalizzato e colorato per le Tabs (Linguette) */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 8px;
+        background-color: rgba(15, 23, 42, 0.7);
+        padding: 10px;
+        border-radius: 12px;
+        border: 1px solid #334155;
+    }}
+
+    .stTabs [data-baseweb="tab"] {{
+        background-color: #1e293b !important;
+        border-radius: 8px !important;
+        color: #cbd5e1 !important;
+        font-weight: bold !important;
+        padding: 10px 20px !important;
+        border: 1px solid #475569 !important;
+    }}
+
+    .stTabs [aria-selected="true"] {{
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%) !important;
+        color: #fbbf24 !important;
+        border: 1px solid #38bdf8 !important;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }}
+
     /* --- PULSANTI GENERALI STREAMLIT --- */
     .stButton button {{
         background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
@@ -166,7 +191,6 @@ def get_url_competizione(nome_competizione):
     return f"{STORAGE_BASE_URL}{filename}"
 
 def check_limite_iscrizioni(fase_str):
-    """Verifica se la data odierna rientra nel limite del 2 febbraio della stagione in corso."""
     if fase_str == "TEST":
         return True
     try:
@@ -237,7 +261,7 @@ if not st.session_state["autenticato"]:
             if not check_limite_iscrizioni(fase_attuale):
                 st.error("❌ Le iscrizioni per la stagione in corso sono chiuse. Il termine ultimo era fissato al 2 febbraio dell'anno della stagione.")
             elif st.session_state.get("nuovo_registrato", False):
-                st.warning("⚠️ Benvenuto nel Premio Cugurra! Prima di farti prendere dall'entusiasmo, faresti bene a conservare e salvare le tue credenziali: nome utente, email e PIN, scriviteli da qualche parte… che poi non abbiamo voglia di venirti in soccorso se hai la memoria corta!")
+                st.warning("⚠️ Benvenuto nel Premio Cugurra! Prima di esaltarti troppo, faresti bene a conservare e salvare le tue credenziali: nome utente, email e PIN, scriviteli da qualche parte… che poi non abbiamo voglia di venirti in soccorso se hai la memoria corta!")
                 st.markdown(f"**Utente:** `{st.session_state['reg_nome']}`")
                 st.markdown(f"**Email:** `{st.session_state['reg_email']}`")
                 st.markdown(f"**PIN:** `{st.session_state['reg_pin']}`")
@@ -312,10 +336,10 @@ if st.sidebar.button("Logout"):
 # --- INTERFACCIA PRINCIPALE ---
 st.title(f"⚽ Premio Cugurra 2026/27 ({fase_attuale})")
 
-# Gestione dinamica delle schede in base ai permessi Admin
+# Gestione dinamica delle schede: Admin vede "Gestione Admin" per primo
 if st.session_state["is_admin"]:
-    tabs = st.tabs(["📝 Pronostici", "🏆 Classifiche", "📜 Regolamento", "⚙️ Admin"])
-    tab_pronostici, tab_classifiche, tab_regolamento, tab_admin = tabs
+    tabs = st.tabs(["⚙️ Gestione Admin", "📝 Pronostici", "🏆 Classifiche", "📜 Regolamento"])
+    tab_admin, tab_pronostici, tab_classifiche, tab_regolamento = tabs
 else:
     tabs = st.tabs(["📝 Pronostici", "🏆 Classifiche", "📜 Regolamento"])
     tab_pronostici, tab_classifiche, tab_regolamento = tabs
@@ -380,11 +404,11 @@ with tab_pronostici:
             """
             components.html(countdown_html, height=110)
             
-            # Logo competizione centrato sotto il countdown e leggermente più piccolo
+            # Logo competizione perfettamente centrato e leggermente più piccolo
             url_comp = get_url_competizione(nome_competizione)
             st.markdown(f"""
-                <div style="text-align: center; margin-top: 5px; margin-bottom: 15px;">
-                    <img src="{url_comp}" width="42">
+                <div style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 15px;">
+                    <img src="{url_comp}" width="42" style="display: block;">
                 </div>
             """, unsafe_allow_html=True)
             
@@ -512,7 +536,7 @@ with tab_pronostici:
 # 2. CLASSIFICHE
 with tab_classifiche:
     st.header("🏆 Classifiche Ufficiali")
-    sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs(["Generale", "Masters of Cugurras", "Bomber di Razza", "Albo d'Oro"])
+    sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Albo d'Oro"])
     
     with sub_tab1: st.write("In attesa delle prime partite.")
     with sub_tab2: st.write("Classifica pronostici da 10 punti.")
@@ -527,9 +551,9 @@ with tab_classifiche:
                     "stagione": "Stagione", 
                     "vincitore_premio_cugurra": "Vincitore Premio Cugurra",
                     "premio_masters_of_cugurras": "Masters of Cugurras", 
-                    "premio_bomber_di_razza": "Bomber di Razza"
+                    "premio_bomber_di_razza": "Bomber di razza"
                 })
-                cols_display = [c for c in ["Stagione", "Vincitore Premio Cugurra", "Masters of Cugurras", "Bomber di Razza"] if c in df_display.columns]
+                cols_display = [c for c in ["Stagione", "Vincitore Premio Cugurra", "Masters of Cugurras", "Bomber di razza"] if c in df_display.columns]
                 st.dataframe(df_display[cols_display], use_container_width=True, hide_index=True)
             else:
                 st.info("Nessun dato presente nell'Albo d'Oro.")
@@ -541,7 +565,7 @@ with tab_regolamento:
     st.header("📜 Punteggi e Regolamento del Premio Cugurra")
     st.markdown("""
     ### 1) Limite Iscrizioni Stagionali:
-    * Le iscrizioni alla stagione in corso rimangono aperte **solo fino al giorno 02 febbraio compreso** dell'anno solare in cui termina la stagione (coincidente con la chiusura del calciomercato invernale del 31 gennaio). Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.
+    * Le iscrizioni alla stagione in corso rimangono aperte fino al giorno 02 febbraio (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio). Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.
 
     ### 2) Punteggi Classifica Generale:
     * **15 Punti:** Risultato e marcatori esatti di tutte e due le squadre.
@@ -556,12 +580,12 @@ with tab_regolamento:
     ### 3) Masters of Cugurras:
     * Classifica dedicata a chi colleziona i pronostici da 10 punti.
 
-    ### 4) Bomber di Razza:
+    ### 4) Bomber di razza:
     * 1 punto per ogni marcatore del Cagliari indovinato.
     * Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.
     """)
 
-# 4. ADMIN
+# 4. ADMIN (Posizionato come primo pannello per l'amministratore)
 if tab_admin is not None:
     with tab_admin:
         st.header("⚙️ Gestione Stagione")
@@ -573,7 +597,7 @@ if tab_admin is not None:
             
         st.divider()
         st.subheader("👥 Gestione Utenti & Status")
-        st.info("ℹ️ **Privilegio Utenti TOP:** Non dovranno più iscriversi nelle stagioni successive.")
+        st.info("ℹ️ **Privilegi Utenti TOP:** Non dovranno più iscriversi nelle stagioni successive.")
         try:
             utenti_db = db.table("utenti").select("*").execute().data
         except:

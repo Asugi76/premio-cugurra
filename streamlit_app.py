@@ -19,7 +19,7 @@ def init_supabase():
 
 db = init_supabase()
 
-# --- CSS / STYLING DEFINITIVO ---
+# --- CSS / STYLING DEFINITIVO (Ottimizzato per Mobile e Contrasti) ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -79,10 +79,10 @@ st.markdown(f"""
         margin-bottom: 10px !important;
     }}
 
-    /* Stile personalizzato e colorato per le Tabs (Linguette) */
+    /* --- STILE LINGUETTE (TABS) MIGLIORATO PER MOBILE & CONTRASTO --- */
     .stTabs [data-baseweb="tab-list"] {{
-        gap: 8px;
-        background-color: rgba(15, 23, 42, 0.7);
+        gap: 6px;
+        background-color: rgba(15, 23, 42, 0.85);
         padding: 10px;
         border-radius: 12px;
         border: 1px solid #334155;
@@ -91,10 +91,15 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab"] {{
         background-color: #1e293b !important;
         border-radius: 8px !important;
-        color: #cbd5e1 !important;
-        font-weight: bold !important;
-        padding: 10px 20px !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        padding: 10px 15px !important;
         border: 1px solid #475569 !important;
+    }}
+
+    .stTabs [data-baseweb="tab"] p {{
+        color: #ffffff !important;
+        font-size: 0.95rem !important;
     }}
 
     .stTabs [aria-selected="true"] {{
@@ -102,6 +107,10 @@ st.markdown(f"""
         color: #fbbf24 !important;
         border: 1px solid #38bdf8 !important;
         box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }}
+
+    .stTabs [aria-selected="true"] p {{
+        color: #fbbf24 !important;
     }}
 
     /* --- PULSANTI GENERALI STREAMLIT --- */
@@ -157,6 +166,7 @@ st.markdown(f"""
     @media (max-width: 640px) {{
         .prediction-box {{ padding: 10px !important; }}
         .big-score-input input {{ font-size: 1.8rem !important; height: 55px !important; }}
+        .stTabs [data-baseweb="tab"] {{ padding: 8px 10px !important; font-size: 0.85rem !important; }}
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -238,21 +248,25 @@ if not st.session_state["autenticato"]:
         col_l1, _ = st.columns([2, 1])
         with col_l1:
             nome_inserito = st.text_input("Nome Facebook / Utente")
-            pin_inserito = st.text_input("PIN personale", type="password")
+            pin_inserito = st.text_input("PIN personale (solo PIN a 4 cifre)", type="password")
             if st.button("Accedi"):
                 try:
-                    res = db.table("utenti").select("*").eq("nome_fb", nome_inserito).eq("pin", pin_inserito).execute()
+                    # Rimozione automatica di spazi indesiderati inseriti da mobile/tastiere
+                    clean_nome = nome_inserito.strip() if nome_inserito else ""
+                    clean_pin = pin_inserito.strip() if pin_inserito else ""
+
+                    res = db.table("utenti").select("*").eq("nome_fb", clean_nome).eq("pin", clean_pin).execute()
                     if res.data:
                         u = res.data[0]
                         st.session_state.update({
                             "autenticato": True, 
                             "utente_corrente": u["nome_fb"], 
                             "is_admin": u.get('is_admin', False), 
-                            "status": u.get('status')
+                            "status": u.get('status', 'STANDARD')
                         })
                         st.rerun()
                     else:
-                        st.error("Nome o PIN non corretti.")
+                        st.error("Nome o PIN non corretti. Verifica di non aver inserito spazi extra.")
                 except Exception as e:
                     st.error(f"Errore di connessione: {e}")
     else:
@@ -281,7 +295,7 @@ if not st.session_state["autenticato"]:
             else:
                 new_nome = st.text_input("Nome Facebook / Utente")
                 new_email = st.text_input("Indirizzo Email (fondamentale contro i cloni)")
-                new_pin = st.text_input("PIN personale", type="password")
+                new_pin = st.text_input("PIN personale (solo PIN a 4 cifre)", type="password")
                 if st.button("Completa Registrazione"):
                     if not new_nome or not new_email or not new_pin:
                         st.error("Compila tutti i campi inclusa l'email.")
@@ -289,6 +303,7 @@ if not st.session_state["autenticato"]:
                         try:
                             clean_email = new_email.strip().lower()
                             clean_nome = new_nome.strip()
+                            clean_pin = new_pin.strip()
 
                             check_nome = db.table("utenti").select("nome_fb").eq("nome_fb", clean_nome).execute()
                             if check_nome.data:
@@ -304,7 +319,7 @@ if not st.session_state["autenticato"]:
                             db.table("utenti").insert({
                                 "nome_fb": clean_nome, 
                                 "email": clean_email, 
-                                "pin": new_pin, 
+                                "pin": clean_pin, 
                                 "status": nuovo_status, 
                                 "is_admin": False
                             }).execute()
@@ -312,7 +327,7 @@ if not st.session_state["autenticato"]:
                             st.session_state["nuovo_registrato"] = True
                             st.session_state["reg_nome"] = clean_nome
                             st.session_state["reg_email"] = clean_email
-                            st.session_state["reg_pin"] = new_pin
+                            st.session_state["reg_pin"] = clean_pin
                             st.session_state["reg_status"] = nuovo_status
                             st.rerun()
                         except Exception as err:
@@ -404,7 +419,7 @@ with tab_pronostici:
             """
             components.html(countdown_html, height=110)
             
-            # Logo competizione perfettamente centrato e leggermente più piccolo
+            # Logo competizione perfettamente centrato
             url_comp = get_url_competizione(nome_competizione)
             st.markdown(f"""
                 <div style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 15px;">

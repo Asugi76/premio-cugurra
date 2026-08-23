@@ -19,12 +19,12 @@ def init_supabase():
 
 db = init_supabase()
 
-# --- CSS / STYLING DEFINITIVO (Ottimizzato per Mobile e Contrasti) ---
+# --- CSS & JAVASCRIPT CORRETTIVO PER MOBILE E CONTRASTI ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-    /* Sfondo Globale con sovrapposizione scura per la massima leggibilità */
+    /* Sfondo Globale con sovrapposizione scura */
     .stApp {{
         background: linear-gradient(rgba(18, 22, 31, 0.88), rgba(18, 22, 31, 0.95)), 
                     url('{SFONDO_URL}') no-repeat center center fixed !important;
@@ -34,10 +34,11 @@ st.markdown(f"""
 
     h1, h2, h3 {{ color: #38bdf8 !important; }}
     
-    /* Etichette dei campi di input rese ben visibili e bianche */
-    .stTextInput label, .stSelectbox label, .stDateInput label, .stTextArea label, div[data-baseweb="select"] label {{
+    /* Forzatura globale ed esplicita per qualsiasi etichetta e testo di input/radio/tab */
+    label, .stRadio label, .stTextInput label, .stSelectbox label, div[data-baseweb="radio"] span, div[data-baseweb="radio"] p, div[data-baseweb="tab"] span, div[data-baseweb="tab"] p {{
         color: #ffffff !important;
         font-weight: 600 !important;
+        opacity: 1 !important;
     }}
 
     /* Input generici e selectbox */
@@ -79,7 +80,7 @@ st.markdown(f"""
         margin-bottom: 10px !important;
     }}
 
-    /* --- STILE LINGUETTE (TABS) MIGLIORATO PER MOBILE & CONTRASTO --- */
+    /* --- STILE LINGUETTE (TABS) --- */
     .stTabs [data-baseweb="tab-list"] {{
         gap: 6px;
         background-color: rgba(15, 23, 42, 0.85);
@@ -97,11 +98,6 @@ st.markdown(f"""
         border: 1px solid #475569 !important;
     }}
 
-    .stTabs [data-baseweb="tab"] p {{
-        color: #ffffff !important;
-        font-size: 0.95rem !important;
-    }}
-
     .stTabs [aria-selected="true"] {{
         background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%) !important;
         color: #fbbf24 !important;
@@ -109,11 +105,12 @@ st.markdown(f"""
         box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
     }}
 
-    .stTabs [aria-selected="true"] p {{
+    .stTabs [aria-selected="true"] p, 
+    .stTabs [aria-selected="true"] span {{
         color: #fbbf24 !important;
     }}
 
-    /* --- PULSANTI GENERALI STREAMLIT --- */
+    /* --- PULSANTI GENERALI --- */
     .stButton button {{
         background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
         color: #fbbf24 !important;
@@ -123,14 +120,8 @@ st.markdown(f"""
         padding: 0.75rem !important;
         width: 100% !important;
     }}
-    .stButton button p {{
-        color: #fbbf24 !important;
-    }}
-    .stButton button:hover {{
-        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
-        color: #ffffff !important;
-    }}
-
+    .stButton button p {{ color: #fbbf24 !important; }}
+    
     .btn-danger button {{
         background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
         color: #ffffff !important;
@@ -140,12 +131,7 @@ st.markdown(f"""
         border: none !important;
         width: 100% !important;
     }}
-    .btn-danger button p {{
-        color: #ffffff !important;
-    }}
-    .btn-danger button:hover {{
-        background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
-    }}
+    .btn-danger button p {{ color: #ffffff !important; }}
 
     .btn-primary-custom button {{
         background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
@@ -156,33 +142,37 @@ st.markdown(f"""
         border: none !important;
         width: 100% !important;
     }}
-    .btn-primary-custom button p {{
-        color: #fbbf24 !important;
-    }}
-    .btn-primary-custom button:hover {{
-        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
-    }}
+    .btn-primary-custom button p {{ color: #fbbf24 !important; }}
 
-    /* Ottimizzazioni specifiche per Smartphone (sotto i 768px) */
+    /* Ottimizzazioni Smartphone */
     @media (max-width: 768px) {{
         .prediction-box {{ padding: 10px !important; }}
         .big-score-input input {{ font-size: 1.8rem !important; height: 55px !important; }}
         .stTabs [data-baseweb="tab"] {{ padding: 8px 10px !important; font-size: 0.85rem !important; }}
         
-        /* Forza i blocchi delle squadre (es. loghi e input gol) a restare in linea orizzontale su mobile */
         [data-testid="stHorizontalBlock"] {{
             display: flex !important;
             flex-direction: row !important;
             align-items: center !important;
             justify-content: center !important;
         }}
-        
         [data-testid="stHorizontalBlock"] > div {{
             flex: 1 !important;
             min-width: auto !important;
         }}
     }}
     </style>
+
+    <script>
+    /* Script di correzione dinamica dei colori per dispositivi mobili e componenti nativi */
+    function fixMobileTextColors() {{
+        const elements = document.querySelectorAll('label, [data-baseweb="radio"] span, [data-baseweb="tab"] span, [data-baseweb="tab"] p');
+        elements.forEach(el => {{
+            el.style.setProperty('color', '#ffffff', 'important');
+        }});
+    }}
+    setInterval(fixMobileTextColors, 300);
+    </script>
 """, unsafe_allow_html=True)
 
 # --- HELPER FUNCTIONS ---
@@ -432,7 +422,6 @@ with tab_pronostici:
             """
             components.html(countdown_html, height=110)
             
-            # Logo competizione perfettamente centrato
             url_comp = get_url_competizione(nome_competizione)
             st.markdown(f"""
                 <div style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 15px;">

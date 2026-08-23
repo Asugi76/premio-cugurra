@@ -237,7 +237,7 @@ if not st.session_state["autenticato"]:
             if not check_limite_iscrizioni(fase_attuale):
                 st.error("❌ Le iscrizioni per la stagione in corso sono chiuse. Il termine ultimo era fissato al 2 febbraio dell'anno della stagione.")
             elif st.session_state.get("nuovo_registrato", False):
-                st.warning("⚠️ Benvenuto nel Premio Cugurra! Prima di esaltarti troppo, faresti bene a conservare e salvare le tue credenziali: nome utente, email e PIN, scriviteli da qualche parte… che poi non abbiamo voglia di venirti in soccorso se hai la memoria corta!")
+                st.warning("⚠️ Benvenuto nel Premio Cugurra! Prima di farti prendere dall'entusiasmo, faresti bene a conservare e salvare le tue credenziali: nome utente, email e PIN, scriviteli da qualche parte… che poi non abbiamo voglia di venirti in soccorso se hai la memoria corta!")
                 st.markdown(f"**Utente:** `{st.session_state['reg_nome']}`")
                 st.markdown(f"**Email:** `{st.session_state['reg_email']}`")
                 st.markdown(f"**PIN:** `{st.session_state['reg_pin']}`")
@@ -541,7 +541,7 @@ with tab_regolamento:
     st.header("📜 Punteggi e Regolamento del Premio Cugurra")
     st.markdown("""
     ### 1) Limite Iscrizioni Stagionali:
-    * Le iscrizioni alla stagione in corso rimangono aperte **solo fino al giorno 02 febbraio compreso** dell'anno solare in cui termina la stagione (coincidente con la chiusura del calciomercato invernale del 31 gennaio). Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva (fanno eccezione gli utenti con status "TOP" che beneficiano dell'iscrizione automatica).
+    * Le iscrizioni alla stagione in corso rimangono aperte **solo fino al giorno 02 febbraio compreso** dell'anno solare in cui termina la stagione (coincidente con la chiusura del calciomercato invernale del 31 gennaio). Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.
 
     ### 2) Punteggi Classifica Generale:
     * **15 Punti:** Risultato e marcatori esatti di tutte e due le squadre.

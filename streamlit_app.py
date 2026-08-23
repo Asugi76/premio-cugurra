@@ -165,6 +165,21 @@ def get_url_competizione(nome_competizione):
     filename = mapping_comp.get(nome_competizione, "DEFAULT.png")
     return f"{STORAGE_BASE_URL}{filename}"
 
+def check_limite_iscrizioni(fase_str):
+    """Verifica se la data odierna rientra nel limite del 2 febbraio della stagione in corso."""
+    if fase_str == "TEST":
+        return True
+    try:
+        parti = fase_str.split("/")
+        if len(parti) == 2:
+            anno_fine = int("20" + parti[1]) if len(parti[1]) == 2 else int(parti[1])
+            limite_data = datetime(anno_fine, 2, 2, 23, 59, 59)
+            if datetime.now() > limite_data:
+                return False
+    except:
+        pass
+    return True
+
 def mostra_footer():
     st.divider()
     url_logo = f"{STORAGE_BASE_URL}CUGURRAOFFICIAL.png"
@@ -219,7 +234,9 @@ if not st.session_state["autenticato"]:
     else:
         col_r1, _ = st.columns([2, 1])
         with col_r1:
-            if st.session_state.get("nuovo_registrato", False):
+            if not check_limite_iscrizioni(fase_attuale):
+                st.error("❌ Le iscrizioni per la stagione in corso sono chiuse. Il termine ultimo era fissato al 2 febbraio dell'anno della stagione.")
+            elif st.session_state.get("nuovo_registrato", False):
                 st.warning("⚠️ Benvenuto nel Premio Cugurra! Prima di esaltarti troppo, faresti bene a conservare e salvare le tue credenziali: nome utente, email e PIN, scriviteli da qualche parte… che poi non abbiamo voglia di venirti in soccorso se hai la memoria corta!")
                 st.markdown(f"**Utente:** `{st.session_state['reg_nome']}`")
                 st.markdown(f"**Email:** `{st.session_state['reg_email']}`")
@@ -329,7 +346,7 @@ with tab_pronostici:
             squadra_2 = partita['avversario'] if is_cagliari_left else "CAGLIARI"
             nome_competizione = partita.get('competizione', 'Serie A')
 
-            st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
+            st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2}, {nome_competizione} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
             
             countdown_html = f"""
             <div style="background-color: #090d16; border: 3px solid #38bdf8; border-radius: 12px; padding: 15px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);">
@@ -363,6 +380,14 @@ with tab_pronostici:
             """
             components.html(countdown_html, height=110)
             
+            # Logo competizione centrato sotto il countdown e leggermente più piccolo
+            url_comp = get_url_competizione(nome_competizione)
+            st.markdown(f"""
+                <div style="text-align: center; margin-top: 5px; margin-bottom: 15px;">
+                    <img src="{url_comp}" width="42">
+                </div>
+            """, unsafe_allow_html=True)
+            
             col_s1, col_mid, col_s2 = st.columns([2, 0.6, 2])
             
             with col_s1:
@@ -373,11 +398,9 @@ with tab_pronostici:
                 st.markdown('</div></div>', unsafe_allow_html=True)
                 
             with col_mid:
-                url_comp = get_url_competizione(nome_competizione)
-                st.markdown(f"""
-                    <div style="text-align: center; margin-top: 25px;">
+                st.markdown("""
+                    <div style="text-align: center; margin-top: 35px;">
                         <h3 style="margin: 0; font-size: 1.2rem;">VS</h3>
-                        <img src="{url_comp}" width="36" style="margin-top: 6px;">
                     </div>
                 """, unsafe_allow_html=True)
                 
@@ -517,7 +540,10 @@ with tab_classifiche:
 with tab_regolamento:
     st.header("📜 Punteggi e Regolamento del Premio Cugurra")
     st.markdown("""
-    ### 1) Punteggi Classifica Generale:
+    ### 1) Limite Iscrizioni Stagionali:
+    * Le iscrizioni alla stagione in corso rimangono aperte **solo fino al giorno 02 febbraio compreso** dell'anno solare in cui termina la stagione (coincidente con la chiusura del calciomercato invernale del 31 gennaio). Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva (fanno eccezione gli utenti con status "TOP" che beneficiano dell'iscrizione automatica).
+
+    ### 2) Punteggi Classifica Generale:
     * **15 Punti:** Risultato e marcatori esatti di tutte e due le squadre.
     * **12 Punti:** Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.
     * **10 Punti:** Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.
@@ -527,10 +553,10 @@ with tab_regolamento:
     * **0 Punti:** Non indovini nulla.
     * **Bonus Espulsioni:** +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).
 
-    ### 2) Masters of Cugurras:
+    ### 3) Masters of Cugurras:
     * Classifica dedicata a chi colleziona i pronostici da 10 punti.
 
-    ### 3) Bomber di Razza:
+    ### 4) Bomber di Razza:
     * 1 punto per ogni marcatore del Cagliari indovinato.
     * Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.
     """)

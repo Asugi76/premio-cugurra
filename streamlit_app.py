@@ -1,43 +1,156 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, time, date
 from supabase import create_client, Client
-import json
+from datetime import datetime, timezone
+import streamlit.components.v1 as components
 
-# ==============================================================================
-# --- CONFIGURAZIONE PAGINA & STILI CSS AVANZATI ---
-# ==============================================================================
-st.set_page_config(
-    page_title="Premio Cugurra",
-    page_icon="⚽",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# --- CONFIGURAZIONE PAGINA ---
+st.set_page_config(page_title="Premio Cugurra", page_icon="⚽", layout="wide")
 
-# --- CONNESSIONE SUPABASE GLOBALE ---
-SUPABASE_URL = st.secrets["supabase"]["url"]
-SUPABASE_KEY = st.secrets["supabase"]["key"]
-db: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# --- SUPABASE ---
+SUPABASE_URL = "https://kbbxjfxltkchzvkyofdr.supabase.co"
+SUPABASE_KEY = "sb_publishable_vT3i8G3_Lz8QQnDmhUqVOA_83_y_y3B"
+STORAGE_BASE_URL = f"{SUPABASE_URL}/storage/v1/object/public/LOGHI_E_GRAFICHE/"
+SFONDO_URL = f"{STORAGE_BASE_URL}sfondo.jpg"
 
-# --- INIZIALIZZAZIONE SESSION STATE COMPLETA ---
-if "utente_corrente" not in st.session_state:
-    if "sessione_utente" in st.session_state:
-        st.session_state["utente_corrente"] = st.session_state["sessione_utente"]
-    else:
-        st.session_state["utente_corrente"] = None
+@st.cache_resource
+def init_supabase(): 
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
 
-if "gol_singoli" not in st.session_state:
-    st.session_state.gol_singoli = {}
+db = init_supabase()
 
-if "gol_omologazione" not in st.session_state:
-    st.session_state.gol_omologazione = {}
+# --- CSS / STYLING DEFINITIVO ---
+st.markdown(f"""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-if "filtro_competizione" not in st.session_state:
-    st.session_state.filtro_competizione = "Tutte"
+    /* Sfondo Globale con sovrapposizione scura per la massima leggibilità */
+    .stApp {{
+        background: linear-gradient(rgba(18, 22, 31, 0.88), rgba(18, 22, 31, 0.95)), 
+                    url('{SFONDO_URL}') no-repeat center center fixed !important;
+        background-size: cover !important;
+        color: #f8fafc !important;
+    }}
 
-# --- FUNZIONE LOGO COMPETIZIONE CON MAPPING ESTESO ---
-def get_competizione_logo_filename(nome_competizione):
-    mapping = {
+    h1, h2, h3 {{ color: #38bdf8 !important; }}
+    
+    /* Etichette dei campi di input rese ben visibili e bianche */
+    .stTextInput label, .stSelectbox label, .stDateInput label, .stTextArea label, div[data-baseweb="select"] label {{
+        color: #ffffff !important;
+        font-weight: 600 !important;
+    }}
+
+    /* Input generici e selectbox */
+    input, textarea, select, div[data-baseweb="select"] > div {{
+        background-color: #1e293b !important;
+        color: #f8fafc !important;
+        border-color: #334155 !important;
+    }}
+    
+    .stTextInput input, .stTextArea textarea {{
+        color: #f8fafc !important;
+        background-color: #1e293b !important;
+        font-size: 1em !important;
+    }}
+
+    div[data-baseweb="select"] * {{
+        color: #f8fafc !important;
+        background-color: #1e293b !important;
+    }}
+
+    /* Input Gol Cicciotti per i Punteggi Principali */
+    .big-score-input input {{
+        font-size: 2.2rem !important;
+        font-weight: bold !important;
+        height: 65px !important;
+        text-align: center !important;
+        color: #fbbf24 !important;
+        background-color: #0f172a !important;
+        border: 2px solid #38bdf8 !important;
+        border-radius: 12px !important;
+    }}
+
+    /* Container Box Pronostico */
+    .prediction-box {{
+        background-color: rgba(30, 41, 59, 0.85) !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
+        padding: 15px !important;
+        margin-bottom: 10px !important;
+    }}
+
+    /* --- PULSANTI GENERALI STREAMLIT --- */
+    .stButton button {{
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
+        color: #fbbf24 !important;
+        font-weight: bold !important;
+        border: 1px solid #38bdf8 !important;
+        border-radius: 10px !important;
+        padding: 0.75rem !important;
+        width: 100% !important;
+    }}
+    .stButton button p {{
+        color: #fbbf24 !important;
+    }}
+    .stButton button:hover {{
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+        color: #ffffff !important;
+    }}
+
+    .btn-danger button {{
+        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+        color: #ffffff !important;
+        font-weight: bold !important;
+        padding: 0.75rem !important;
+        border-radius: 10px !important;
+        border: none !important;
+        width: 100% !important;
+    }}
+    .btn-danger button p {{
+        color: #ffffff !important;
+    }}
+    .btn-danger button:hover {{
+        background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
+    }}
+
+    .btn-primary-custom button {{
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
+        color: #fbbf24 !important;
+        font-weight: bold !important;
+        padding: 0.75rem !important;
+        border-radius: 10px !important;
+        border: none !important;
+        width: 100% !important;
+    }}
+    .btn-primary-custom button p {{
+        color: #fbbf24 !important;
+    }}
+    .btn-primary-custom button:hover {{
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+    }}
+
+    @media (max-width: 640px) {{
+        .prediction-box {{ padding: 10px !important; }}
+        .big-score-input input {{ font-size: 1.8rem !important; height: 55px !important; }}
+    }}
+    </style>
+""", unsafe_allow_html=True)
+
+# --- HELPER FUNCTIONS ---
+def get_fase():
+    try:
+        res = db.table("configurazione").select("valore").eq("chiave", "fase_corrente").execute()
+        return res.data[0]['valore'] if res.data else "TEST"
+    except:
+        return "TEST"
+
+def get_url_scudetto(nome_squadra):
+    if not nome_squadra:
+        return f"{STORAGE_BASE_URL}DEFAULT.png"
+    return f"{STORAGE_BASE_URL}{nome_squadra.strip().upper()}.png"
+
+def get_url_competizione(nome_competizione):
+    mapping_comp = {
         "Serie A": "comp_seriea.png",
         "Serie B": "comp_serieb.png",
         "Coppa Italia": "comp_coppaitalia.png",
@@ -49,316 +162,338 @@ def get_competizione_logo_filename(nome_competizione):
         "Amichevole": "comp_amichevole.png",
         "Torneo Amichevole": "comp_torneoamichevole.png"
     }
-    return mapping.get(nome_competizione, "comp_seriea.png")
+    filename = mapping_comp.get(nome_competizione, "DEFAULT.png")
+    return f"{STORAGE_BASE_URL}{filename}"
 
-# --- CARICAMENTO CONFIGURAZIONE GLOBALE DELLA STAGIONE ---
-try:
-    res_conf = db.table("configurazione").select("*").eq("chiave", "fase_corrente").execute()
-    fase_attuale = res_conf.data[0]["valore"] if res_conf.data else "TEST"
-except Exception:
-    fase_attuale = "TEST"
-
-# --- STILI CSS CUSTOM PER INTERFACCIA DARK TEMA ---
-st.markdown("""
-    <style>
-    .stApp {
-        background-color: #0d1117;
-        color: #e6edf3;
-    }
-    .btn-primary-custom button {
-        background-color: #1f6feb !important;
-        color: white !important;
-        border-radius: 8px;
-        width: 100%;
-        font-weight: bold;
-        border: none;
-        padding: 0.5rem 1rem;
-    }
-    .btn-primary-custom button:hover {
-        background-color: #388bfd !important;
-    }
-    .card-custom {
-        background-color: #161b22;
-        border: 1px solid #30363d;
-        padding: 1.25rem;
-        border-radius: 10px;
-        margin-bottom: 1rem;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- VERIFICA RUOLO AMMINISTRATORE ---
-is_admin = False
-if st.session_state["utente_corrente"]:
-    try:
-        res_usr = db.table("utenti").select("is_admin").eq("nome_fb", st.session_state["utente_corrente"]).execute()
-        if res_usr.data:
-            is_admin = res_usr.data[0].get("is_admin", False)
-    except Exception:
-        pass
-
-# ==============================================================================
-# --- FUNZIONI DI UTILITÀ GLOBALE ---
-# ==============================================================================
 def mostra_footer():
-    st.markdown("---")
-    st.markdown(
-        "<div style='text-align: center; color: #8b949e; font-size: 0.85rem;'>"
-        "Premio Cugurra • Piattaforma Ufficiale Pronostici Cagliari Calcio"
-        "</div>", 
-        unsafe_allow_html=True
-    )
+    st.divider()
+    url_logo = f"{STORAGE_BASE_URL}CUGURRAOFFICIAL.png"
+    st.markdown(f"""
+    <div style="text-align: center; color: #fbbf24; font-weight: bold; background-color: rgba(30, 41, 59, 0.9); padding: 15px; border-radius: 12px; border: 1px solid #334155;">
+        <img src="{url_logo}" width="90" style="margin-bottom: 8px;"><br>
+        <p>"Essere cugurra, esserlo nella mente"</p>
+        <p style="font-size: 0.8em; color: #94a3b8;">App by Tifosi del Cagliari & Asugi</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-# ==============================================================================
-# --- GESTIONE ACCESSO / LOGIN UTENTE ---
-# ==============================================================================
-if not st.session_state["utente_corrente"]:
-    st.title("⚽ Benvenuto al Premio Cugurra")
-    st.write("Inserisci il tuo nome Facebook registrato per accedere alla piattaforma e inserire i tuoi pronostici.")
+# --- GESTIONE SESSIONE ---
+if "autenticato" not in st.session_state:
+    st.session_state.update({
+        "autenticato": False, 
+        "utente_corrente": None, 
+        "is_admin": False, 
+        "status": None, 
+        "gol_singoli": {}, 
+        "gol_omologazione": {},
+        "nuovo_registrato": False
+    })
+
+fase_attuale = get_fase()
+
+# --- LOGIN / REGISTRAZIONE ---
+if not st.session_state["autenticato"]:
+    st.title("⚽ Premio Cugurra - Accesso")
+    scelta_accesso = st.radio("Seleziona operazione:", ["Accedi", "Registrati"], horizontal=True)
     
-    with st.form("form_login"):
-        nome_inserito = st.text_input("Il tuo nome Facebook")
-        submit_login = st.form_submit_button("Entra")
-        if submit_login:
-            if nome_inserito.strip():
+    if scelta_accesso == "Accedi":
+        col_l1, _ = st.columns([2, 1])
+        with col_l1:
+            nome_inserito = st.text_input("Nome Facebook / Utente")
+            pin_inserito = st.text_input("PIN Segreto", type="password")
+            if st.button("Accedi"):
                 try:
-                    res_U = db.table("utenti").select("*").eq("nome_fb", nome_inserito.strip()).execute()
-                    if res_U.data:
-                        st.session_state["utente_corrente"] = nome_inserito.strip()
-                        st.success("Accesso effettuato con successo!")
+                    res = db.table("utenti").select("*").eq("nome_fb", nome_inserito).eq("pin", pin_inserito).execute()
+                    if res.data:
+                        u = res.data[0]
+                        st.session_state.update({
+                            "autenticato": True, 
+                            "utente_corrente": u["nome_fb"], 
+                            "is_admin": u.get('is_admin', False), 
+                            "status": u.get('status')
+                        })
                         st.rerun()
                     else:
-                        st.error("Utente non trovato nel database. Contatta l'amministratore.")
+                        st.error("Nome o PIN non corretti.")
                 except Exception as e:
-                    st.error(f"Errore durante il login: {e}")
+                    st.error(f"Errore di connessione: {e}")
+    else:
+        col_r1, _ = st.columns([2, 1])
+        with col_r1:
+            if st.session_state.get("nuovo_registrato", False):
+                st.warning("⚠️ Benvenuto nel Premio Cugurra! Prima di esaltarti troppo, faresti bene a conservare e salvare le tue credenziali: nome utente, email e PIN, scriviteli da qualche parte… che poi non abbiamo voglia di venirti in soccorso se hai la memoria corta!")
+                st.markdown(f"**Utente:** `{st.session_state['reg_nome']}`")
+                st.markdown(f"**Email:** `{st.session_state['reg_email']}`")
+                st.markdown(f"**PIN:** `{st.session_state['reg_pin']}`")
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                st.markdown('<div class="btn-primary-custom">', unsafe_allow_html=True)
+                if st.button("Ajò a giocare"):
+                    st.session_state.update({
+                        "autenticato": True,
+                        "utente_corrente": st.session_state["reg_nome"],
+                        "status": st.session_state["reg_status"],
+                        "is_admin": False,
+                        "nuovo_registrato": False
+                    })
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
             else:
-                st.warning("Inserisci un nome valido.")
+                new_nome = st.text_input("Nome Facebook / Utente")
+                new_email = st.text_input("Indirizzo Email (fondamentale contro i cloni)")
+                new_pin = st.text_input("PIN Segreto", type="password")
+                if st.button("Completa Registrazione"):
+                    if not new_nome or not new_email or not new_pin:
+                        st.error("Compila tutti i campi inclusa l'email.")
+                    else:
+                        try:
+                            clean_email = new_email.strip().lower()
+                            clean_nome = new_nome.strip()
+
+                            check_nome = db.table("utenti").select("nome_fb").eq("nome_fb", clean_nome).execute()
+                            if check_nome.data:
+                                st.warning(f"Il nome utente '{clean_nome}' è già utilizzato.")
+                                st.stop()
+
+                            check_email = db.table("utenti").select("email").eq("email", clean_email).execute()
+                            if check_email.data:
+                                st.warning(f"L'indirizzo email '{new_email}' risulta già registrato.")
+                                st.stop()
+
+                            nuovo_status = "TOP" if fase_attuale == "TEST" else "STANDARD"
+                            db.table("utenti").insert({
+                                "nome_fb": clean_nome, 
+                                "email": clean_email, 
+                                "pin": new_pin, 
+                                "status": nuovo_status, 
+                                "is_admin": False
+                            }).execute()
+                            
+                            st.session_state["nuovo_registrato"] = True
+                            st.session_state["reg_nome"] = clean_nome
+                            st.session_state["reg_email"] = clean_email
+                            st.session_state["reg_pin"] = new_pin
+                            st.session_state["reg_status"] = nuovo_status
+                            st.rerun()
+                        except Exception as err:
+                            err_str = str(err).lower()
+                            if "unique" in err_str or "duplicate" in err_str or "already exists" in err_str:
+                                st.error(f"Errore: L'indirizzo email '{new_email}' o il nome utente sono già presenti nel sistema.")
+                            else:
+                                st.error(f"Errore durante la registrazione: {err}")
     st.stop()
 
-# ==============================================================================
-# --- BARRA LATERALE E MENU DI NAVIGAZIONE ---
-# ==============================================================================
-with st.sidebar:
-    st.write(f"Utente: **{st.session_state['utente_corrente']}**")
-    if is_admin:
-        st.markdown("🔴 **Ruolo: Amministratore**")
-    else:
-        st.markdown("🔵 **Ruolo: Utente**")
-        
-    if st.button("Logout"):
-        st.session_state["utente_corrente"] = None
-        st.rerun()
-    st.divider()
+# --- BARRA LATERALE ---
+st.sidebar.markdown(f"👤 Utente: **{st.session_state.get('utente_corrente')}**")
+st.sidebar.markdown(f"⭐ Status: **{st.session_state.get('status')}**")
+if st.session_state.get('status') == "TOP" or st.session_state.get('status') == "ADMIN":
+    st.sidebar.caption("👑 *Privilegio TOP: Iscrizione automatica per le stagioni successive.*")
+st.sidebar.markdown(f"📌 Stagione: **{fase_attuale}**")
+if st.sidebar.button("Logout"):
+    st.session_state.clear()
+    st.rerun()
 
-# --- DEFINIZIONE TAB PRINCIPALI ---
-tabs_list = ["Pronostici", "Classifiche", "Regolamento"]
-tab_admin = None
-if is_admin:
-    tabs_list.append("Admin")
+# --- INTERFACCIA PRINCIPALE ---
+st.title(f"⚽ Premio Cugurra 2026/27 ({fase_attuale})")
 
-tabs = st.tabs(tabs_list)
-tab_pronostici = tabs[0]
-tab_classifiche = tabs[1]
-tab_regolamento = tabs[2]
-if is_admin:
-    tab_admin = tabs[3]
+# Gestione dinamica delle schede in base ai permessi Admin
+if st.session_state["is_admin"]:
+    tabs = st.tabs(["📝 Pronostici", "🏆 Classifiche", "📜 Regolamento", "⚙️ Admin"])
+    tab_pronostici, tab_classifiche, tab_regolamento, tab_admin = tabs
+else:
+    tabs = st.tabs(["📝 Pronostici", "🏆 Classifiche", "📜 Regolamento"])
+    tab_pronostici, tab_classifiche, tab_regolamento = tabs
+    tab_admin = None
 
-# ==============================================================================
-# --- 1. SEZIONE PRONOSTICI ---
-# ==============================================================================
+# 1. PRONOSTICI
 with tab_pronostici:
-    st.header("🎯 Inserisci il tuo Pronostico")
-    try:
-        partite_aperte = db.table("partite").select("*").eq("omologata", False).order("data_ora").execute().data
-    except Exception:
-        partite_aperte = []
-
-    if not partite_aperte:
-        st.info("Nessuna partita disponibile per i pronostici al momento.")
+    if fase_attuale == "ARCHIVIO":
+        st.warning("Stagione in archivio. Pronostici disabilitati.")
     else:
-        dict_part = {f"{p['competizione']} - Cagliari vs {p['avversario']} ({p['data_ora'][:10]}) [ID: {p['id']}]": p for p in partite_aperte}
-        scelta_p_str = st.selectbox("Seleziona Partita", list(dict_part.keys()))
-        partita = dict_part[scelta_p_str]
+        try:
+            partite_db = db.table("partite").select("*").order("data_ora").execute().data
+        except:
+            partite_db = []
 
-        competizione_corrente = partita.get("competizione", "Serie A")
-        logo_comp_file = get_competizione_logo_filename(competizione_corrente)
+        now_utc = datetime.now(timezone.utc)
+        partita = next((p for p in partite_db if datetime.fromisoformat(p['data_ora'].replace("Z", "+00:00")) > now_utc and not p.get('omologata', False)), None)
+        
+        if not partita:
+            st.info("Nessuna partita disponibile per il pronostico in questo momento.")
+        else:
+            dt_partita = datetime.fromisoformat(partita['data_ora'].replace("Z", "+00:00"))
+            iso_timestamp = dt_partita.isoformat()
 
-        campo_partita = partita.get('campo') or partita.get('casa_trasferta') or 'Casa'
-        is_cag_left = campo_partita in ["Casa", "Campo Neutro"]
-        squadra_1 = "CAGLIARI" if is_cag_left else partita['avversario']
-        squadra_2 = partita['avversario'] if is_cag_left else "CAGLIARI"
+            campo_val = partita.get('campo') or partita.get('casa_trasferta') or 'Casa'
+            is_cagliari_left = campo_val in ["Casa", "Campo Neutro"]
+            squadra_1 = "CAGLIARI" if is_cagliari_left else partita['avversario']
+            squadra_2 = partita['avversario'] if is_cagliari_left else "CAGLIARI"
+            nome_competizione = partita.get('competizione', 'Serie A')
 
-        col_s1, col_vs, col_s2 = st.columns([3, 1, 3])
-        with col_s1:
-            st.markdown(f"### {squadra_1}")
-        with col_vs:
-            st.markdown("<h3 style='text-align: center;'>vs</h3>", unsafe_allow_html=True)
-            st.markdown(f"<div style='text-align: center;'><img src='app/static/{logo_comp_file}' width='35'></div>", unsafe_allow_html=True)
-        with col_s2:
-            st.markdown(f"### {squadra_2}")
-
-        col_g1, col_g2 = st.columns(2)
-        with col_g1:
-            gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, max_value=20, value=0, key=f"g_s1_{partita['id']}")
-        with col_g2:
-            gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, max_value=20, value=0, key=f"g_s2_{partita['id']}")
-
-        is_goleada_1 = gol_s1 > 9
-        is_goleada_2 = gol_s2 > 9
-
-        rosa_cag_list = [x.strip() for x in (partita.get("rosa_cagliari") or "").split(",") if x.strip()]
-        rosa_avv_list = [x.strip() for x in (partita.get("rosa_avversaria") or "").split(",") if x.strip()]
-
-        rosa_team1 = rosa_cag_list if is_cag_left else rosa_avv_list
-        rosa_team2 = rosa_avv_list if is_cag_left else rosa_cag_list
-
-        st.markdown("#### Dettagli Marcatori e Cartellini")
-        col_m1, col_m2 = st.columns(2)
-
-        with col_m1:
-            st.markdown(f"**{squadra_1}**")
-            if is_goleada_1:
-                st.info(f"Goleada stimata per {squadra_1}: non è richiesto l'inserimento dei marcatori.")
-                marc1 = []
-            else:
-                marc1 = st.multiselect(f"Marcatori {squadra_1}", options=rosa_team1, key=f"marc_1_{partita['id']}")
-                for m in marc1:
-                    k_m1 = f"g_s1_{m}_{partita['id']}"
-                    st.session_state.gol_singoli[k_m1] = st.number_input(f"Gol di {m}", 1, 20, 1, key=k_m1)
+            st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
             
-            auto2 = st.multiselect(f"Autogol a favore di {squadra_1} (fatti da {squadra_2})", options=rosa_team2, key=f"auto_2_{partita['id']}")
-            for a in auto2:
-                k_a2 = f"auto_s2_{a}_{partita['id']}"
-                st.session_state.gol_singoli[k_a2] = st.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a2)
+            countdown_html = f"""
+            <div style="background-color: #090d16; border: 3px solid #38bdf8; border-radius: 12px; padding: 15px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);">
+                <div style="font-size: 0.75rem; color: #38bdf8; margin-bottom: 10px; text-transform: uppercase;">Quanto manca all'inizio della prossima partita?</div>
+                <div id="clock" style="font-size: 1.2rem; color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6);">CALCOLO IN CORSO...</div>
+            </div>
+            <script>
+                const targetStr = "{iso_timestamp}".replace("Z", "");
+                const targetDate = new Date(targetStr).getTime();
+                
+                function updateTimer() {{
+                    const nowString = new Date().toLocaleString("en-US", {{ timeZone: "Europe/Rome" }});
+                    const nowTime = new Date(nowString).getTime();
+                    
+                    const diff = targetDate - nowTime;
+                    if (diff <= 0) {{
+                        document.getElementById("clock").innerHTML = "IN CORSO / TERMINATA";
+                        return;
+                    }}
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    let res = "";
+                    if (days > 0) res += days + "g ";
+                    res += String(hours).padStart(2, '0') + "h " + String(minutes).padStart(2, '0') + "m";
+                    document.getElementById("clock").innerHTML = res;
+                }}
+                updateTimer();
+                setInterval(updateTimer, 1000);
+            </script>
+            """
+            components.html(countdown_html, height=110)
             
-            esp1 = st.multiselect(f"Espulsi {squadra_1}", options=rosa_team1, key=f"esp_1_{partita['id']}")
-
-        with col_m2:
-            st.markdown(f"**{squadra_2}**")
-            if is_goleada_2:
-                st.info(f"Goleada stimata per {squadra_2}: non è richiesto l'inserimento dei marcatori.")
-                marc2 = []
-            else:
-                marc2 = st.multiselect(f"Marcatori {squadra_2}", options=rosa_team2, key=f"marc_2_{partita['id']}")
-                for m in marc2:
-                    k_m2 = f"g_s2_{m}_{partita['id']}"
-                    st.session_state.gol_singoli[k_m2] = st.number_input(f"Gol di {m}", 1, 20, 1, key=k_m2)
+            col_s1, col_mid, col_s2 = st.columns([2, 0.6, 2])
             
-            auto1 = st.multiselect(f"Autogol a favore di {squadra_2} (fatti da {squadra_1})", options=rosa_team1, key=f"auto_1_{partita['id']}")
-            for a in auto1:
-                k_a1 = f"auto_s1_{a}_{partita['id']}"
-                st.session_state.gol_singoli[k_a1] = st.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a1)
-            
-            esp2 = st.multiselect(f"Espulsi {squadra_2}", options=rosa_team2, key=f"esp_2_{partita['id']}")
+            with col_s1:
+                st.markdown('<div class="prediction-box">', unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align: center; margin-bottom: 8px;'><img src='{get_url_scudetto(squadra_1)}' width='60'><br><b style='font-size: 0.9rem; color: #38bdf8;'>{squadra_1}</b></div>", unsafe_allow_html=True)
+                st.markdown('<div class="big-score-input">', unsafe_allow_html=True)
+                gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=0, key=f"gs1_{partita['id']}", label_visibility="collapsed")
+                st.markdown('</div></div>', unsafe_allow_html=True)
+                
+            with col_mid:
+                url_comp = get_url_competizione(nome_competizione)
+                st.markdown(f"""
+                    <div style="text-align: center; margin-top: 25px;">
+                        <img src="{url_comp}" width="42" style="margin-bottom: 5px;"><br>
+                        <h3 style="margin: 0; font-size: 1.2rem;">VS</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+            with col_s2:
+                st.markdown('<div class="prediction-box">', unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align: center; margin-bottom: 8px;'><img src='{get_url_scudetto(squadra_2)}' width='60'><br><b style='font-size: 0.9rem; color: #38bdf8;'>{squadra_2}</b></div>", unsafe_allow_html=True)
+                st.markdown('<div class="big-score-input">', unsafe_allow_html=True)
+                gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=0, key=f"gs2_{partita['id']}", label_visibility="collapsed")
+                st.markdown('</div></div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="btn-primary-custom">', unsafe_allow_html=True)
-        if st.button("Invia Pronostico"):
-            tot_gol_s1_calcolati = 0
-            if not is_goleada_1:
-                for m in marc1:
-                    tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"g_s1_{m}_{partita['id']}", 1)
-            for a in auto2:
-                tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"auto_s2_{a}_{partita['id']}", 1)
+            is_goleada_1 = gol_s1 > 9
+            is_goleada_2 = gol_s2 > 9
 
-            tot_gol_s2_calcolati = 0
-            if not is_goleada_2:
-                for m in marc2:
-                    tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"g_s2_{m}_{partita['id']}", 1)
-            for a in auto1:
-                tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"auto_s1_{a}_{partita['id']}", 1)
+            st.markdown("---")
+            rosa_cag = [x.strip() for x in (partita.get("rosa_cagliari") or "").split(",") if x.strip()]
+            rosa_avv = [x.strip() for x in (partita.get("rosa_avversaria") or "").split(",") if x.strip()]
+            rosa_1 = rosa_cag if is_cagliari_left else rosa_avv
+            rosa_2 = rosa_avv if is_cagliari_left else rosa_cag
 
-            errore_coerenza = False
-            if not is_goleada_1 and tot_gol_s1_calcolati != gol_s1:
-                st.error(f"Errore per {squadra_1}: inseriti {gol_s1} gol totali, ma la somma calcolata è {tot_gol_s1_calcolati}.")
-                errore_coerenza = True
-            if not is_goleada_2 and tot_gol_s2_calcolati != gol_s2:
-                st.error(f"Errore per {squadra_2}: inseriti {gol_s2} gol totali, ma la somma calcolata è {tot_gol_s2_calcolati}.")
-                errore_coerenza = True
-
-            if not errore_coerenza:
-                if is_cag_left:
-                    gol_cag, gol_avv = gol_s1, gol_s2
-                    marc_cag, marc_avv = marc1, marc2
-                    auto_cag, auto_avv = auto2, auto1
-                    esp_cag, esp_avv = esp1, esp2
+            def render_team_section(team_name, lista_rosa, lista_opp, is_goleada, key_pref):
+                st.markdown(f"### {team_name}")
+                if is_goleada:
+                    st.info("Goleada attivata (>9 gol): marcatori disabilitati.")
+                    marcatori = []
                 else:
-                    gol_cag, gol_avv = gol_s2, gol_s1
-                    marc_cag, marc_avv = marc2, marc1
-                    auto_cag, auto_avv = auto1, auto2
-                    esp_cag, esp_avv = esp2, esp1
+                    marcatori = st.multiselect(f"Marcatori {team_name}", options=lista_rosa, key=f"m_{key_pref}_{partita['id']}")
+                    for m in marcatori:
+                        k = f"g_{key_pref}_{m}_{partita['id']}"
+                        st.session_state.gol_singoli[k] = st.number_input(f"Gol di {m}", 1, 50, st.session_state.gol_singoli.get(k, 1), key=k)
 
-                db.table("pronostici").upsert({
-                    "id_partita": partita['id'], "utente": st.session_state["utente_corrente"],
-                    "gol_cagliari": gol_cag, "gol_avversario": gol_avv,
-                    "marcatori_cagliari": marc_cag, "marcatori_avversario": marc_avv,
-                    "autogol_cagliari": auto_cag, "autogol_avversario": auto_avv,
-                    "espulsi_cagliari": esp_cag, "espulsi_avversario": esp_avv
-                }).execute()
-                st.success("Pronostico registrato con successo nel database!")
-        st.markdown('</div>', unsafe_allow_html=True)
+                autogol = st.multiselect(f"Autogol a favore ({team_name})", options=lista_opp, key=f"a_{key_pref}_{partita['id']}")
+                for a in autogol:
+                    k = f"auto_{key_pref}_{a}_{partita['id']}"
+                    st.session_state.gol_singoli[k] = st.number_input(f"Autogol di {a}", 1, 50, st.session_state.gol_singoli.get(k, 1), key=k)
+                
+                espulsi = st.multiselect(f"Espulsi ({team_name})", options=lista_rosa, max_selections=3, key=f"e_{key_pref}_{partita['id']}")
+                return marcatori, autogol, espulsi
 
-# ==============================================================================
-# --- 2. SEZIONE CLASSIFICHE ---
-# ==============================================================================
+            col_tab1, col_tab2 = st.columns(2)
+            with col_tab1: marc1, auto1, esp1 = render_team_section(squadra_1, rosa_1, rosa_2, is_goleada_1, "s1")
+            with col_tab2: marc2, auto2, esp2 = render_team_section(squadra_2, rosa_2, rosa_1, is_goleada_2, "s2")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            col_b1, col_b2 = st.columns(2)
+            
+            with col_b1:
+                st.markdown('<div class="btn-danger">', unsafe_allow_html=True)
+                if st.button("Cancella i dati inseriti"):
+                    st.session_state.gol_singoli.clear()
+                    keys_to_clear = [
+                        k for k in st.session_state.keys() 
+                        if str(partita['id']) in k or k.startswith("gs1_") or k.startswith("gs2_")
+                    ]
+                    for k in keys_to_clear:
+                        if k in st.session_state:
+                            del st.session_state[k]
+                    st.success("Dati cancellati!")
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with col_b2:
+                st.markdown('<div class="btn-primary-custom">', unsafe_allow_html=True)
+                if st.button("Invia Pronostico"):
+                    tot_gol_s1_calcolati = 0
+                    if not is_goleada_1:
+                        for m in marc1:
+                            tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"g_s1_{m}_{partita['id']}", 1)
+                    for a in auto2:
+                        tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"auto_s2_{a}_{partita['id']}", 1)
+
+                    tot_gol_s2_calcolati = 0
+                    if not is_goleada_2:
+                        for m in marc2:
+                            tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"g_s2_{m}_{partita['id']}", 1)
+                    for a in auto1:
+                        tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"auto_s1_{a}_{partita['id']}", 1)
+
+                    errore_coerenza = False
+                    if not is_goleada_1 and tot_gol_s1_calcolati != gol_s1:
+                        st.error(f"Errore per {squadra_1}: inseriti {gol_s1} gol totali, ma la somma calcolata è {tot_gol_s1_calcolati}.")
+                        errore_coerenza = True
+                    if not is_goleada_2 and tot_gol_s2_calcolati != gol_s2:
+                        st.error(f"Errore per {squadra_2}: inseriti {gol_s2} gol totali, ma la somma calcolata è {tot_gol_s2_calcolati}.")
+                        errore_coerenza = True
+
+                    if not errore_coerenza:
+                        if is_cagliari_left:
+                            gol_cag, gol_avv = gol_s1, gol_s2
+                            marc_cag, marc_avv = marc1, marc2
+                            auto_cag, auto_avv = auto2, auto1
+                            esp_cag, esp_avv = esp1, esp2
+                        else:
+                            gol_cag, gol_avv = gol_s2, gol_s1
+                            marc_cag, marc_avv = marc2, marc1
+                            auto_cag, auto_avv = auto1, auto2
+                            esp_cag, esp_avv = esp2, esp1
+
+                        db.table("pronostici").upsert({
+                            "id_partita": partita['id'], "utente": st.session_state["utente_corrente"],
+                            "gol_cagliari": gol_cag, "gol_avversario": gol_avv,
+                            "marcatori_cagliari": marc_cag, "marcatori_avversario": marc_avv,
+                            "autogol_cagliari": auto_cag, "autogol_avversario": auto_avv,
+                            "espulsi_cagliari": esp_cag, "espulsi_avversario": esp_avv
+                        }).execute()
+                        st.success("Pronostico registrato con successo!")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+# 2. CLASSIFICHE
 with tab_classifiche:
     st.header("🏆 Classifiche Ufficiali")
     sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs(["Generale", "Masters of Cugurras", "Bomber di Razza", "Albo d'Oro"])
     
-    with sub_tab1:
-        st.subheader("Classifica Generale")
-        try:
-            res_punti = db.table("punteggi_partita").select("utente, punti_generale").execute().data
-        except Exception:
-            res_punti = []
-            
-        if res_punti:
-            df_p = pd.DataFrame(res_punti)
-            df_gen = df_p.groupby("utente", as_index=False)["punti_generale"].sum()
-            df_gen = df_gen.sort_values(by="punti_generale", ascending=False).reset_index(drop=True)
-            df_gen.index = df_gen.index + 1
-            df_gen = df_gen.reset_index().rename(columns={"index": "Posizione", "utente": "Utente", "punti_generale": "Punti"})
-            st.dataframe(df_gen[["Posizione", "Utente", "Punti"]], use_container_width=True, hide_index=True)
-        else:
-            st.info("Nessun punteggio disponibile in classifica generale.")
-
-    with sub_tab2:
-        st.subheader("Masters of Cugurras")
-        try:
-            res_masters = db.table("punteggi_partita").select("utente, punti_masters").execute().data
-        except Exception:
-            res_masters = []
-            
-        if res_masters:
-            df_m = pd.DataFrame(res_masters)
-            df_mast = df_m.groupby("utente", as_index=False)["punti_masters"].sum()
-            df_mast = df_mast[df_mast["punti_masters"] > 0]
-            df_mast = df_mast.sort_values(by="punti_masters", ascending=False).reset_index(drop=True)
-            df_mast.index = df_mast.index + 1
-            df_mast = df_mast.reset_index().rename(columns={"index": "Posizione", "utente": "Utente", "punti_masters": "Punti Masters"})
-            if not df_mast.empty:
-                st.dataframe(df_mast[["Posizione", "Utente", "Punti Masters"]], use_container_width=True, hide_index=True)
-            else:
-                st.info("Nessun utente ha ancora collezionato punti Masters of Cugurras.")
-        else:
-            st.info("Nessun dato disponibile per i Masters of Cugurras.")
-
-    with sub_tab3:
-        st.subheader("Bomber di Razza")
-        try:
-            res_bomber = db.table("punteggi_partita").select("utente, punti_bomber").execute().data
-        except Exception:
-            res_bomber = []
-            
-        if res_bomber:
-            df_b = pd.DataFrame(res_bomber)
-            df_bomb = df_b.groupby("utente", as_index=False)["punti_bomber"].sum()
-            df_bomb = df_bomb.sort_values(by="punti_bomber", ascending=False).reset_index(drop=True)
-            df_bomb.index = df_bomb.index + 1
-            df_bomb = df_bomb.reset_index().rename(columns={"index": "Posizione", "utente": "Utente", "punti_bomber": "Punti Bomber"})
-            st.dataframe(df_bomb[["Posizione", "Utente", "Punti Bomber"]], use_container_width=True, hide_index=True)
-        else:
-            st.info("Nessun dato disponibile per Bomber di Razza.")
-
+    with sub_tab1: st.write("In attesa delle prime partite.")
+    with sub_tab2: st.write("Classifica pronostici da 10 punti.")
+    with sub_tab3: st.write("Punti marcatori.")
     with sub_tab4:
         st.subheader("📜 Albo d'Oro")
         try:
@@ -375,11 +510,10 @@ with tab_classifiche:
                 st.dataframe(df_display[cols_display], use_container_width=True, hide_index=True)
             else:
                 st.info("Nessun dato presente nell'Albo d'Oro.")
-        except Exception:
+        except:
             st.info("Albo d'oro non disponibile.")
-# ==============================================================================
-# --- 3. SEZIONE REGOLAMENTO UFFICIALE DELLA PIATTAFORMA ---
-# ==============================================================================
+
+# 3. REGOLAMENTO
 with tab_regolamento:
     st.header("📜 Punteggi e Regolamento del Premio Cugurra")
     st.markdown("""
@@ -391,43 +525,32 @@ with tab_regolamento:
     * **5 Punti:** Indovini l'esito (1, X, 2).
     * **3 Punti:** Tutti i marcatori del Cagliari indovinati.
     * **0 Punti:** Non indovini nulla.
-    * **Bonus Espulsioni:** +1 punto per ogni giocatore espulso indovinato (fino a un massimo di 3 per squadra).
+    * **Bonus Espulsioni:** +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).
 
     ### 2) Masters of Cugurras:
-    * Classifica dedicata esclusivamente a chi colleziona i pronostici da 10 punti.
+    * Classifica dedicata a chi colleziona i pronostici da 10 punti.
 
     ### 3) Bomber di Razza:
     * 1 punto per ogni marcatore del Cagliari indovinato.
     * Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.
     """)
 
-# ==============================================================================
-# --- 4. SEZIONE PANNELLO AMMINISTRATORE AVANZATO ---
-# ==============================================================================
+# 4. ADMIN
 if tab_admin is not None:
     with tab_admin:
-        st.header("⚙️ Gestione Avanzata Stagione")
-        
-        # --- BLOCCO: CONTROLLO FASE GLOBALE ---
-        st.subheader("Controllo Fase Globale")
-        fase_scelta = st.selectbox(
-            "Cambia Fase Globale", 
-            ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"], 
-            index=["TEST", "STAGIONE IN CORSO", "ARCHIVIO"].index(fase_attuale) if fase_attuale in ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"] else 0
-        )
+        st.header("⚙️ Gestione Stagione")
+        fase_scelta = st.selectbox("Cambia Fase Globale", ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"], index=["TEST", "STAGIONE IN CORSO", "ARCHIVIO"].index(fase_attuale) if fase_attuale in ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"] else 0)
         if st.button("Aggiorna Fase Globale"):
             db.table("configurazione").update({"valore": fase_scelta}).eq("chiave", "fase_corrente").execute()
-            st.success("Fase aggiornata con successo!")
+            st.success("Fase aggiornata!")
             st.rerun()
             
         st.divider()
-        
-        # --- BLOCCO: GESTIONE UTENTI & STATUS ---
         st.subheader("👥 Gestione Utenti & Status")
         st.info("ℹ️ **Privilegio Utenti TOP:** Non dovranno più iscriversi nelle stagioni successive.")
         try:
             utenti_db = db.table("utenti").select("*").execute().data
-        except Exception:
+        except:
             utenti_db = []
             
         if utenti_db:
@@ -437,29 +560,27 @@ if tab_admin is not None:
             
             utenti_non_admin = [u['nome_fb'] for u in utenti_db if not u.get('is_admin', False)]
             if utenti_non_admin:
-                utente_target = st.selectbox("Seleziona Utente da gestire", utenti_non_admin, key="sel_usr_manage")
-                azione = st.radio("Seleziona Azione:", ["Promuovi a TOP", "Retrocedi a STANDARD", "Elimina Utente"])
+                utente_target = st.selectbox("Seleziona Utente da gestire", utenti_non_admin)
+                azione = st.radio("Azione:", ["Promuovi a TOP", "Retrocedi a STANDARD", "Elimina Utente"])
                 if st.button("Esegui Modifica Utente"):
                     try:
                         if azione == "Elimina Utente":
                             db.table("utenti").delete().eq("nome_fb", utente_target).execute()
-                            st.success(f"Utente {utente_target} rimosso correttamente.")
+                            st.success(f"Utente {utente_target} rimosso.")
                         else:
                             nuovo_status = "TOP" if azione == "Promuovi a TOP" else "STANDARD"
                             db.table("utenti").update({"status": nuovo_status}).eq("nome_fb", utente_target).execute()
-                            st.success(f"Utente {utente_target} aggiornato allo status {nuovo_status}.")
+                            st.success(f"Utente {utente_target} ora ha status {nuovo_status}.")
                         st.rerun()
                     except Exception as err:
-                        st.error(f"Errore durante l'operazione: {err}")
+                        st.error(f"Errore: {err}")
 
         st.divider()
-        
-        # --- BLOCCO: INSERISCI NUOVA PARTITA ---
-        st.subheader("➕ Inserisci Nuova Partita")
+        st.subheader("Inserisci Nuova Partita")
         try:
             lista_comp = [c['nome'] for c in db.table("competizioni").select("nome").order("nome").execute().data]
-        except Exception:
-            lista_comp = ["Serie A", "Coppa Italia", "Amichevole"]
+        except:
+            lista_comp = ["Serie A"]
             
         with st.form("form_nuova_partita"):
             comp = st.selectbox("Competizione", lista_comp)
@@ -468,8 +589,8 @@ if tab_admin is not None:
             data_p = st.date_input("Data Partita")
             ore_sel = st.selectbox("Ora", list(range(0, 24)), index=15)
             min_sel = st.selectbox("Minuti", [0, 15, 30, 45], index=0)
-            rosa_cag_input = st.text_area("Convocati Cagliari (separati da virgola)", "")
-            rosa_avv_input = st.text_area("Convocati Avversaria (separati da virgola)", "")
+            rosa_cag_input = st.text_area("Convocati Cagliari", "")
+            rosa_avv_input = st.text_area("Convocati Avversaria", "")
             
             if st.form_submit_button("Crea Partita nel Database"):
                 if not avv:
@@ -485,17 +606,15 @@ if tab_admin is not None:
                         "rosa_avversaria": rosa_avv_input.replace(";", ","),
                         "omologata": False
                     }).execute()
-                    st.success("Partita creata con successo!")
+                    st.success("Partita creata!")
 
         st.divider()
-        
-        # --- BLOCCO: OMOLOGAZIONE PARTITA & CALCOLO PUNTEGGI ---
         st.subheader("🏁 Omologazione Partita")
         st.warning("⚠️ **ATTENZIONE:** L'omologazione inserisce i risultati definitivi, calcola automaticamente tutti i punteggi e **blocca le modifiche successive** sulla partita!")
         
         try:
             partite_non_omologate = db.table("partite").select("*").eq("omologata", False).order("data_ora").execute().data
-        except Exception:
+        except:
             partite_non_omologate = []
 
         if not partite_non_omologate:
@@ -520,7 +639,7 @@ if tab_admin is not None:
             rosa_t1 = rosa_cag_l if is_cag_left_omo else rosa_avv_l
             rosa_t2 = rosa_avv_l if is_cag_left_omo else rosa_cag_l
 
-            st.markdown("#### Marcatori e Dettagli Ufficiali")
+            st.markdown("#### Marcatori e Dettagli")
             col_mo1, col_mo2 = st.columns(2)
             with col_mo1:
                 st.markdown(f"**{s1_omo}**")
@@ -568,7 +687,7 @@ if tab_admin is not None:
 
                 try:
                     pronostici_utenti = db.table("pronostici").select("*").eq("id_partita", p_omo["id"]).execute().data
-                except Exception:
+                except:
                     pronostici_utenti = []
 
                 for pron in pronostici_utenti:
@@ -630,16 +749,14 @@ if tab_admin is not None:
                         "punti_bomber": punti_bomber
                     }).execute()
 
-                st.success("Partita omologata e punteggi calcolati con successo!")
+                st.success("Partita omologata e punti assegnati automaticamente!")
                 st.rerun()
 
         st.divider()
-        
-        # --- BLOCCO: MODIFICA O ELIMINA PARTITE ATTIVE ---
         st.subheader("🛠️ Modifica o Elimina Partite Attive")
         try:
             partite_attive = db.table("partite").select("*").eq("omologata", False).order("data_ora").execute().data
-        except Exception:
+        except:
             partite_attive = []
 
         if not partite_attive:
@@ -662,7 +779,7 @@ if tab_admin is not None:
                     init_date = dt_esistente.date()
                     init_hour = dt_esistente.hour
                     init_minute_idx = [0, 15, 30, 45].index(dt_esistente.minute) if dt_esistente.minute in [0, 15, 30, 45] else 0
-                except Exception:
+                except:
                     init_date = datetime.today().date()
                     init_hour = 15
                     init_minute_idx = 0
@@ -691,17 +808,15 @@ if tab_admin is not None:
                         "rosa_cagliari": m_rosa_cag.replace(";", ","),
                         "rosa_avversaria": m_rosa_avv.replace(";", ",")
                     }).eq("id", p_selezionata["id"]).execute()
-                    st.success("Partita aggiornata con successo!")
+                    st.success("Partita aggiornata!")
                     st.rerun()
 
                 if submit_del:
                     db.table("partite").delete().eq("id", p_selezionata["id"]).execute()
-                    st.success("Partita eliminata correttamente!")
+                    st.success("Partita eliminata!")
                     st.rerun()
                     
         st.divider()
-        
-        # --- BLOCCO: GESTIONE ALBO D'ORO (ADMIN) ---
         st.subheader("✍️ Gestione Albo d'Oro (Admin)")
         try:
             res_albo_admin = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
@@ -731,9 +846,8 @@ if tab_admin is not None:
                         st.success("Albo d'Oro aggiornato con successo!")
                         st.rerun()
                     except Exception as ex_albo:
-                        st.error(f"Errore durante l'aggiornamento dell'Albo d'Oro: {ex_albo}")
-        except Exception:
-            st.info("Impossibile caricare l'albo d'oro per la gestione amministrativa.")
+                        st.error(f"Errore durante l'aggiornamento: {ex_albo}")
+        except:
+            st.info("Impossibile caricare l'albo d'oro per la gestione.")
 
-# --- RICHIAMO FUNZIONE FOOTER FINALE ---
 mostra_footer()

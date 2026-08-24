@@ -32,7 +32,7 @@ st.markdown(f"""
         color: #f8fafc !important;
     }}
 
-    h1, h2, h3 {{ color: #38bdf8 !important; }}
+    h1, h2, h3 {{ color: #38bdf8 !important; text-align: center; }}
     
     label, .stRadio label, .stTextInput label, .stSelectbox label, div[data-baseweb="radio"] span, div[data-baseweb="radio"] p {{
         color: #ffffff !important;
@@ -57,16 +57,16 @@ st.markdown(f"""
         background-color: #1e293b !important;
     }}
 
-    /* Input Gol Cicciotti per i Punteggi Principali */
+    /* Input Gol Tabellone (Molto grandi) */
     .big-score-input input {{
-        font-size: 2.2rem !important;
+        font-size: 2.8rem !important;
         font-weight: bold !important;
-        height: 65px !important;
+        height: 80px !important;
         text-align: center !important;
         color: #fbbf24 !important;
         background-color: #0f172a !important;
-        border: 2px solid #38bdf8 !important;
-        border-radius: 12px !important;
+        border: 3px solid #38bdf8 !important;
+        border-radius: 16px !important;
     }}
 
     /* Container Box Pronostico */
@@ -114,20 +114,12 @@ st.markdown(f"""
     div.stButton > button {{
         width: 100% !important;
         min-height: 48px !important;
-        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
-        color: #fbbf24 !important;
         font-weight: bold !important;
         font-size: 16px !important;
-        border: 1px solid #38bdf8 !important;
         border-radius: 10px !important;
         padding: 0.75rem !important;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         transition: all 0.2s ease-in-out;
-    }}
-    div.stButton > button p {{ color: #fbbf24 !important; }}
-    
-    div.stButton > button:hover {{
-        border-color: #fbbf24 !important;
     }}
     
     /* Variazioni Colore Pulsanti Specifici */
@@ -155,7 +147,7 @@ st.markdown(f"""
     /* Ottimizzazioni Smartphone */
     @media (max-width: 768px) {{
         .prediction-box {{ padding: 10px !important; }}
-        .big-score-input input {{ font-size: 1.8rem !important; height: 55px !important; }}
+        .big-score-input input {{ font-size: 2.2rem !important; height: 65px !important; }}
         div.stButton {{ margin-bottom: 8px !important; }}
     }}
     </style>
@@ -195,7 +187,7 @@ def check_limite_iscrizioni(fase_str):
     if fase_str == "TEST":
         return True
     try:
-        stagione_str = get_stagione() # es. "2026/27"
+        stagione_str = get_stagione()
         parti = stagione_str.split("/")
         if len(parti) == 2:
             anno_fine = int("20" + parti[1]) if len(parti[1]) == 2 else int(parti[1])
@@ -221,7 +213,7 @@ def mostra_footer():
 if "autenticato" not in st.session_state:
     st.session_state.update({
         "autenticato": False, "utente_corrente": None, "is_admin": False, "status": None, 
-        "gol_singoli": {}, "gol_omologazione": {}, "nuovo_registrato": False, "modalita_auth": "Accedi"
+        "gol_singoli": {}, "gol_omologazione": {}, "nuovo_registrato": False, "modalita_auth": None
     })
 
 fase_attuale = get_fase()
@@ -229,19 +221,21 @@ stagione_attuale = get_stagione()
 
 # --- LOGIN / REGISTRAZIONE ---
 if not st.session_state["autenticato"]:
-    st.title("⚽ Premio Cugurra - Accesso")
+    # Header richiesti centrati
+    st.markdown("<h1 style='text-align: center; color: #38bdf8; margin-bottom: 0px;'>⚽️ PREMIO CUGURRA ⚽️</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='text-align: center; color: #fbbf24; margin-top: 5px; margin-bottom: 25px;'>Stagione {stagione_attuale} - {fase_attuale}</h3>", unsafe_allow_html=True)
     
     # Pulsanti Accedi e Registrati affiancati, colorati (Rosso e Blu)
     col_scelta1, col_scelta2 = st.columns(2)
     with col_scelta1:
         st.markdown('<div class="btn-red">', unsafe_allow_html=True)
-        if st.button("Accedi", key="btn_switch_accedi"):
+        if st.button("ACCEDI", key="btn_switch_accedi"):
             st.session_state["modalita_auth"] = "Accedi"
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
     with col_scelta2:
         st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
-        if st.button("Registrati", key="btn_switch_registrati"):
+        if st.button("REGISTRATI", key="btn_switch_registrati"):
             st.session_state["modalita_auth"] = "Registrati"
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
@@ -254,8 +248,9 @@ if not st.session_state["autenticato"]:
             nome_inserito = st.text_input("Nome Facebook / Utente")
             pin_inserito = st.text_input("PIN personale (solo PIN a 4 cifre)", type="password")
             
+            st.markdown("<br>", unsafe_allow_html=True)
             st.markdown('<div class="btn-green">', unsafe_allow_html=True)
-            if st.button("Ajò a giocare!", key="btn_submit_accedi"):
+            if st.button("Ajò a giocare", key="btn_submit_accedi"):
                 try:
                     clean_nome = nome_inserito.strip() if nome_inserito else ""
                     clean_pin = pin_inserito.strip() if pin_inserito else ""
@@ -273,7 +268,8 @@ if not st.session_state["autenticato"]:
                 except Exception as e:
                     st.error(f"Errore di connessione: {e}")
             st.markdown('</div>', unsafe_allow_html=True)
-    else:
+            
+    elif st.session_state["modalita_auth"] == "Registrati":
         col_r1, _ = st.columns([2, 1])
         with col_r1:
             if not check_limite_iscrizioni(fase_attuale):
@@ -286,7 +282,7 @@ if not st.session_state["autenticato"]:
                 st.markdown("<br>", unsafe_allow_html=True)
                 
                 st.markdown('<div class="btn-green">', unsafe_allow_html=True)
-                if st.button("Ajò a giocare!", key="btn_ajo_giocare"):
+                if st.button("Ajò a giocare", key="btn_ajo_giocare"):
                     st.session_state.update({
                         "autenticato": True, "utente_corrente": st.session_state["reg_nome"],
                         "status": st.session_state["reg_status"], "is_admin": False, "nuovo_registrato": False
@@ -298,6 +294,7 @@ if not st.session_state["autenticato"]:
                 new_email = st.text_input("Indirizzo Email (fondamentale contro i cloni)")
                 new_pin = st.text_input("PIN personale (esattamente 4 cifre)", type="password")
                 
+                st.markdown("<br>", unsafe_allow_html=True)
                 st.markdown('<div class="btn-green">', unsafe_allow_html=True)
                 if st.button("Completa Registrazione", key="btn_submit_registrazione"):
                     clean_pin = new_pin.strip() if new_pin else ""
@@ -398,7 +395,7 @@ if is_pronostici:
 
             st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2}, {nome_competizione} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
             
-            # Countdown con animazione pulsante e icona orologio stilizzata
+            # Countdown con correzione "Mancano all'inizio"
             countdown_html = f"""
             <div style="background-color: #090d16; border: 2px solid #38bdf8; border-radius: 12px; padding: 12px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);">
                 <style>
@@ -410,7 +407,7 @@ if is_pronostici:
                     .pulsing-clock {{ animation: pulse-anim 2s infinite ease-in-out; }}
                 </style>
                 <div class="pulsing-clock">
-                    <div style="font-size: 0.7rem; color: #38bdf8; margin-bottom: 6px; text-transform: uppercase;">⏳ Manca all'inizio</div>
+                    <div style="font-size: 0.7rem; color: #38bdf8; margin-bottom: 6px; text-transform: uppercase;">⏳ Mancano all'inizio</div>
                     <div id="clock" style="font-size: 1.1rem; color: #fbbf24; text-shadow: 0 0 6px rgba(251, 191, 36, 0.5);">CALCOLO...</div>
                 </div>
             </div>
@@ -441,32 +438,45 @@ if is_pronostici:
             """
             components.html(countdown_html, height=100)
             
+            # --- NUOVA DISPOSIZIONE TABELLONE ---
+            # 1. Logo della competizione centrato
             url_comp = get_url_competizione(nome_competizione)
             st.markdown(f"""
-                <div style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 15px;">
-                    <img src="{url_comp}" width="42" style="display: block;">
+                <div style="display: flex; justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 10px;">
+                    <img src="{url_comp}" width="48" style="display: block;">
                 </div>
             """, unsafe_allow_html=True)
             
+            # 2. Scudetti affiancati e centrati
             col_s1, col_mid, col_s2 = st.columns([2, 0.4, 2])
-            
             with col_s1:
-                st.markdown('<div class="prediction-box">', unsafe_allow_html=True)
-                st.markdown(f"<div style='text-align: center; margin-bottom: 8px;'><img src='{get_url_scudetto(squadra_1)}' width='60'><br><b style='font-size: 0.9rem; color: #38bdf8;'>{squadra_1}</b></div>", unsafe_allow_html=True)
-                st.markdown('<div class="big-score-input">', unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align: center;'><img src='{get_url_scudetto(squadra_1)}' width='70'></div>", unsafe_allow_html=True)
+            with col_mid:
+                st.write("")
+            with col_s2:
+                st.markdown(f"<div style='text-align: center;'><img src='{get_url_scudetto(squadra_2)}' width='70'></div>", unsafe_allow_html=True)
+
+            # 3. Selettori gol stile tabellone (grandi) subito sotto gli scudetti
+            col_i1, col_imid, col_i2 = st.columns([2, 0.4, 2])
+            with col_i1:
+                st.markdown('<div class="prediction-box"><div class="big-score-input">', unsafe_allow_html=True)
                 gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=0, key=f"gs1_{partita['id']}", label_visibility="collapsed")
                 st.markdown('</div></div>', unsafe_allow_html=True)
-                
-            with col_mid:
-                # Spazio vuoto senza scritta "VS" come richiesto
+            with col_imid:
                 st.write("")
-                
-            with col_s2:
-                st.markdown('<div class="prediction-box">', unsafe_allow_html=True)
-                st.markdown(f"<div style='text-align: center; margin-bottom: 8px;'><img src='{get_url_scudetto(squadra_2)}' width='60'><br><b style='font-size: 0.9rem; color: #38bdf8;'>{squadra_2}</b></div>", unsafe_allow_html=True)
-                st.markdown('<div class="big-score-input">', unsafe_allow_html=True)
+            with col_i2:
+                st.markdown('<div class="prediction-box"><div class="big-score-input">', unsafe_allow_html=True)
                 gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=0, key=f"gs2_{partita['id']}", label_visibility="collapsed")
                 st.markdown('</div></div>', unsafe_allow_html=True)
+
+            # 4. Nomi delle squadre sotto i selettori
+            col_n1, col_nmid, col_n2 = st.columns([2, 0.4, 2])
+            with col_n1:
+                st.markdown(f"<div style='text-align: center; margin-bottom: 15px;'><b style='font-size: 1rem; color: #38bdf8;'>{squadra_1}</b></div>", unsafe_allow_html=True)
+            with col_nmid:
+                st.write("")
+            with col_n2:
+                st.markdown(f"<div style='text-align: center; margin-bottom: 15px;'><b style='font-size: 1rem; color: #38bdf8;'>{squadra_2}</b></div>", unsafe_allow_html=True)
 
             is_goleada_1 = gol_s1 > 9
             is_goleada_2 = gol_s2 > 9
@@ -621,10 +631,8 @@ elif tab_admin is not None:
     with st.container():
         st.header("⚙️ Gestione Stagione")
         
-        # Selezione fase globale
         fase_scelta = st.selectbox("Cambia Fase Globale", ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"], index=["TEST", "STAGIONE IN CORSO", "ARCHIVIO"].index(fase_attuale) if fase_attuale in ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"] else 0)
         
-        # Gestione automatica della stagione
         st.markdown(f"Stagione corrente attiva: **{stagione_attuale}**")
         col_st1, col_st2 = st.columns(2)
         with col_st1:
@@ -635,7 +643,6 @@ elif tab_admin is not None:
         with col_st2:
             if st.button("🚀 Passa a Nuova Stagione (+1 anno & Test)", key="btn_nuova_stagione"):
                 try:
-                    # Calcola anno successivo (es. da "2026/27" a "2027/28")
                     parti_anno = stagione_attuale.split("/")
                     if len(parti_anno) == 2:
                         anno1_int = int(parti_anno[0]) + 1
@@ -644,7 +651,6 @@ elif tab_admin is not None:
                     else:
                         nuova_stagione_str = "2027/28"
                     
-                    # Aggiorna database automaticamente
                     db.table("configurazione").update({"valore": nuova_stagione_str}).eq("chiave", "stagione_corrente").execute()
                     db.table("configurazione").update({"valore": "TEST"}).eq("chiave", "fase_corrente").execute()
                     st.success(f"Stagione passata con successo a {nuova_stagione_str} in modalità TEST!")
@@ -895,7 +901,7 @@ elif tab_admin is not None:
                     
         st.divider()
         
-        # --- SEZIONE UTENTI (Sposta in fondo, in un expander) ---
+        # --- SEZIONE UTENTI (In fondo, in un expander) ---
         with st.expander("👥 Gestione Utenti & Status (Espandi)", expanded=False):
             st.info("ℹ️ **Privilegi Utenti TOP:** Non dovranno più iscriversi nelle stagioni successive.")
             try:

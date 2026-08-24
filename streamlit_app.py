@@ -266,7 +266,7 @@ if not st.session_state["autenticato"]:
         with col_l1:
             nome_inserito = st.text_input("Nome Facebook / Utente")
             pin_inserito = st.text_input("PIN personale (solo PIN a 4 cifre)", type="password")
-            if st.button("Conferma Accesso", key="btn_submit_accedi"):
+            if st.button("Ajò a giocare!", key="btn_submit_accedi"):
                 try:
                     clean_nome = nome_inserito.strip() if nome_inserito else ""
                     clean_pin = pin_inserito.strip() if pin_inserito else ""
@@ -311,15 +311,17 @@ if not st.session_state["autenticato"]:
             else:
                 new_nome = st.text_input("Nome Facebook / Utente")
                 new_email = st.text_input("Indirizzo Email (fondamentale contro i cloni)")
-                new_pin = st.text_input("PIN personale (solo PIN a 4 cifre)", type="password")
+                new_pin = st.text_input("PIN personale (esattamente 4 cifre)", type="password")
                 if st.button("Completa Registrazione", key="btn_submit_registrazione"):
-                    if not new_nome or not new_email or not new_pin:
-                        st.error("Compila tutti i campi inclusa l'email.")
+                    clean_pin = new_pin.strip() if new_pin else ""
+                    if not new_nome or not new_email or not clean_pin:
+                        st.error("Compila tutti i campi inclusi email e PIN.")
+                    elif not clean_pin.isdigit() or len(clean_pin) != 4:
+                        st.error("⚠️ Il PIN deve essere composto **esattamente da 4 cifre numeriche**.")
                     else:
                         try:
                             clean_email = new_email.strip().lower()
                             clean_nome = new_nome.strip()
-                            clean_pin = new_pin.strip()
 
                             check_nome = db.table("utenti").select("nome_fb").eq("nome_fb", clean_nome).execute()
                             if check_nome.data:
@@ -367,7 +369,7 @@ if st.sidebar.button("Logout", key="sidebar_logout_btn"):
 # --- INTERFACCIA PRINCIPALE ---
 st.title(f"⚽ Premio Cugurra 2026/27 ({fase_attuale})")
 
-# --- NAVIGAZIONE A PULSANTI (SOSTITUISCE LE VECCHIE TABS NATIVE) ---
+# --- NAVIGAZIONE A PULSANTI ---
 if st.session_state["is_admin"]:
     menu_options = ["⚙️ Gestione Admin", "📝 Pronostici", "🏆 Classifiche", "📜 Regolamento"]
 else:
@@ -380,14 +382,12 @@ selected_tab = st.radio(
     horizontal=True
 )
 
-st.write("") # Spaziatura pulita
+st.write("") 
 
-# Mappatura delle sezioni in base alla scelta del menu
 tab_admin = selected_tab if selected_tab == "⚙️ Gestione Admin" else None
 is_pronostici = (selected_tab == "📝 Pronostici")
 is_classifiche = (selected_tab == "🏆 Classifiche")
 is_regolamento = (selected_tab == "📜 Regolamento")
-
 
 # 1. PRONOSTICI
 if is_pronostici:
@@ -639,47 +639,49 @@ elif tab_admin is not None:
             st.rerun()
             
         st.divider()
-        st.subheader("👥 Gestione Utenti & Status")
-        st.info("ℹ️ **Privilegi Utenti TOP:** Non dovranno più iscriversi nelle stagioni successive.")
-        try:
-            utenti_db = db.table("utenti").select("*").execute().data
-        except:
-            utenti_db = []
-            
-        if utenti_db:
-            df_utenti = pd.DataFrame(utenti_db)
-            cols_to_show = [c for c in ['nome_fb', 'email', 'status', 'is_admin'] if c in df_utenti.columns]
-            st.dataframe(df_utenti[cols_to_show], use_container_width=True)
-            
-            utenti_non_admin = [u['nome_fb'] for u in utenti_db if not u.get('is_admin', False)]
-            if utenti_non_admin:
-                utente_target = st.selectbox("Seleziona Utente da gestire", utenti_non_admin)
+        
+        # --- SEZIONE UTENTI NASCOSTA IN UN EXPANDER ---
+        with st.expander("👥 Gestione Utenti & Status (Espandi)", expanded=False):
+            st.info("ℹ️ **Privilegi Utenti TOP:** Non dovranno più iscriversi nelle stagioni successive.")
+            try:
+                utenti_db = db.table("utenti").select("*").execute().data
+            except:
+                utenti_db = []
                 
-                col_u1, col_u2, col_u3 = st.columns(3)
-                azione_utente = "Promuovi a TOP"
-                with col_u1:
-                    if st.button("Promuovi TOP", key="btn_promuovi"):
-                        azione_utente = "Promuovi a TOP"
-                with col_u2:
-                    if st.button("Retrocedi STANDARD", key="btn_retrocedi"):
-                        azione_utente = "Retrocedi a STANDARD"
-                with col_u3:
-                    if st.button("Elimina", key="btn_elimina_utente"):
-                        azione_utente = "Elimina Utente"
+            if utenti_db:
+                df_utenti = pd.DataFrame(utenti_db)
+                cols_to_show = [c for c in ['nome_fb', 'email', 'status', 'is_admin'] if c in df_utenti.columns]
+                st.dataframe(df_utenti[cols_to_show], use_container_width=True)
                 
-                st.write(f"Azione selezionata: **{azione_utente}** per l'utente **{utente_target}**")
-                if st.button("Esegui Modifica Utente", key="btn_esegui_mod_utente"):
-                    try:
-                        if azione_utente == "Elimina Utente":
-                            db.table("utenti").delete().eq("nome_fb", utente_target).execute()
-                            st.success(f"Utente {utente_target} rimosso.")
-                        else:
-                            nuovo_status = "TOP" if azione_utente == "Promuovi a TOP" else "STANDARD"
-                            db.table("utenti").update({"status": nuovo_status}).eq("nome_fb", utente_target).execute()
-                            st.success(f"Utente {utente_target} ora ha status {nuovo_status}.")
-                        st.rerun()
-                    except Exception as err:
-                        st.error(f"Errore: {err}")
+                utenti_non_admin = [u['nome_fb'] for u in utenti_db if not u.get('is_admin', False)]
+                if utenti_non_admin:
+                    utente_target = st.selectbox("Seleziona Utente da gestire", utenti_non_admin)
+                    
+                    col_u1, col_u2, col_u3 = st.columns(3)
+                    azione_utente = "Promuovi a TOP"
+                    with col_u1:
+                        if st.button("Promuovi TOP", key="btn_promuovi"):
+                            azione_utente = "Promuovi a TOP"
+                    with col_u2:
+                        if st.button("Retrocedi STANDARD", key="btn_retrocedi"):
+                            azione_utente = "Retrocedi a STANDARD"
+                    with col_u3:
+                        if st.button("Elimina", key="btn_elimina_utente"):
+                            azione_utente = "Elimina Utente"
+                    
+                    st.write(f"Azione selezionata: **{azione_utente}** per l'utente **{utente_target}**")
+                    if st.button("Esegui Modifica Utente", key="btn_esegui_mod_utente"):
+                        try:
+                            if azione_utente == "Elimina Utente":
+                                db.table("utenti").delete().eq("nome_fb", utente_target).execute()
+                                st.success(f"Utente {utente_target} rimosso.")
+                            else:
+                                nuovo_status = "TOP" if azione_utente == "Promuovi a TOP" else "STANDARD"
+                                db.table("utenti").update({"status": nuovo_status}).eq("nome_fb", utente_target).execute()
+                                st.success(f"Utente {utente_target} ora ha status {nuovo_status}.")
+                            st.rerun()
+                        except Exception as err:
+                            st.error(f"Errore: {err}")
 
         st.divider()
         st.subheader("Inserisci Nuova Partita")

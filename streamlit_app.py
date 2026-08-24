@@ -34,8 +34,8 @@ st.markdown(f"""
 
     h1, h2, h3 {{ color: #38bdf8 !important; }}
     
-    /* Forzatura globale ed esplicita per qualsiasi etichetta e testo di input/radio/tab */
-    label, .stRadio label, .stTextInput label, .stSelectbox label, div[data-baseweb="radio"] span, div[data-baseweb="radio"] p, div[data-baseweb="tab"] span, div[data-baseweb="tab"] p {{
+    /* Forzatura globale ed esplicita per qualsiasi etichetta e testo di input/radio */
+    label, .stRadio label, .stTextInput label, .stSelectbox label, div[data-baseweb="radio"] span, div[data-baseweb="radio"] p {{
         color: #ffffff !important;
         font-weight: 600 !important;
         opacity: 1 !important;
@@ -80,34 +80,36 @@ st.markdown(f"""
         margin-bottom: 10px !important;
     }}
 
-    /* --- STILE LINGUETTE (TABS) --- */
-    .stTabs [data-baseweb="tab-list"] {{
-        gap: 6px;
-        background-color: rgba(15, 23, 42, 0.85);
+    /* --- STILE RADIO BUTTON ORIZZONTALE (MENU PRINCIPALE A PILLOLE/PULSANTI) --- */
+    div.row-widget.stRadio > div {{
+        flex-direction: row;
+        justify-content: center;
+        gap: 8px;
+        background-color: rgba(15, 23, 42, 0.95);
         padding: 10px;
-        border-radius: 12px;
+        border-radius: 14px;
         border: 1px solid #334155;
+        margin-bottom: 20px;
     }}
-
-    .stTabs [data-baseweb="tab"] {{
+    
+    div.row-widget.stRadio label {{
         background-color: #1e293b !important;
-        border-radius: 8px !important;
         color: #ffffff !important;
         font-weight: 700 !important;
-        padding: 10px 15px !important;
+        padding: 10px 18px !important;
+        border-radius: 10px !important;
         border: 1px solid #475569 !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        cursor: pointer;
+    }}
+    
+    div.row-widget.stRadio label:hover {{
+        border-color: #38bdf8 !important;
+        background-color: #334155 !important;
     }}
 
-    .stTabs [aria-selected="true"] {{
-        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%) !important;
-        color: #fbbf24 !important;
-        border: 1px solid #38bdf8 !important;
-        box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
-    }}
-
-    .stTabs [aria-selected="true"] p, 
-    .stTabs [aria-selected="true"] span {{
-        color: #fbbf24 !important;
+    div.row-widget.stRadio input[type="radio"] {{
+        display: none;
     }}
 
     /* --- PULSANTI GENERALI COERENTI E MOBILE-FRIENDLY --- */
@@ -148,7 +150,6 @@ st.markdown(f"""
     @media (max-width: 768px) {{
         .prediction-box {{ padding: 10px !important; }}
         .big-score-input input {{ font-size: 1.8rem !important; height: 55px !important; }}
-        .stTabs [data-baseweb="tab"] {{ padding: 8px 10px !important; font-size: 0.85rem !important; }}
         div.stButton {{ margin-bottom: 8px !important; }}
         
         [data-testid="stHorizontalBlock"] {{
@@ -166,7 +167,7 @@ st.markdown(f"""
 
     <script>
     function fixMobileTextColors() {{
-        const elements = document.querySelectorAll('label, [data-baseweb="radio"] span, [data-baseweb="tab"] span, [data-baseweb="tab"] p');
+        const elements = document.querySelectorAll('label, [data-baseweb="radio"] span');
         elements.forEach(el => {{
             el.style.setProperty('color', '#ffffff', 'important');
         }});
@@ -248,7 +249,6 @@ fase_attuale = get_fase()
 if not st.session_state["autenticato"]:
     st.title("⚽ Premio Cugurra - Accesso")
     
-    # Sostituzione dei vecchi radio button con pulsanti coerenti per la scelta dell'operazione
     col_scelta1, col_scelta2 = st.columns(2)
     with col_scelta1:
         if st.button("Accedi", key="btn_switch_accedi"):
@@ -367,17 +367,30 @@ if st.sidebar.button("Logout", key="sidebar_logout_btn"):
 # --- INTERFACCIA PRINCIPALE ---
 st.title(f"⚽ Premio Cugurra 2026/27 ({fase_attuale})")
 
-# Gestione dinamica delle schede: Admin vede "Gestione Admin" per primo
+# --- NAVIGAZIONE A PULSANTI (SOSTITUISCE LE VECCHIE TABS NATIVE) ---
 if st.session_state["is_admin"]:
-    tabs = st.tabs(["⚙️ Gestione Admin", "📝 Pronostici", "🏆 Classifiche", "📜 Regolamento"])
-    tab_admin, tab_pronostici, tab_classifiche, tab_regolamento = tabs
+    menu_options = ["⚙️ Gestione Admin", "📝 Pronostici", "🏆 Classifiche", "📜 Regolamento"]
 else:
-    tabs = st.tabs(["📝 Pronostici", "🏆 Classifiche", "📜 Regolamento"])
-    tab_pronostici, tab_classifiche, tab_regolamento = tabs
-    tab_admin = None
+    menu_options = ["📝 Pronostici", "🏆 Classifiche", "📜 Regolamento"]
+
+selected_tab = st.radio(
+    "Navigazione Principale",
+    options=menu_options,
+    label_visibility="collapsed",
+    horizontal=True
+)
+
+st.write("") # Spaziatura pulita
+
+# Mappatura delle sezioni in base alla scelta del menu
+tab_admin = selected_tab if selected_tab == "⚙️ Gestione Admin" else None
+is_pronostici = (selected_tab == "📝 Pronostici")
+is_classifiche = (selected_tab == "🏆 Classifiche")
+is_regolamento = (selected_tab == "📜 Regolamento")
+
 
 # 1. PRONOSTICI
-with tab_pronostici:
+if is_pronostici:
     if fase_attuale == "ARCHIVIO":
         st.warning("Stagione in archivio. Pronostici disabilitati.")
     else:
@@ -564,7 +577,7 @@ with tab_pronostici:
                 st.markdown('</div>', unsafe_allow_html=True)
 
 # 2. CLASSIFICHE
-with tab_classifiche:
+elif is_classifiche:
     st.header("🏆 Classifiche Ufficiali")
     sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Albo d'Oro"])
     
@@ -591,7 +604,7 @@ with tab_classifiche:
             st.info("Albo d'oro non disponibile.")
 
 # 3. REGOLAMENTO
-with tab_regolamento:
+elif is_regolamento:
     st.header("📜 Punteggi e Regolamento del Premio Cugurra")
     st.markdown("""
     ### 1) Limite Iscrizioni Stagionali:
@@ -615,9 +628,9 @@ with tab_regolamento:
     * Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.
     """)
 
-# 4. ADMIN (Posizionato come primo pannello per l'amministratore)
-if tab_admin is not None:
-    with tab_admin:
+# 4. ADMIN
+elif tab_admin is not None:
+    with st.container():
         st.header("⚙️ Gestione Stagione")
         fase_scelta = st.selectbox("Cambia Fase Globale", ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"], index=["TEST", "STAGIONE IN CORSO", "ARCHIVIO"].index(fase_attuale) if fase_attuale in ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"] else 0)
         if st.button("Aggiorna Fase Globale", key="btn_aggiorna_fase"):
@@ -642,7 +655,6 @@ if tab_admin is not None:
             if utenti_non_admin:
                 utente_target = st.selectbox("Seleziona Utente da gestire", utenti_non_admin)
                 
-                # Sostituzione radio button gestione utente con pulsanti chiari
                 col_u1, col_u2, col_u3 = st.columns(3)
                 azione_utente = "Promuovi a TOP"
                 with col_u1:

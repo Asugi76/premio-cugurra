@@ -19,7 +19,7 @@ def init_supabase():
 
 db = init_supabase()
 
-# --- CSS & JAVASCRIPT CORRETTIVO PER MOBILE E PULSANTI COLORATI ---
+# --- CSS & JAVASCRIPT CORRETTIVO PER MOBILE E LAYOUT ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -65,7 +65,7 @@ st.markdown(f"""
         align-items: center !important;
         width: 100% !important;
         gap: 10px !important;
-        margin-bottom: 10px !important;
+        margin-bottom: 5px !important;
     }}
     
     .scoreboard-column {{
@@ -131,54 +131,6 @@ st.markdown(f"""
     div.row-widget.stRadio input[type="radio"] {{
         display: none;
     }}
-
-    /* --- GESTIONE FORZATA COLORI PULSANTI STREAMLIT --- */
-    div.stButton > button {{
-        width: 100% !important;
-        min-height: 48px !important;
-        font-weight: bold !important;
-        font-size: 16px !important;
-        border-radius: 10px !important;
-        padding: 0.75rem !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        transition: all 0.2s ease-in-out;
-    }}
-
-    /* Pulsante Rosso (Accedi / Cancella) */
-    .btn-red button {{
-        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
-        color: #ffffff !important;
-        border: 1px solid #f87171 !important;
-    }}
-    .btn-red button:hover {{
-        background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%) !important;
-        border-color: #fca5a5 !important;
-    }}
-    .btn-red button p, .btn-red button span {{ color: #ffffff !important; }}
-
-    /* Pulsante Blu (Registrati / Invia Pronostico) */
-    .btn-blue button {{
-        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
-        color: #ffffff !important;
-        border: 1px solid #60a5fa !important;
-    }}
-    .btn-blue button:hover {{
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-        border-color: #93c5fd !important;
-    }}
-    .btn-blue button p, .btn-blue button span {{ color: #ffffff !important; }}
-
-    /* Pulsante Verde (Conferme / Ajò a giocare) */
-    .btn-green button {{
-        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
-        color: #ffffff !important;
-        border: 1px solid #4ade80 !important;
-    }}
-    .btn-green button:hover {{
-        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
-        border-color: #86efac !important;
-    }}
-    .btn-green button p, .btn-green button span {{ color: #ffffff !important; }}
 
     /* Ottimizzazioni Smartphone */
     @media (max-width: 768px) {{
@@ -260,17 +212,13 @@ if not st.session_state["autenticato"]:
     
     col_scelta1, col_scelta2 = st.columns(2)
     with col_scelta1:
-        st.markdown('<div class="btn-red">', unsafe_allow_html=True)
-        if st.button("ACCEDI", key="btn_switch_accedi"):
+        if st.button("ACCEDI", key="btn_switch_accedi", use_container_width=True):
             st.session_state["modalita_auth"] = "Accedi"
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
     with col_scelta2:
-        st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
-        if st.button("REGISTRATI", key="btn_switch_registrati"):
+        if st.button("REGISTRATI", key="btn_switch_registrati", use_container_width=True):
             st.session_state["modalita_auth"] = "Registrati"
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
             
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -281,8 +229,7 @@ if not st.session_state["autenticato"]:
             pin_inserito = st.text_input("PIN personale (solo PIN a 4 cifre)", type="password")
             
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown('<div class="btn-green">', unsafe_allow_html=True)
-            if st.button("Ajò a giocare", key="btn_submit_accedi"):
+            if st.button("Ajò a giocare", key="btn_submit_accedi", use_container_width=True):
                 try:
                     clean_nome = nome_inserito.strip() if nome_inserito else ""
                     clean_pin = pin_inserito.strip() if pin_inserito else ""
@@ -299,7 +246,6 @@ if not st.session_state["autenticato"]:
                         st.error("Nome o PIN non corretti. Verifica di non aver inserito spazi extra.")
                 except Exception as e:
                     st.error(f"Errore di connessione: {e}")
-            st.markdown('</div>', unsafe_allow_html=True)
             
     elif st.session_state["modalita_auth"] == "Registrati":
         col_r1, _ = st.columns([2, 1])
@@ -313,22 +259,19 @@ if not st.session_state["autenticato"]:
                 st.markdown(f"**PIN:** `{st.session_state['reg_pin']}`")
                 st.markdown("<br>", unsafe_allow_html=True)
                 
-                st.markdown('<div class="btn-green">', unsafe_allow_html=True)
-                if st.button("Ajò a giocare", key="btn_ajo_giocare"):
+                if st.button("Ajò a giocare", key="btn_ajo_giocare", use_container_width=True):
                     st.session_state.update({
                         "autenticato": True, "utente_corrente": st.session_state["reg_nome"],
                         "status": st.session_state["reg_status"], "is_admin": False, "nuovo_registrato": False
                     })
                     st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
             else:
                 new_nome = st.text_input("Nome Facebook / Utente")
                 new_email = st.text_input("Indirizzo Email (fondamentale contro i cloni)")
                 new_pin = st.text_input("PIN personale (esattamente 4 cifre)", type="password")
                 
                 st.markdown("<br>", unsafe_allow_html=True)
-                st.markdown('<div class="btn-green">', unsafe_allow_html=True)
-                if st.button("Completa Registrazione", key="btn_submit_registrazione"):
+                if st.button("Completa Registrazione", key="btn_submit_registrazione", use_container_width=True):
                     clean_pin = new_pin.strip() if new_pin else ""
                     if not new_nome or not new_email or not clean_pin:
                         st.error("Compila tutti i campi inclusi email e PIN.")
@@ -367,17 +310,14 @@ if not st.session_state["autenticato"]:
                                 st.error(f"Errore: L'indirizzo email '{new_email}' o il nome utente sono già presenti nel sistema.")
                             else:
                                 st.error(f"Errore durante la registrazione: {err}")
-                st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 # --- BARRA LATERALE ---
 st.sidebar.markdown(f"👤 Utente: **{st.session_state.get('utente_corrente')}**")
 st.sidebar.markdown(f"⭐ Status: **{st.session_state.get('status')}**")
-st.sidebar.markdown('<div class="btn-red">', unsafe_allow_html=True)
-if st.sidebar.button("Logout", key="sidebar_logout_btn"):
+if st.sidebar.button("Logout", key="sidebar_logout_btn", use_container_width=True):
     st.session_state.clear()
     st.rerun()
-st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 # --- INTERFACCIA PRINCIPALE ---
 st.title(f"⚽ Premio Cugurra {stagione_attuale} ({fase_attuale})")
@@ -472,7 +412,7 @@ if is_pronostici:
             """
             components.html(countdown_html, height=100)
             
-            # --- TABELLONE FORZATO ORIZZONTALE ---
+            # --- TABELLONE CON SCUDETTI, ETICHETTE E SELETTORI ALLINEATI ---
             url_comp = get_url_competizione(nome_competizione)
             url_s1 = get_url_scudetto(squadra_1)
             url_s2 = get_url_scudetto(squadra_2)
@@ -483,6 +423,7 @@ if is_pronostici:
                 </div>
             """, unsafe_allow_html=True)
 
+            # Riga Scudetti
             st.markdown(f"""
                 <div class="scoreboard-container">
                     <div class="scoreboard-column">
@@ -495,6 +436,20 @@ if is_pronostici:
                 </div>
             """, unsafe_allow_html=True)
 
+            # Riga Etichette (Gol Squadra 1 e Gol Squadra 2) direttamente sotto gli scudetti
+            st.markdown(f"""
+                <div class="scoreboard-container" style="margin-bottom: 5px;">
+                    <div class="scoreboard-column">
+                        <b style="font-size: 0.95rem; color: #38bdf8;">Gol {squadra_1}</b>
+                    </div>
+                    <div class="scoreboard-middle"></div>
+                    <div class="scoreboard-column">
+                        <b style="font-size: 0.95rem; color: #38bdf8;">Gol {squadra_2}</b>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
+            # Riga Selettori Gol
             col_i1, col_imid, col_i2 = st.columns([2, 0.4, 2])
             with col_i1:
                 st.markdown('<div class="prediction-box"><div class="big-score-input">', unsafe_allow_html=True)
@@ -506,18 +461,6 @@ if is_pronostici:
                 st.markdown('<div class="prediction-box"><div class="big-score-input">', unsafe_allow_html=True)
                 gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=0, key=f"gs2_{partita['id']}", label_visibility="collapsed")
                 st.markdown('</div></div>', unsafe_allow_html=True)
-
-            st.markdown(f"""
-                <div class="scoreboard-container" style="margin-bottom: 20px;">
-                    <div class="scoreboard-column">
-                        <b style="font-size: 1rem; color: #38bdf8;">{squadra_1}</b>
-                    </div>
-                    <div class="scoreboard-middle"></div>
-                    <div class="scoreboard-column">
-                        <b style="font-size: 1rem; color: #38bdf8;">{squadra_2}</b>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
 
             is_goleada_1 = gol_s1 > 9
             is_goleada_2 = gol_s2 > 9
@@ -556,8 +499,7 @@ if is_pronostici:
             col_b1, col_b2 = st.columns(2)
             
             with col_b1:
-                st.markdown('<div class="btn-red">', unsafe_allow_html=True)
-                if st.button("Cancella i dati inseriti", key="btn_cancella_dati"):
+                if st.button("Cancella i dati inseriti", key="btn_cancella_dati", use_container_width=True):
                     st.session_state.gol_singoli.clear()
                     keys_to_clear = [
                         k for k in st.session_state.keys() 
@@ -568,11 +510,9 @@ if is_pronostici:
                             del st.session_state[k]
                     st.success("Dati cancellati!")
                     st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
 
             with col_b2:
-                st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
-                if st.button("Invia Pronostico", key="btn_invia_pronostico"):
+                if st.button("Invia Pronostico", key="btn_invia_pronostico", use_container_width=True):
                     tot_gol_s1_calcolati = 0
                     if not is_goleada_1:
                         for m in marc1:
@@ -615,7 +555,6 @@ if is_pronostici:
                             "espulsi_cagliari": esp_cag, "espulsi_avversario": esp_avv
                         }).execute()
                         st.success("Pronostico registrato con successo!")
-                st.markdown('</div>', unsafe_allow_html=True)
 
 # 2. CLASSIFICHE
 elif is_classifiche:
@@ -677,15 +616,12 @@ elif tab_admin is not None:
         st.markdown(f"Stagione corrente attiva: **{stagione_attuale}**")
         col_st1, col_st2 = st.columns(2)
         with col_st1:
-            st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
-            if st.button("Aggiorna Fase Globale", key="btn_aggiorna_fase"):
+            if st.button("Aggiorna Fase Globale", key="btn_aggiorna_fase", use_container_width=True):
                 db.table("configurazione").update({"valore": fase_scelta}).eq("chiave", "fase_corrente").execute()
                 st.success("Fase aggiornata!")
                 st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
         with col_st2:
-            st.markdown('<div class="btn-red">', unsafe_allow_html=True)
-            if st.button("🚀 Passa a Nuova Stagione (+1 anno & Test)", key="btn_nuova_stagione"):
+            if st.button("🚀 Passa a Nuova Stagione (+1 anno & Test)", key="btn_nuova_stagione", use_container_width=True):
                 try:
                     parti_anno = stagione_attuale.split("/")
                     if len(parti_anno) == 2:
@@ -701,7 +637,6 @@ elif tab_admin is not None:
                     st.rerun()
                 except Exception as ex_st:
                     st.error(f"Errore durante il cambio stagione: {ex_st}")
-            st.markdown('</div>', unsafe_allow_html=True)
             
         st.divider()
         st.subheader("Inserisci Nuova Partita")
@@ -720,9 +655,7 @@ elif tab_admin is not None:
             rosa_cag_input = st.text_area("Convocati Cagliari", "")
             rosa_avv_input = st.text_area("Convocati Avversaria", "")
             
-            st.markdown('<div class="btn-green">', unsafe_allow_html=True)
-            submitted_partita = st.form_submit_button("Crea Partita nel Database")
-            st.markdown('</div>', unsafe_allow_html=True)
+            submitted_partita = st.form_submit_button("Crea Partita nel Database", use_container_width=True)
 
             if submitted_partita:
                 if not avv:
@@ -797,9 +730,7 @@ elif tab_admin is not None:
                     st.session_state.gol_omologazione[k_a1] = st.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a1)
                 esp_uff_2 = st.multiselect(f"Espulsi {s2_omo}", options=rosa_t2, key="eu_2")
 
-            st.markdown('<div class="btn-green">', unsafe_allow_html=True)
-            btn_omologa = st.button("Conferma e Omologa Partita", key="btn_conferma_omologa")
-            st.markdown('</div>', unsafe_allow_html=True)
+            btn_omologa = st.button("Conferma e Omologa Partita", key="btn_conferma_omologa", use_container_width=True)
 
             if btn_omologa:
                 if is_cag_left_omo:
@@ -929,13 +860,9 @@ elif tab_admin is not None:
 
                 col_mod1, col_mod2 = st.columns(2)
                 with col_mod1:
-                    st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
-                    submit_mod = st.form_submit_button("Salva Modifiche")
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    submit_mod = st.form_submit_button("Salva Modifiche", use_container_width=True)
                 with col_mod2:
-                    st.markdown('<div class="btn-red">', unsafe_allow_html=True)
-                    submit_del = st.form_submit_button("Elimina Partita")
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    submit_del = st.form_submit_button("Elimina Partita", use_container_width=True)
 
                 if submit_mod:
                     ora_str = f"{m_ora:02d}:{m_min:02d}:00"
@@ -978,25 +905,17 @@ elif tab_admin is not None:
                     col_u1, col_u2, col_u3 = st.columns(3)
                     azione_utente = "Promuovi a TOP"
                     with col_u1:
-                        st.markdown('<div class="btn-green">', unsafe_allow_html=True)
-                        if st.button("Promuovi TOP", key="btn_promuovi"):
+                        if st.button("Promuovi TOP", key="btn_promuovi", use_container_width=True):
                             azione_utente = "Promuovi a TOP"
-                        st.markdown('</div>', unsafe_allow_html=True)
                     with col_u2:
-                        st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
-                        if st.button("Retrocedi STANDARD", key="btn_retrocedi"):
+                        if st.button("Retrocedi STANDARD", key="btn_retrocedi", use_container_width=True):
                             azione_utente = "Retrocedi a STANDARD"
-                        st.markdown('</div>', unsafe_allow_html=True)
                     with col_u3:
-                        st.markdown('<div class="btn-red">', unsafe_allow_html=True)
-                        if st.button("Elimina", key="btn_elimina_utente"):
+                        if st.button("Elimina", key="btn_elimina_utente", use_container_width=True):
                             azione_utente = "Elimina Utente"
-                        st.markdown('</div>', unsafe_allow_html=True)
                     
                     st.write(f"Azione selezionata: **{azione_utente}** per l'utente **{utente_target}**")
-                    st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
-                    btn_esegui_utente = st.button("Esegui Modifica Utente", key="btn_esegui_mod_utente")
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    btn_esegui_utente = st.button("Esegui Modifica Utente", key="btn_esegui_mod_utente", use_container_width=True)
 
                     if btn_esegui_utente:
                         try:
@@ -1022,9 +941,7 @@ elif tab_admin is not None:
                     edited_df = st.data_editor(
                         df_albo_admin, num_rows="dynamic", use_container_width=True, key="editor_albo_admin"
                     )
-                    st.markdown('<div class="btn-green">', unsafe_allow_html=True)
-                    btn_salva_albo = st.button("Salva Modifiche Albo d'Oro", key="btn_salva_albo")
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    btn_salva_albo = st.button("Salva Modifiche Albo d'Oro", key="btn_salva_albo", use_container_width=True)
 
                     if btn_salva_albo:
                         try:

@@ -19,7 +19,7 @@ def init_supabase():
 
 db = init_supabase()
 
-# --- CSS & JAVASCRIPT CORRETTIVO PER MOBILE E PULSANTI COERENTI ---
+# --- CSS & JAVASCRIPT CORRETTIVO PER MOBILE E COLORI CUSTOM ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -34,14 +34,12 @@ st.markdown(f"""
 
     h1, h2, h3 {{ color: #38bdf8 !important; }}
     
-    /* Forzatura globale ed esplicita per qualsiasi etichetta e testo di input/radio */
     label, .stRadio label, .stTextInput label, .stSelectbox label, div[data-baseweb="radio"] span, div[data-baseweb="radio"] p {{
         color: #ffffff !important;
         font-weight: 600 !important;
         opacity: 1 !important;
     }}
 
-    /* Input generici e selectbox */
     input, textarea, select, div[data-baseweb="select"] > div {{
         background-color: #1e293b !important;
         color: #f8fafc !important;
@@ -80,7 +78,7 @@ st.markdown(f"""
         margin-bottom: 10px !important;
     }}
 
-    /* --- STILE RADIO BUTTON ORIZZONTALE (MENU PRINCIPALE A PILLOLE/PULSANTI) --- */
+    /* --- STILE RADIO BUTTON ORIZZONTALE (MENU PRINCIPALE A PILLOLE) --- */
     div.row-widget.stRadio > div {{
         flex-direction: row;
         justify-content: center;
@@ -129,60 +127,53 @@ st.markdown(f"""
     div.stButton > button p {{ color: #fbbf24 !important; }}
     
     div.stButton > button:hover {{
-        background: linear-gradient(135deg, #2563eb 100%, #1e3a8a 0%) !important;
         border-color: #fbbf24 !important;
     }}
     
-    .btn-danger button {{
+    /* Variazioni Colore Pulsanti Specifici */
+    .btn-red button {{
         background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
         color: #ffffff !important;
         border: 1px solid #f87171 !important;
     }}
-    .btn-danger button p {{ color: #ffffff !important; }}
+    .btn-red button p {{ color: #ffffff !important; }}
 
-    .btn-primary-custom button {{
+    .btn-blue button {{
         background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
         color: #fbbf24 !important;
+        border: 1px solid #38bdf8 !important;
     }}
-    .btn-primary-custom button p {{ color: #fbbf24 !important; }}
+    .btn-blue button p {{ color: #fbbf24 !important; }}
+
+    .btn-green button {{
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid #4ade80 !important;
+    }}
+    .btn-green button p {{ color: #ffffff !important; }}
 
     /* Ottimizzazioni Smartphone */
     @media (max-width: 768px) {{
         .prediction-box {{ padding: 10px !important; }}
         .big-score-input input {{ font-size: 1.8rem !important; height: 55px !important; }}
         div.stButton {{ margin-bottom: 8px !important; }}
-        
-        [data-testid="stHorizontalBlock"] {{
-            display: flex !important;
-            flex-direction: row !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }}
-        [data-testid="stHorizontalBlock"] > div {{
-            flex: 1 !important;
-            min-width: auto !important;
-        }}
     }}
     </style>
-
-    <script>
-    function fixMobileTextColors() {{
-        const elements = document.querySelectorAll('label, [data-baseweb="radio"] span');
-        elements.forEach(el => {{
-            el.style.setProperty('color', '#ffffff', 'important');
-        }});
-    }}
-    setInterval(fixMobileTextColors, 300);
-    </script>
 """, unsafe_allow_html=True)
 
 # --- HELPER FUNCTIONS ---
-def get_fase():
+def get_config_valore(chiave_target, default_val):
     try:
-        res = db.table("configurazione").select("valore").eq("chiave", "fase_corrente").execute()
-        return res.data[0]['valore'] if res.data else "TEST"
+        res = db.table("configurazione").select("valore").eq("chiave", chiave_target).execute()
+        return res.data[0]['valore'] if res.data else default_val
     except:
-        return "TEST"
+        return default_val
+
+def get_fase():
+    return get_config_valore("fase_corrente", "TEST")
+
+def get_stagione():
+    return get_config_valore("stagione_corrente", "2026/27")
 
 def get_url_scudetto(nome_squadra):
     if not nome_squadra:
@@ -191,16 +182,11 @@ def get_url_scudetto(nome_squadra):
 
 def get_url_competizione(nome_competizione):
     mapping_comp = {
-        "Serie A": "comp_seriea.png",
-        "Serie B": "comp_serieb.png",
-        "Coppa Italia": "comp_coppaitalia.png",
-        "Supercoppa Italiana": "comp_supercoppaitaliana.png",
-        "Champions League": "comp_championsleague.png",
-        "Europa League": "comp_europaleague.png",
-        "Conference League": "comp_conferenceleague.png",
-        "Mondiale per Club": "comp_mondialeclub.png",
-        "Amichevole": "comp_amichevole.png",
-        "Torneo Amichevole": "comp_torneoamichevole.png"
+        "Serie A": "comp_seriea.png", "Serie B": "comp_serieb.png",
+        "Coppa Italia": "comp_coppaitalia.png", "Supercoppa Italiana": "comp_supercoppaitaliana.png",
+        "Champions League": "comp_championsleague.png", "Europa League": "comp_europaleague.png",
+        "Conference League": "comp_conferenceleague.png", "Mondiale per Club": "comp_mondialeclub.png",
+        "Amichevole": "comp_amichevole.png", "Torneo Amichevole": "comp_torneoamichevole.png"
     }
     filename = mapping_comp.get(nome_competizione, "DEFAULT.png")
     return f"{STORAGE_BASE_URL}{filename}"
@@ -209,7 +195,8 @@ def check_limite_iscrizioni(fase_str):
     if fase_str == "TEST":
         return True
     try:
-        parti = fase_str.split("/")
+        stagione_str = get_stagione() # es. "2026/27"
+        parti = stagione_str.split("/")
         if len(parti) == 2:
             anno_fine = int("20" + parti[1]) if len(parti[1]) == 2 else int(parti[1])
             limite_data = datetime(anno_fine, 2, 2, 23, 59, 59)
@@ -233,31 +220,31 @@ def mostra_footer():
 # --- GESTIONE SESSIONE ---
 if "autenticato" not in st.session_state:
     st.session_state.update({
-        "autenticato": False, 
-        "utente_corrente": None, 
-        "is_admin": False, 
-        "status": None, 
-        "gol_singoli": {}, 
-        "gol_omologazione": {},
-        "nuovo_registrato": False,
-        "modalita_auth": "Accedi"
+        "autenticato": False, "utente_corrente": None, "is_admin": False, "status": None, 
+        "gol_singoli": {}, "gol_omologazione": {}, "nuovo_registrato": False, "modalita_auth": "Accedi"
     })
 
 fase_attuale = get_fase()
+stagione_attuale = get_stagione()
 
 # --- LOGIN / REGISTRAZIONE ---
 if not st.session_state["autenticato"]:
     st.title("⚽ Premio Cugurra - Accesso")
     
+    # Pulsanti Accedi e Registrati affiancati, colorati (Rosso e Blu)
     col_scelta1, col_scelta2 = st.columns(2)
     with col_scelta1:
+        st.markdown('<div class="btn-red">', unsafe_allow_html=True)
         if st.button("Accedi", key="btn_switch_accedi"):
             st.session_state["modalita_auth"] = "Accedi"
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
     with col_scelta2:
+        st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
         if st.button("Registrati", key="btn_switch_registrati"):
             st.session_state["modalita_auth"] = "Registrati"
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
             
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -266,6 +253,8 @@ if not st.session_state["autenticato"]:
         with col_l1:
             nome_inserito = st.text_input("Nome Facebook / Utente")
             pin_inserito = st.text_input("PIN personale (solo PIN a 4 cifre)", type="password")
+            
+            st.markdown('<div class="btn-green">', unsafe_allow_html=True)
             if st.button("Ajò a giocare!", key="btn_submit_accedi"):
                 try:
                     clean_nome = nome_inserito.strip() if nome_inserito else ""
@@ -275,16 +264,15 @@ if not st.session_state["autenticato"]:
                     if res.data:
                         u = res.data[0]
                         st.session_state.update({
-                            "autenticato": True, 
-                            "utente_corrente": u["nome_fb"], 
-                            "is_admin": u.get('is_admin', False), 
-                            "status": u.get('status', 'STANDARD')
+                            "autenticato": True, "utente_corrente": u["nome_fb"], 
+                            "is_admin": u.get('is_admin', False), "status": u.get('status', 'STANDARD')
                         })
                         st.rerun()
                     else:
                         st.error("Nome o PIN non corretti. Verifica di non aver inserito spazi extra.")
                 except Exception as e:
                     st.error(f"Errore di connessione: {e}")
+            st.markdown('</div>', unsafe_allow_html=True)
     else:
         col_r1, _ = st.columns([2, 1])
         with col_r1:
@@ -297,14 +285,11 @@ if not st.session_state["autenticato"]:
                 st.markdown(f"**PIN:** `{st.session_state['reg_pin']}`")
                 st.markdown("<br>", unsafe_allow_html=True)
                 
-                st.markdown('<div class="btn-primary-custom">', unsafe_allow_html=True)
-                if st.button("Ajò a giocare", key="btn_ajo_giocare"):
+                st.markdown('<div class="btn-green">', unsafe_allow_html=True)
+                if st.button("Ajò a giocare!", key="btn_ajo_giocare"):
                     st.session_state.update({
-                        "autenticato": True,
-                        "utente_corrente": st.session_state["reg_nome"],
-                        "status": st.session_state["reg_status"],
-                        "is_admin": False,
-                        "nuovo_registrato": False
+                        "autenticato": True, "utente_corrente": st.session_state["reg_nome"],
+                        "status": st.session_state["reg_status"], "is_admin": False, "nuovo_registrato": False
                     })
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -312,6 +297,8 @@ if not st.session_state["autenticato"]:
                 new_nome = st.text_input("Nome Facebook / Utente")
                 new_email = st.text_input("Indirizzo Email (fondamentale contro i cloni)")
                 new_pin = st.text_input("PIN personale (esattamente 4 cifre)", type="password")
+                
+                st.markdown('<div class="btn-green">', unsafe_allow_html=True)
                 if st.button("Completa Registrazione", key="btn_submit_registrazione"):
                     clean_pin = new_pin.strip() if new_pin else ""
                     if not new_nome or not new_email or not clean_pin:
@@ -335,11 +322,8 @@ if not st.session_state["autenticato"]:
 
                             nuovo_status = "TOP" if fase_attuale == "TEST" else "STANDARD"
                             db.table("utenti").insert({
-                                "nome_fb": clean_nome, 
-                                "email": clean_email, 
-                                "pin": clean_pin, 
-                                "status": nuovo_status, 
-                                "is_admin": False
+                                "nome_fb": clean_nome, "email": clean_email, "pin": clean_pin, 
+                                "status": nuovo_status, "is_admin": False
                             }).execute()
                             
                             st.session_state["nuovo_registrato"] = True
@@ -354,20 +338,18 @@ if not st.session_state["autenticato"]:
                                 st.error(f"Errore: L'indirizzo email '{new_email}' o il nome utente sono già presenti nel sistema.")
                             else:
                                 st.error(f"Errore durante la registrazione: {err}")
+                st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 # --- BARRA LATERALE ---
 st.sidebar.markdown(f"👤 Utente: **{st.session_state.get('utente_corrente')}**")
 st.sidebar.markdown(f"⭐ Status: **{st.session_state.get('status')}**")
-if st.session_state.get('status') == "TOP" or st.session_state.get('status') == "ADMIN":
-    st.sidebar.caption("👑 *Privilegio TOP: Iscrizione automatica per le stagioni successive.*")
-st.sidebar.markdown(f"📌 Stagione: **{fase_attuale}**")
 if st.sidebar.button("Logout", key="sidebar_logout_btn"):
     st.session_state.clear()
     st.rerun()
 
 # --- INTERFACCIA PRINCIPALE ---
-st.title(f"⚽ Premio Cugurra 2026/27 ({fase_attuale})")
+st.title(f"⚽ Premio Cugurra {stagione_attuale} ({fase_attuale})")
 
 # --- NAVIGAZIONE A PULSANTI ---
 if st.session_state["is_admin"]:
@@ -416,10 +398,21 @@ if is_pronostici:
 
             st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2}, {nome_competizione} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
             
+            # Countdown con animazione pulsante e icona orologio stilizzata
             countdown_html = f"""
-            <div style="background-color: #090d16; border: 3px solid #38bdf8; border-radius: 12px; padding: 15px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);">
-                <div style="font-size: 0.75rem; color: #38bdf8; margin-bottom: 10px; text-transform: uppercase;">Quanto manca all'inizio della prossima partita?</div>
-                <div id="clock" style="font-size: 1.2rem; color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6);">CALCOLO IN CORSO...</div>
+            <div style="background-color: #090d16; border: 2px solid #38bdf8; border-radius: 12px; padding: 12px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);">
+                <style>
+                    @keyframes pulse-anim {{
+                        0% {{ opacity: 0.8; transform: scale(1); }}
+                        50% {{ opacity: 1; transform: scale(1.02); }}
+                        100% {{ opacity: 0.8; transform: scale(1); }}
+                    }}
+                    .pulsing-clock {{ animation: pulse-anim 2s infinite ease-in-out; }}
+                </style>
+                <div class="pulsing-clock">
+                    <div style="font-size: 0.7rem; color: #38bdf8; margin-bottom: 6px; text-transform: uppercase;">⏳ Manca all'inizio</div>
+                    <div id="clock" style="font-size: 1.1rem; color: #fbbf24; text-shadow: 0 0 6px rgba(251, 191, 36, 0.5);">CALCOLO...</div>
+                </div>
             </div>
             <script>
                 const targetStr = "{iso_timestamp}".replace("Z", "");
@@ -446,7 +439,7 @@ if is_pronostici:
                 setInterval(updateTimer, 1000);
             </script>
             """
-            components.html(countdown_html, height=110)
+            components.html(countdown_html, height=100)
             
             url_comp = get_url_competizione(nome_competizione)
             st.markdown(f"""
@@ -455,7 +448,7 @@ if is_pronostici:
                 </div>
             """, unsafe_allow_html=True)
             
-            col_s1, col_mid, col_s2 = st.columns([2, 0.6, 2])
+            col_s1, col_mid, col_s2 = st.columns([2, 0.4, 2])
             
             with col_s1:
                 st.markdown('<div class="prediction-box">', unsafe_allow_html=True)
@@ -465,11 +458,8 @@ if is_pronostici:
                 st.markdown('</div></div>', unsafe_allow_html=True)
                 
             with col_mid:
-                st.markdown("""
-                    <div style="text-align: center; margin-top: 35px;">
-                        <h3 style="margin: 0; font-size: 1.2rem;">VS</h3>
-                    </div>
-                """, unsafe_allow_html=True)
+                # Spazio vuoto senza scritta "VS" come richiesto
+                st.write("")
                 
             with col_s2:
                 st.markdown('<div class="prediction-box">', unsafe_allow_html=True)
@@ -515,7 +505,7 @@ if is_pronostici:
             col_b1, col_b2 = st.columns(2)
             
             with col_b1:
-                st.markdown('<div class="btn-danger">', unsafe_allow_html=True)
+                st.markdown('<div class="btn-red">', unsafe_allow_html=True)
                 if st.button("Cancella i dati inseriti", key="btn_cancella_dati"):
                     st.session_state.gol_singoli.clear()
                     keys_to_clear = [
@@ -530,7 +520,7 @@ if is_pronostici:
                 st.markdown('</div>', unsafe_allow_html=True)
 
             with col_b2:
-                st.markdown('<div class="btn-primary-custom">', unsafe_allow_html=True)
+                st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
                 if st.button("Invia Pronostico", key="btn_invia_pronostico"):
                     tot_gol_s1_calcolati = 0
                     if not is_goleada_1:
@@ -591,10 +581,8 @@ elif is_classifiche:
             if res_albo_pub.data:
                 df_albo_pub = pd.DataFrame(res_albo_pub.data)
                 df_display = df_albo_pub.rename(columns={
-                    "stagione": "Stagione", 
-                    "vincitore_premio_cugurra": "Vincitore Premio Cugurra",
-                    "premio_masters_of_cugurras": "Masters of Cugurras", 
-                    "premio_bomber_di_razza": "Bomber di razza"
+                    "stagione": "Stagione", "vincitore_premio_cugurra": "Vincitore Premio Cugurra",
+                    "premio_masters_of_cugurras": "Masters of Cugurras", "premio_bomber_di_razza": "Bomber di razza"
                 })
                 cols_display = [c for c in ["Stagione", "Vincitore Premio Cugurra", "Masters of Cugurras", "Bomber di razza"] if c in df_display.columns]
                 st.dataframe(df_display[cols_display], use_container_width=True, hide_index=True)
@@ -632,57 +620,38 @@ elif is_regolamento:
 elif tab_admin is not None:
     with st.container():
         st.header("⚙️ Gestione Stagione")
-        fase_scelta = st.selectbox("Cambia Fase Globale", ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"], index=["TEST", "STAGIONE IN CORSO", "ARCHIVIO"].index(fase_attuale) if fase_attuale in ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"] else 0)
-        if st.button("Aggiorna Fase Globale", key="btn_aggiorna_fase"):
-            db.table("configurazione").update({"valore": fase_scelta}).eq("chiave", "fase_corrente").execute()
-            st.success("Fase aggiornata!")
-            st.rerun()
-            
-        st.divider()
         
-        # --- SEZIONE UTENTI NASCOSTA IN UN EXPANDER ---
-        with st.expander("👥 Gestione Utenti & Status (Espandi)", expanded=False):
-            st.info("ℹ️ **Privilegi Utenti TOP:** Non dovranno più iscriversi nelle stagioni successive.")
-            try:
-                utenti_db = db.table("utenti").select("*").execute().data
-            except:
-                utenti_db = []
-                
-            if utenti_db:
-                df_utenti = pd.DataFrame(utenti_db)
-                cols_to_show = [c for c in ['nome_fb', 'email', 'status', 'is_admin'] if c in df_utenti.columns]
-                st.dataframe(df_utenti[cols_to_show], use_container_width=True)
-                
-                utenti_non_admin = [u['nome_fb'] for u in utenti_db if not u.get('is_admin', False)]
-                if utenti_non_admin:
-                    utente_target = st.selectbox("Seleziona Utente da gestire", utenti_non_admin)
+        # Selezione fase globale
+        fase_scelta = st.selectbox("Cambia Fase Globale", ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"], index=["TEST", "STAGIONE IN CORSO", "ARCHIVIO"].index(fase_attuale) if fase_attuale in ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"] else 0)
+        
+        # Gestione automatica della stagione
+        st.markdown(f"Stagione corrente attiva: **{stagione_attuale}**")
+        col_st1, col_st2 = st.columns(2)
+        with col_st1:
+            if st.button("Aggiorna Fase Globale", key="btn_aggiorna_fase"):
+                db.table("configurazione").update({"valore": fase_scelta}).eq("chiave", "fase_corrente").execute()
+                st.success("Fase aggiornata!")
+                st.rerun()
+        with col_st2:
+            if st.button("🚀 Passa a Nuova Stagione (+1 anno & Test)", key="btn_nuova_stagione"):
+                try:
+                    # Calcola anno successivo (es. da "2026/27" a "2027/28")
+                    parti_anno = stagione_attuale.split("/")
+                    if len(parti_anno) == 2:
+                        anno1_int = int(parti_anno[0]) + 1
+                        anno2_str = str(int(parti_anno[1]) + 1).zfill(2)
+                        nuova_stagione_str = f"{anno1_int}/{anno2_str}"
+                    else:
+                        nuova_stagione_str = "2027/28"
                     
-                    col_u1, col_u2, col_u3 = st.columns(3)
-                    azione_utente = "Promuovi a TOP"
-                    with col_u1:
-                        if st.button("Promuovi TOP", key="btn_promuovi"):
-                            azione_utente = "Promuovi a TOP"
-                    with col_u2:
-                        if st.button("Retrocedi STANDARD", key="btn_retrocedi"):
-                            azione_utente = "Retrocedi a STANDARD"
-                    with col_u3:
-                        if st.button("Elimina", key="btn_elimina_utente"):
-                            azione_utente = "Elimina Utente"
-                    
-                    st.write(f"Azione selezionata: **{azione_utente}** per l'utente **{utente_target}**")
-                    if st.button("Esegui Modifica Utente", key="btn_esegui_mod_utente"):
-                        try:
-                            if azione_utente == "Elimina Utente":
-                                db.table("utenti").delete().eq("nome_fb", utente_target).execute()
-                                st.success(f"Utente {utente_target} rimosso.")
-                            else:
-                                nuovo_status = "TOP" if azione_utente == "Promuovi a TOP" else "STANDARD"
-                                db.table("utenti").update({"status": nuovo_status}).eq("nome_fb", utente_target).execute()
-                                st.success(f"Utente {utente_target} ora ha status {nuovo_status}.")
-                            st.rerun()
-                        except Exception as err:
-                            st.error(f"Errore: {err}")
-
+                    # Aggiorna database automaticamente
+                    db.table("configurazione").update({"valore": nuova_stagione_str}).eq("chiave", "stagione_corrente").execute()
+                    db.table("configurazione").update({"valore": "TEST"}).eq("chiave", "fase_corrente").execute()
+                    st.success(f"Stagione passata con successo a {nuova_stagione_str} in modalità TEST!")
+                    st.rerun()
+                except Exception as ex_st:
+                    st.error(f"Errore durante il cambio stagione: {ex_st}")
+            
         st.divider()
         st.subheader("Inserisci Nuova Partita")
         try:
@@ -925,37 +894,81 @@ elif tab_admin is not None:
                     st.rerun()
                     
         st.divider()
-        st.subheader("✍️ Gestione Albo d'Oro (Admin)")
-        try:
-            res_albo_admin = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
-            if res_albo_admin.data:
-                df_albo_admin = pd.DataFrame(res_albo_admin.data)
-                edited_df = st.data_editor(
-                    df_albo_admin, 
-                    num_rows="dynamic", 
-                    use_container_width=True, 
-                    key="editor_albo_admin"
-                )
-                if st.button("Salva Modifiche Albo d'Oro", key="btn_salva_albo"):
-                    try:
-                        records = edited_df.to_dict(orient="records")
-                        for r in records:
-                            row_id = r.get("id")
-                            data_to_save = {
-                                "stagione": r.get("stagione"),
-                                "vincitore_premio_cugurra": r.get("vincitore_premio_cugurra"),
-                                "premio_masters_of_cugurras": r.get("premio_masters_of_cugurras"),
-                                "premio_bomber_di_razza": r.get("premio_bomber_di_razza")
-                            }
-                            if pd.notna(row_id) and row_id:
-                                db.table("albo_doros").update(data_to_save).eq("id", int(row_id)).execute()
+        
+        # --- SEZIONE UTENTI (Sposta in fondo, in un expander) ---
+        with st.expander("👥 Gestione Utenti & Status (Espandi)", expanded=False):
+            st.info("ℹ️ **Privilegi Utenti TOP:** Non dovranno più iscriversi nelle stagioni successive.")
+            try:
+                utenti_db = db.table("utenti").select("*").execute().data
+            except:
+                utenti_db = []
+                
+            if utenti_db:
+                df_utenti = pd.DataFrame(utenti_db)
+                cols_to_show = [c for c in ['nome_fb', 'email', 'status', 'is_admin'] if c in df_utenti.columns]
+                st.dataframe(df_utenti[cols_to_show], use_container_width=True)
+                
+                utenti_non_admin = [u['nome_fb'] for u in utenti_db if not u.get('is_admin', False)]
+                if utenti_non_admin:
+                    utente_target = st.selectbox("Seleziona Utente da gestire", utenti_non_admin)
+                    
+                    col_u1, col_u2, col_u3 = st.columns(3)
+                    azione_utente = "Promuovi a TOP"
+                    with col_u1:
+                        if st.button("Promuovi TOP", key="btn_promuovi"):
+                            azione_utente = "Promuovi a TOP"
+                    with col_u2:
+                        if st.button("Retrocedi STANDARD", key="btn_retrocedi"):
+                            azione_utente = "Retrocedi a STANDARD"
+                    with col_u3:
+                        if st.button("Elimina", key="btn_elimina_utente"):
+                            azione_utente = "Elimina Utente"
+                    
+                    st.write(f"Azione selezionata: **{azione_utente}** per l'utente **{utente_target}**")
+                    if st.button("Esegui Modifica Utente", key="btn_esegui_mod_utente"):
+                        try:
+                            if azione_utente == "Elimina Utente":
+                                db.table("utenti").delete().eq("nome_fb", utente_target).execute()
+                                st.success(f"Utente {utente_target} rimosso.")
                             else:
-                                db.table("albo_doros").insert(data_to_save).execute()
-                        st.success("Albo d'Oro aggiornato con successo!")
-                        st.rerun()
-                    except Exception as ex_albo:
-                        st.error(f"Errore durante l'aggiornamento: {ex_albo}")
-        except:
-            st.info("Impossibile caricare l'albo d'oro per la gestione.")
+                                nuovo_status = "TOP" if azione_utente == "Promuovi a TOP" else "STANDARD"
+                                db.table("utenti").update({"status": nuovo_status}).eq("nome_fb", utente_target).execute()
+                                st.success(f"Utente {utente_target} ora ha status {nuovo_status}.")
+                            st.rerun()
+                        except Exception as err:
+                            st.error(f"Errore: {err}")
+
+        st.divider()
+
+        # --- SEZIONE ALBO D'ORO ADMIN (Ultima opzione, in un expander) ---
+        with st.expander("📜 Gestione Albo d'Oro (Espandi)", expanded=False):
+            try:
+                res_albo_admin = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
+                if res_albo_admin.data:
+                    df_albo_admin = pd.DataFrame(res_albo_admin.data)
+                    edited_df = st.data_editor(
+                        df_albo_admin, num_rows="dynamic", use_container_width=True, key="editor_albo_admin"
+                    )
+                    if st.button("Salva Modifiche Albo d'Oro", key="btn_salva_albo"):
+                        try:
+                            records = edited_df.to_dict(orient="records")
+                            for r in records:
+                                row_id = r.get("id")
+                                data_to_save = {
+                                    "stagione": r.get("stagione"),
+                                    "vincitore_premio_cugurra": r.get("vincitore_premio_cugurra"),
+                                    "premio_masters_of_cugurras": r.get("premio_masters_of_cugurras"),
+                                    "premio_bomber_di_razza": r.get("premio_bomber_di_razza")
+                                }
+                                if pd.notna(row_id) and row_id:
+                                    db.table("albo_doros").update(data_to_save).eq("id", int(row_id)).execute()
+                                else:
+                                    db.table("albo_doros").insert(data_to_save).execute()
+                            st.success("Albo d'Oro aggiornato con successo!")
+                            st.rerun()
+                        except Exception as ex_albo:
+                            st.error(f"Errore durante l'aggiornamento: {ex_albo}")
+            except:
+                st.info("Impossibile caricare l'albo d'oro per la gestione.")
 
 mostra_footer()

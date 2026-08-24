@@ -19,7 +19,7 @@ def init_supabase():
 
 db = init_supabase()
 
-# --- CSS & JAVASCRIPT CORRETTIVO PER MOBILE E COLORI CUSTOM ---
+# --- CSS & JAVASCRIPT CORRETTIVO PER MOBILE E PULSANTI COLORATI ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -57,11 +57,33 @@ st.markdown(f"""
         background-color: #1e293b !important;
     }}
 
-    /* Input Gol Tabellone (Molto grandi) */
+    /* --- TABELLONE ORIZZONTALE FORZATO (ANCHE SU MOBILE) --- */
+    .scoreboard-container {{
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        gap: 10px !important;
+        margin-bottom: 10px !important;
+    }}
+    
+    .scoreboard-column {{
+        flex: 1 !important;
+        text-align: center !important;
+        max-width: 45% !important;
+    }}
+
+    .scoreboard-middle {{
+        flex: 0.3 !important;
+        text-align: center !important;
+    }}
+
+    /* Input Gol Tabellone (Molto grandi ma responsive) */
     .big-score-input input {{
-        font-size: 2.8rem !important;
+        font-size: 2.5rem !important;
         font-weight: bold !important;
-        height: 80px !important;
+        height: 75px !important;
         text-align: center !important;
         color: #fbbf24 !important;
         background-color: #0f172a !important;
@@ -74,8 +96,8 @@ st.markdown(f"""
         background-color: rgba(30, 41, 59, 0.85) !important;
         border: 1px solid #334155 !important;
         border-radius: 12px !important;
-        padding: 15px !important;
-        margin-bottom: 10px !important;
+        padding: 10px !important;
+        margin-bottom: 5px !important;
     }}
 
     /* --- STILE RADIO BUTTON ORIZZONTALE (MENU PRINCIPALE A PILLOLE) --- */
@@ -110,7 +132,7 @@ st.markdown(f"""
         display: none;
     }}
 
-    /* --- PULSANTI GENERALI COERENTI E MOBILE-FRIENDLY --- */
+    /* --- GESTIONE FORZATA COLORI PULSANTI STREAMLIT --- */
     div.stButton > button {{
         width: 100% !important;
         min-height: 48px !important;
@@ -118,37 +140,49 @@ st.markdown(f"""
         font-size: 16px !important;
         border-radius: 10px !important;
         padding: 0.75rem !important;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         transition: all 0.2s ease-in-out;
     }}
-    
-    /* Variazioni Colore Pulsanti Specifici */
+
+    /* Pulsante Rosso (Accedi / Cancella) */
     .btn-red button {{
         background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
         color: #ffffff !important;
         border: 1px solid #f87171 !important;
     }}
-    .btn-red button p {{ color: #ffffff !important; }}
-
-    .btn-blue button {{
-        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
-        color: #fbbf24 !important;
-        border: 1px solid #38bdf8 !important;
+    .btn-red button:hover {{
+        background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%) !important;
+        border-color: #fca5a5 !important;
     }}
-    .btn-blue button p {{ color: #fbbf24 !important; }}
+    .btn-red button p, .btn-red button span {{ color: #ffffff !important; }}
 
+    /* Pulsante Blu (Registrati / Invia Pronostico) */
+    .btn-blue button {{
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid #60a5fa !important;
+    }}
+    .btn-blue button:hover {{
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+        border-color: #93c5fd !important;
+    }}
+    .btn-blue button p, .btn-blue button span {{ color: #ffffff !important; }}
+
+    /* Pulsante Verde (Conferme / Ajò a giocare) */
     .btn-green button {{
         background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
         color: #ffffff !important;
         border: 1px solid #4ade80 !important;
     }}
-    .btn-green button p {{ color: #ffffff !important; }}
+    .btn-green button:hover {{
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+        border-color: #86efac !important;
+    }}
+    .btn-green button p, .btn-green button span {{ color: #ffffff !important; }}
 
     /* Ottimizzazioni Smartphone */
     @media (max-width: 768px) {{
-        .prediction-box {{ padding: 10px !important; }}
-        .big-score-input input {{ font-size: 2.2rem !important; height: 65px !important; }}
-        div.stButton {{ margin-bottom: 8px !important; }}
+        .big-score-input input {{ font-size: 1.8rem !important; height: 55px !important; }}
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -221,11 +255,9 @@ stagione_attuale = get_stagione()
 
 # --- LOGIN / REGISTRAZIONE ---
 if not st.session_state["autenticato"]:
-    # Header richiesti centrati
     st.markdown("<h1 style='text-align: center; color: #38bdf8; margin-bottom: 0px;'>⚽️ PREMIO CUGURRA ⚽️</h1>", unsafe_allow_html=True)
     st.markdown(f"<h3 style='text-align: center; color: #fbbf24; margin-top: 5px; margin-bottom: 25px;'>Stagione {stagione_attuale} - {fase_attuale}</h3>", unsafe_allow_html=True)
     
-    # Pulsanti Accedi e Registrati affiancati, colorati (Rosso e Blu)
     col_scelta1, col_scelta2 = st.columns(2)
     with col_scelta1:
         st.markdown('<div class="btn-red">', unsafe_allow_html=True)
@@ -341,9 +373,11 @@ if not st.session_state["autenticato"]:
 # --- BARRA LATERALE ---
 st.sidebar.markdown(f"👤 Utente: **{st.session_state.get('utente_corrente')}**")
 st.sidebar.markdown(f"⭐ Status: **{st.session_state.get('status')}**")
+st.sidebar.markdown('<div class="btn-red">', unsafe_allow_html=True)
 if st.sidebar.button("Logout", key="sidebar_logout_btn"):
     st.session_state.clear()
     st.rerun()
+st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 # --- INTERFACCIA PRINCIPALE ---
 st.title(f"⚽ Premio Cugurra {stagione_attuale} ({fase_attuale})")
@@ -395,7 +429,7 @@ if is_pronostici:
 
             st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2}, {nome_competizione} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
             
-            # Countdown con correzione "Mancano all'inizio"
+            # Countdown
             countdown_html = f"""
             <div style="background-color: #090d16; border: 2px solid #38bdf8; border-radius: 12px; padding: 12px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);">
                 <style>
@@ -438,25 +472,29 @@ if is_pronostici:
             """
             components.html(countdown_html, height=100)
             
-            # --- NUOVA DISPOSIZIONE TABELLONE ---
-            # 1. Logo della competizione centrato
+            # --- TABELLONE FORZATO ORIZZONTALE ---
             url_comp = get_url_competizione(nome_competizione)
+            url_s1 = get_url_scudetto(squadra_1)
+            url_s2 = get_url_scudetto(squadra_2)
+
             st.markdown(f"""
-                <div style="display: flex; justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: center; align-items: center; margin-top: 15px; margin-bottom: 5px;">
                     <img src="{url_comp}" width="48" style="display: block;">
                 </div>
             """, unsafe_allow_html=True)
-            
-            # 2. Scudetti affiancati e centrati
-            col_s1, col_mid, col_s2 = st.columns([2, 0.4, 2])
-            with col_s1:
-                st.markdown(f"<div style='text-align: center;'><img src='{get_url_scudetto(squadra_1)}' width='70'></div>", unsafe_allow_html=True)
-            with col_mid:
-                st.write("")
-            with col_s2:
-                st.markdown(f"<div style='text-align: center;'><img src='{get_url_scudetto(squadra_2)}' width='70'></div>", unsafe_allow_html=True)
 
-            # 3. Selettori gol stile tabellone (grandi) subito sotto gli scudetti
+            st.markdown(f"""
+                <div class="scoreboard-container">
+                    <div class="scoreboard-column">
+                        <img src="{url_s1}" width="65" style="display: block; margin: 0 auto;">
+                    </div>
+                    <div class="scoreboard-middle"></div>
+                    <div class="scoreboard-column">
+                        <img src="{url_s2}" width="65" style="display: block; margin: 0 auto;">
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
             col_i1, col_imid, col_i2 = st.columns([2, 0.4, 2])
             with col_i1:
                 st.markdown('<div class="prediction-box"><div class="big-score-input">', unsafe_allow_html=True)
@@ -469,14 +507,17 @@ if is_pronostici:
                 gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=0, key=f"gs2_{partita['id']}", label_visibility="collapsed")
                 st.markdown('</div></div>', unsafe_allow_html=True)
 
-            # 4. Nomi delle squadre sotto i selettori
-            col_n1, col_nmid, col_n2 = st.columns([2, 0.4, 2])
-            with col_n1:
-                st.markdown(f"<div style='text-align: center; margin-bottom: 15px;'><b style='font-size: 1rem; color: #38bdf8;'>{squadra_1}</b></div>", unsafe_allow_html=True)
-            with col_nmid:
-                st.write("")
-            with col_n2:
-                st.markdown(f"<div style='text-align: center; margin-bottom: 15px;'><b style='font-size: 1rem; color: #38bdf8;'>{squadra_2}</b></div>", unsafe_allow_html=True)
+            st.markdown(f"""
+                <div class="scoreboard-container" style="margin-bottom: 20px;">
+                    <div class="scoreboard-column">
+                        <b style="font-size: 1rem; color: #38bdf8;">{squadra_1}</b>
+                    </div>
+                    <div class="scoreboard-middle"></div>
+                    <div class="scoreboard-column">
+                        <b style="font-size: 1rem; color: #38bdf8;">{squadra_2}</b>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
 
             is_goleada_1 = gol_s1 > 9
             is_goleada_2 = gol_s2 > 9
@@ -636,11 +677,14 @@ elif tab_admin is not None:
         st.markdown(f"Stagione corrente attiva: **{stagione_attuale}**")
         col_st1, col_st2 = st.columns(2)
         with col_st1:
+            st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
             if st.button("Aggiorna Fase Globale", key="btn_aggiorna_fase"):
                 db.table("configurazione").update({"valore": fase_scelta}).eq("chiave", "fase_corrente").execute()
                 st.success("Fase aggiornata!")
                 st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
         with col_st2:
+            st.markdown('<div class="btn-red">', unsafe_allow_html=True)
             if st.button("🚀 Passa a Nuova Stagione (+1 anno & Test)", key="btn_nuova_stagione"):
                 try:
                     parti_anno = stagione_attuale.split("/")
@@ -657,6 +701,7 @@ elif tab_admin is not None:
                     st.rerun()
                 except Exception as ex_st:
                     st.error(f"Errore durante il cambio stagione: {ex_st}")
+            st.markdown('</div>', unsafe_allow_html=True)
             
         st.divider()
         st.subheader("Inserisci Nuova Partita")
@@ -675,7 +720,11 @@ elif tab_admin is not None:
             rosa_cag_input = st.text_area("Convocati Cagliari", "")
             rosa_avv_input = st.text_area("Convocati Avversaria", "")
             
-            if st.form_submit_button("Crea Partita nel Database"):
+            st.markdown('<div class="btn-green">', unsafe_allow_html=True)
+            submitted_partita = st.form_submit_button("Crea Partita nel Database")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            if submitted_partita:
                 if not avv:
                     st.error("Inserisci la squadra avversaria.")
                 else:
@@ -748,7 +797,11 @@ elif tab_admin is not None:
                     st.session_state.gol_omologazione[k_a1] = st.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a1)
                 esp_uff_2 = st.multiselect(f"Espulsi {s2_omo}", options=rosa_t2, key="eu_2")
 
-            if st.button("Conferma e Omologa Partita", key="btn_conferma_omologa"):
+            st.markdown('<div class="btn-green">', unsafe_allow_html=True)
+            btn_omologa = st.button("Conferma e Omologa Partita", key="btn_conferma_omologa")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            if btn_omologa:
                 if is_cag_left_omo:
                     res_cag, res_avv = gol_uff_s1, gol_uff_s2
                     m_cag, m_avv = marc_uff_1, marc_uff_2
@@ -876,9 +929,13 @@ elif tab_admin is not None:
 
                 col_mod1, col_mod2 = st.columns(2)
                 with col_mod1:
+                    st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
                     submit_mod = st.form_submit_button("Salva Modifiche")
+                    st.markdown('</div>', unsafe_allow_html=True)
                 with col_mod2:
+                    st.markdown('<div class="btn-red">', unsafe_allow_html=True)
                     submit_del = st.form_submit_button("Elimina Partita")
+                    st.markdown('</div>', unsafe_allow_html=True)
 
                 if submit_mod:
                     ora_str = f"{m_ora:02d}:{m_min:02d}:00"
@@ -901,7 +958,7 @@ elif tab_admin is not None:
                     
         st.divider()
         
-        # --- SEZIONE UTENTI (In fondo, in un expander) ---
+        # --- SEZIONE UTENTI ---
         with st.expander("👥 Gestione Utenti & Status (Espandi)", expanded=False):
             st.info("ℹ️ **Privilegi Utenti TOP:** Non dovranno più iscriversi nelle stagioni successive.")
             try:
@@ -921,17 +978,27 @@ elif tab_admin is not None:
                     col_u1, col_u2, col_u3 = st.columns(3)
                     azione_utente = "Promuovi a TOP"
                     with col_u1:
+                        st.markdown('<div class="btn-green">', unsafe_allow_html=True)
                         if st.button("Promuovi TOP", key="btn_promuovi"):
                             azione_utente = "Promuovi a TOP"
+                        st.markdown('</div>', unsafe_allow_html=True)
                     with col_u2:
+                        st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
                         if st.button("Retrocedi STANDARD", key="btn_retrocedi"):
                             azione_utente = "Retrocedi a STANDARD"
+                        st.markdown('</div>', unsafe_allow_html=True)
                     with col_u3:
+                        st.markdown('<div class="btn-red">', unsafe_allow_html=True)
                         if st.button("Elimina", key="btn_elimina_utente"):
                             azione_utente = "Elimina Utente"
+                        st.markdown('</div>', unsafe_allow_html=True)
                     
                     st.write(f"Azione selezionata: **{azione_utente}** per l'utente **{utente_target}**")
-                    if st.button("Esegui Modifica Utente", key="btn_esegui_mod_utente"):
+                    st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
+                    btn_esegui_utente = st.button("Esegui Modifica Utente", key="btn_esegui_mod_utente")
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                    if btn_esegui_utente:
                         try:
                             if azione_utente == "Elimina Utente":
                                 db.table("utenti").delete().eq("nome_fb", utente_target).execute()
@@ -946,7 +1013,7 @@ elif tab_admin is not None:
 
         st.divider()
 
-        # --- SEZIONE ALBO D'ORO ADMIN (Ultima opzione, in un expander) ---
+        # --- SEZIONE ALBO D'ORO ADMIN ---
         with st.expander("📜 Gestione Albo d'Oro (Espandi)", expanded=False):
             try:
                 res_albo_admin = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
@@ -955,7 +1022,11 @@ elif tab_admin is not None:
                     edited_df = st.data_editor(
                         df_albo_admin, num_rows="dynamic", use_container_width=True, key="editor_albo_admin"
                     )
-                    if st.button("Salva Modifiche Albo d'Oro", key="btn_salva_albo"):
+                    st.markdown('<div class="btn-green">', unsafe_allow_html=True)
+                    btn_salva_albo = st.button("Salva Modifiche Albo d'Oro", key="btn_salva_albo")
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                    if btn_salva_albo:
                         try:
                             records = edited_df.to_dict(orient="records")
                             for r in records:

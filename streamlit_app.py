@@ -1,6 +1,7 @@
+import streamlit as str_module
 import streamlit as st
 import pandas as pd
-from supabase import create_client
+from supabase import create_client, Client
 from datetime import datetime, timezone
 import streamlit.components.v1 as components
 
@@ -77,18 +78,6 @@ st.markdown(f"""
     div[data-baseweb="select"] * {{
         color: #f8fafc !important;
         background-color: #1e293b !important;
-    }}
-
-    /* Selettore Gol: Box bianco ridotto con numeri grandi in Amaranto */
-    .big-score-input input {{
-        font-size: 2rem !important;
-        font-weight: bold !important;
-        height: 45px !important;
-        text-align: center !important;
-        color: #881337 !important;
-        background-color: #ffffff !important;
-        border: 2px solid #38bdf8 !important;
-        border-radius: 8px !important;
     }}
 
     /* --- PERSONALIZZAZIONE PULSANTI D'AZIONE --- */
@@ -376,7 +365,14 @@ if is_pronostici:
             squadra_2 = partita['avversario'] if is_cagliari_left else "CAGLIARI"
             nome_competizione = partita.get('competizione', 'Serie A')
 
-            st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2}, {nome_competizione} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
+            # Intestazione partita centrata su tre righe, con squadra e competizione in giallo
+            st.markdown(f"""
+                <div style="text-align: center; line-height: 1.6; margin-bottom: 20px;">
+                    Prossima partita:<br>
+                    <span style="color: #fbbf24; font-weight: bold; font-size: 1.2rem;">{squadra_1} vs {squadra_2}, {nome_competizione}</span><br>
+                    {dt_partita.strftime('%d/%m/%Y ore %H:%M')}
+                </div>
+            """, unsafe_allow_html=True)
             
             # Countdown
             countdown_html = f"""
@@ -577,31 +573,41 @@ elif is_classifiche:
         except:
             st.info("Albo d'oro non disponibile.")
 
-# 3. REGOLAMENTO
+# 3. REGOLAMENTO (Senza numeri nei titoli e allineato a sinistra)
 elif is_regolamento:
     st.markdown("""
-## 📜 Punteggi e Regolamento del Premio Cugurra
+        <div class="regolamento-container">
+            <h2>📜 Punteggi e Regolamento del Premio Cugurra</h2>
+            
+            <h3>Limite per le iscrizioni stagionali:</h3>
+            <ul>
+                <li>Le iscrizioni alla stagione in corso rimangono aperte fino al giorno <b>02 febbraio</b> (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.</li>
+            </ul>
 
-### 1) Limite Iscrizioni Stagionali:
-* Le iscrizioni alla stagione in corso rimangono aperte fino al giorno **02 febbraio** (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.
+            <h3>Punteggi assegnati nella Classifica Generale:</h3>
+            <ul>
+                <li><b>15 Punti:</b> Risultato e marcatori esatti di tutte e due le squadre.</li>
+                <li><b>12 Punti:</b> Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.</li>
+                <li><b>10 Punti:</b> Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.</li>
+                <li><b>8 Punti:</b> Indovini lo 0-0, OPPURE solo la goleada di una squadra.</li>
+                <li><b>5 Punti:</b> Indovini l'esito (1, X, 2).</li>
+                <li><b>3 Punti:</b> Tutti i marcatori del Cagliari indovinati.</li>
+                <li><b>0 Punti:</b> Non indovini nulla.</li>
+                <li><b>Bonus Espulsioni:</b> +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).</li>
+            </ul>
 
-### 2) Punteggi Classifica Generale:
-* **15 Punti:** Risultato e marcatori esatti di tutte e due le squadre.
-* **12 Punti:** Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.
-* **10 Punti:** Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.
-* **8 Punti:** Indovini lo 0-0, OPPURE solo la goleada di una squadra.
-* **5 Punti:** Indovini l'esito (1, X, 2).
-* **3 Punti:** Tutti i marcatori del Cagliari indovinati.
-* **0 Punti:** Non indovini nulla.
-* **Bonus Espulsioni:** +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).
+            <h3>Classifica Masters of Cugurras:</h3>
+            <ul>
+                <li>Classifica dedicata a chi colleziona i pronostici da 10 punti.</li>
+            </ul>
 
-### 3) Masters of Cugurras:
-* Classifica dedicata a chi colleziona i pronostici da 10 punti.
-
-### 4) Bomber di razza:
-* 1 punto per ogni marcatore del Cagliari indovinato.
-* Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.
-    """)
+            <h3>Classifica Bomber di razza:</h3>
+            <ul>
+                <li>1 punto per ogni marcatore del Cagliari indovinato.</li>
+                <li>Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.</li>
+            </ul>
+        </div>
+    """, unsafe_allow_html=True)
 
 # 4. ADMIN
 elif tab_admin is not None:

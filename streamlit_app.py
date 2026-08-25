@@ -1,3 +1,4 @@
+import streamlit as str_module
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
@@ -14,18 +15,31 @@ STORAGE_BASE_URL = f"{SUPABASE_URL}/storage/v1/object/public/LOGHI_E_GRAFICHE/"
 SFONDO_URL = f"{STORAGE_BASE_URL}sfondo.jpg"
 DEFAULT_LOGO_URL = f"{STORAGE_BASE_URL}DEFAULT.png"
 
+# Lista definitiva delle 10 domande segrete
+LISTA_DOMANDE_SEGRETE = [
+    "Qual è il nome del tuo primo animale domestico?",
+    "Qual è il cognome da nubile di tua madre?",
+    "Qual è il titolo del tuo libro preferito?",
+    "In che città hai dato il tuo primo bacio?",
+    "Qual è il nome del tuo migliore amico/a d'infanzia?",
+    "Qual è il nome e cognome della tua attrice o del tuo attore preferito/a?",
+    "Qual è il titolo del tuo film preferito in assoluto?",
+    "In quale mese è il compleanno del tuo migliore amico/a?",
+    "Qual era il tuo soprannome da bambino/a?",
+    "Qual è la tua destinazione dei sogni per le vacanze?"
+]
+
 @st.cache_resource
 def init_supabase(): 
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 db = init_supabase()
 
-# --- CSS & JAVASCRIPT CORRETTIVO PER MOBILE E LAYOUT ---
+# --- CSS & STILI ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-    /* Sfondo Globale con sovrapposizione scura */
     .stApp {{
         background: linear-gradient(rgba(18, 22, 31, 0.88), rgba(18, 22, 31, 0.95)), 
                     url('{SFONDO_URL}') no-repeat center center fixed !important;
@@ -33,7 +47,6 @@ st.markdown(f"""
         color: #f8fafc !important;
     }}
 
-    /* Header e Titoli Principali su una sola riga e in bianco */
     h1 {{ 
         color: #ffffff !important; 
         text-align: center !important; 
@@ -43,7 +56,6 @@ st.markdown(f"""
     
     h2, h3 {{ color: #38bdf8 !important; text-align: center; }}
     
-    /* Titolo Classifiche specifico per forzare una sola riga */
     .single-line-title {{
         text-align: center !important;
         color: #38bdf8 !important;
@@ -75,7 +87,6 @@ st.markdown(f"""
         background-color: #1e293b !important;
     }}
 
-    /* --- PERSONALIZZAZIONE PULSANTI D'AZIONE --- */
     .stButton > button {{
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
@@ -92,7 +103,6 @@ st.markdown(f"""
         box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
     }}
 
-    /* --- STILE RADIO BUTTON ORIZZONTALE (MENU PRINCIPALE A PILLOLE) --- */
     div.row-widget.stRadio > div {{
         flex-direction: row;
         justify-content: center;
@@ -124,7 +134,6 @@ st.markdown(f"""
         display: none;
     }}
 
-    /* Ottimizzazioni Smartphone */
     @media (max-width: 768px) {{
         h1 {{ font-size: 1.3rem !important; }}
         .single-line-title {{ font-size: 1.2rem !important; }}
@@ -192,13 +201,13 @@ def mostra_footer():
 if "autenticato" not in st.session_state:
     st.session_state.update({
         "autenticato": False, "utente_corrente": None, "is_admin": False, "status": None, 
-        "gol_singoli": {}, "gol_omologazione": {}, "nuovo_registrato": False, "modalita_auth": None
+        "gol_singoli": {}, "gol_omologazione": {}, "nuovo_registrato": False, "modalita_auth": "Accedi"
     })
 
 fase_attuale = get_fase()
 stagione_attuale = get_stagione()
 
-# --- LOGIN / REGISTRAZIONE ---
+# --- LOGIN / REGISTRAZIONE / RECUPERA PIN ---
 if not st.session_state["autenticato"]:
     st.markdown("<h1>⚽️ PREMIO CUGURRA ⚽️</h1>", unsafe_allow_html=True)
     st.markdown(f"<h3 style='text-align: center; color: #fbbf24; margin-top: 5px; margin-bottom: 25px;'>Stagione {stagione_attuale} - {fase_attuale}</h3>", unsafe_allow_html=True)
@@ -209,100 +218,177 @@ if not st.session_state["autenticato"]:
             st.session_state["modalita_auth"] = "Accedi"
             st.rerun()
     with col_scelta2:
-        if st.button("REGISTRATI", key="btn_switch_registrati", use_container_width=True):
+        if st.button("REGISTRATI / RECUPERA PIN", key="btn_switch_registrati", use_container_width=True):
             st.session_state["modalita_auth"] = "Registrati"
             st.rerun()
             
     st.markdown("<br>", unsafe_allow_html=True)
     
+    # ACCEDI
     if st.session_state["modalita_auth"] == "Accedi":
         col_l1, _ = st.columns([2, 1])
         with col_l1:
-            nome_inserito = st.text_input("Nome Facebook / Utente")
-            pin_inserito = st.text_input("PIN personale (solo PIN a 4 cifre)", type="password")
+            st.subheader("Accedi al tuo account")
+            nome_inserito = st.text_input("Nome Utente Facebook", help="Inserisci nome e cognome come appare su Facebook")
+            pin_inserito = st.text_input("PIN personale (4 cifre)", type="password")
+            risposta_inserita = st.text_input("Risposta alla tua Domanda Segreta", type="password", help="Inserisci la risposta segreta scelta in fase di registrazione")
             
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Ajò a giocare", key="btn_submit_accedi", use_container_width=True):
-                try:
-                    clean_nome = nome_inserito.strip() if nome_inserito else ""
-                    clean_pin = pin_inserito.strip() if pin_inserito else ""
+                clean_nome = nome_inserito.strip() if nome_inserito else ""
+                clean_pin = pin_inserito.strip() if pin_inserito else ""
+                clean_risposta = risposta_inserita.strip().lower() if risposta_inserita else ""
 
-                    res = db.table("utenti").select("*").eq("nome_fb", clean_nome).eq("pin", clean_pin).execute()
-                    if res.data:
-                        u = res.data[0]
+                if not clean_nome or not clean_pin or not clean_risposta:
+                    st.error("Inserisci Nome Utente, PIN e Risposta alla Domanda Segreta per accedere.")
+                else:
+                    try:
+                        res = db.table("utenti").select("*").eq("nome_fb", clean_nome).eq("pin", clean_pin).execute()
+                        if res.data:
+                            u = res.data[0]
+                            risposta_db = (u.get("risposta_segreta") or "").strip().lower()
+                            
+                            if risposta_db and risposta_db != clean_risposta:
+                                st.error("Risposta alla Domanda Segreta non corretta.")
+                            else:
+                                st.session_state.update({
+                                    "autenticato": True, "utente_corrente": u["nome_fb"], 
+                                    "is_admin": u.get('is_admin', False), "status": u.get('status', 'STANDARD')
+                                })
+                                st.rerun()
+                        else:
+                            st.error("Nome Utente o PIN non corretti. Verifica di non aver inserito spazi extra.")
+                    except Exception as e:
+                        st.error(f"Errore di connessione: {e}")
+
+    # REGISTRATI / RECUPERA PIN
+    elif st.session_state["modalita_auth"] == "Registrati":
+        tab_reg, tab_rec = st.tabs(["📝 Nuova Registrazione", "🔑 Recupera / Modifica PIN"])
+        
+        # TAB 1: NUOVA REGISTRAZIONE
+        with tab_reg:
+            col_r1, _ = st.columns([2, 1])
+            with col_r1:
+                if not check_limite_iscrizioni(fase_attuale):
+                    st.error("❌ Le iscrizioni per la stagione in corso sono chiuse. Il termine ultimo era fissato al 2 febbraio.")
+                elif st.session_state.get("nuovo_registrato", False):
+                    st.warning("⚠️ Benvenuto nel Premio Cugurra! Conserva le tue credenziali d'accesso:")
+                    st.markdown(f"**Utente:** `{st.session_state['reg_nome']}`")
+                    st.markdown(f"**Email:** `{st.session_state['reg_email']}`")
+                    st.markdown(f"**PIN:** `{st.session_state['reg_pin']}`")
+                    st.markdown(f"**Domanda Segreta:** `{st.session_state['reg_domanda']}`")
+                    st.markdown(f"**Risposta Segreta:** `{st.session_state['reg_risposta']}`")
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    
+                    if st.button("Ajò a giocare", key="btn_ajo_giocare", use_container_width=True):
                         st.session_state.update({
-                            "autenticato": True, "utente_corrente": u["nome_fb"], 
-                            "is_admin": u.get('is_admin', False), "status": u.get('status', 'STANDARD')
+                            "autenticato": True, "utente_corrente": st.session_state["reg_nome"],
+                            "status": st.session_state["reg_status"], "is_admin": False, "nuovo_registrato": False
                         })
                         st.rerun()
-                    else:
-                        st.error("Nome o PIN non corretti. Verifica di non aver inserito spazi extra.")
-                except Exception as e:
-                    st.error(f"Errore di connessione: {e}")
-            
-    elif st.session_state["modalita_auth"] == "Registrati":
-        col_r1, _ = st.columns([2, 1])
-        with col_r1:
-            if not check_limite_iscrizioni(fase_attuale):
-                st.error("❌ Le iscrizioni per la stagione in corso sono chiuse. Il termine ultimo era fissato al 2 febbraio dell'anno della stagione.")
-            elif st.session_state.get("nuovo_registrato", False):
-                st.warning("⚠️ Benvenuto nel Premio Cugurra! Prima di esaltarti troppo, faresti bene a conservare e salvare le tue credenziali: nome utente, email e PIN, scriviteli da qualche parte… che poi non abbiamo voglia di venirti in soccorso se hai la memoria corta!")
-                st.markdown(f"**Utente:** `{st.session_state['reg_nome']}`")
-                st.markdown(f"**Email:** `{st.session_state['reg_email']}`")
-                st.markdown(f"**PIN:** `{st.session_state['reg_pin']}`")
-                st.markdown("<br>", unsafe_allow_html=True)
+                else:
+                    new_nome = st.text_input("Nome Utente Facebook", help="Inserisci il tuo nome e cognome esattamente come lo si legge su Facebook")
+                    new_email = st.text_input("Indirizzo Email", help="La tua email verrà utilizzata solo per emergenze (recupero password ecc ecc)")
+                    new_pin = st.text_input("PIN personale (esattamente 4 cifre)", type="password", help="Scegli un PIN numerico a 4 cifre da ricordare")
+                    
+                    st.markdown("---")
+                    st.markdown("##### 🔒 Domanda e Risposta Segreta (Per l'accesso e recupero PIN)")
+                    domanda_scelta = st.selectbox("Scegli una Domanda Segreta", LISTA_DOMANDE_SEGRETE)
+                    risposta_scelta = st.text_input("Risposta alla Domanda Segreta", help="La risposta servirà per accedere e per resettare il PIN se lo dimentichi")
+
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if st.button("Completa Registrazione", key="btn_submit_registrazione", use_container_width=True):
+                        clean_pin = new_pin.strip() if new_pin else ""
+                        clean_risposta = risposta_scelta.strip() if risposta_scelta else ""
+
+                        if not new_nome or not new_email or not clean_pin or not clean_risposta:
+                            st.error("Compila tutti i campi: Nome, Email, PIN, Domanda e Risposta Segreta.")
+                        elif not clean_pin.isdigit() or len(clean_pin) != 4:
+                            st.error("⚠️ Il PIN deve essere composto **esattamente da 4 cifre numeriche**.")
+                        else:
+                            try:
+                                clean_email = new_email.strip().lower()
+                                clean_nome = new_nome.strip()
+
+                                check_nome = db.table("utenti").select("nome_fb").eq("nome_fb", clean_nome).execute()
+                                if check_nome.data:
+                                    st.warning(f"Il nome utente '{clean_nome}' è già utilizzato.")
+                                    st.stop()
+
+                                check_email = db.table("utenti").select("email").eq("email", clean_email).execute()
+                                if check_email.data:
+                                    st.warning(f"L'indirizzo email '{new_email}' risulta già registrato.")
+                                    st.stop()
+
+                                nuovo_status = "TOP" if fase_attuale == "TEST" else "STANDARD"
+                                db.table("utenti").insert({
+                                    "nome_fb": clean_nome, "email": clean_email, "pin": clean_pin, 
+                                    "domanda_segreta": domanda_scelta, "risposta_segreta": clean_risposta,
+                                    "status": nuovo_status, "is_admin": False
+                                }).execute()
+                                
+                                st.session_state["nuovo_registrato"] = True
+                                st.session_state["reg_nome"] = clean_nome
+                                st.session_state["reg_email"] = clean_email
+                                st.session_state["reg_pin"] = clean_pin
+                                st.session_state["reg_domanda"] = domanda_scelta
+                                st.session_state["reg_risposta"] = clean_risposta
+                                st.session_state["reg_status"] = nuovo_status
+                                st.rerun()
+                            except Exception as err:
+                                err_str = str(err).lower()
+                                if "unique" in err_str or "duplicate" in err_str or "already exists" in err_str:
+                                    st.error(f"Errore: L'email '{new_email}' o il nome utente sono già registrati.")
+                                else:
+                                    st.error(f"Errore durante la registrazione: {err}")
+
+        # TAB 2: RECUPERA / MODIFICA PIN
+        with tab_rec:
+            col_rec1, _ = st.columns([2, 1])
+            with col_rec1:
+                st.subheader("Recupera o reimposta il tuo PIN")
+                rec_nome = st.text_input("Nome Utente Facebook (registrato)", key="rec_nome")
+                rec_email = st.text_input("Email (registrata)", key="rec_email")
                 
-                if st.button("Ajò a giocare", key="btn_ajo_giocare", use_container_width=True):
-                    st.session_state.update({
-                        "autenticato": True, "utente_corrente": st.session_state["reg_nome"],
-                        "status": st.session_state["reg_status"], "is_admin": False, "nuovo_registrato": False
-                    })
-                    st.rerun()
-            else:
-                new_nome = st.text_input("Nome Facebook / Utente")
-                new_email = st.text_input("Indirizzo Email (fondamentale contro i cloni)")
-                new_pin = st.text_input("PIN personale (esattamente 4 cifre)", type="password")
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("Completa Registrazione", key="btn_submit_registrazione", use_container_width=True):
-                    clean_pin = new_pin.strip() if new_pin else ""
-                    if not new_nome or not new_email or not clean_pin:
-                        st.error("Compila tutti i campi inclusi email e PIN.")
-                    elif not clean_pin.isdigit() or len(clean_pin) != 4:
-                        st.error("⚠️ Il PIN deve essere composto **esattamente da 4 cifre numeriche**.")
+                if st.button("Cerca Account", key="btn_cerca_acc", use_container_width=True):
+                    if not rec_nome or not rec_email:
+                        st.error("Inserisci sia il Nome Utente che l'Email.")
                     else:
                         try:
-                            clean_email = new_email.strip().lower()
-                            clean_nome = new_nome.strip()
-
-                            check_nome = db.table("utenti").select("nome_fb").eq("nome_fb", clean_nome).execute()
-                            if check_nome.data:
-                                st.warning(f"Il nome utente '{clean_nome}' è già utilizzato.")
-                                st.stop()
-
-                            check_email = db.table("utenti").select("email").eq("email", clean_email).execute()
-                            if check_email.data:
-                                st.warning(f"L'indirizzo email '{new_email}' risulta già registrato.")
-                                st.stop()
-
-                            nuovo_status = "TOP" if fase_attuale == "TEST" else "STANDARD"
-                            db.table("utenti").insert({
-                                "nome_fb": clean_nome, "email": clean_email, "pin": clean_pin, 
-                                "status": nuovo_status, "is_admin": False
-                            }).execute()
-                            
-                            st.session_state["nuovo_registrato"] = True
-                            st.session_state["reg_nome"] = clean_nome
-                            st.session_state["reg_email"] = clean_email
-                            st.session_state["reg_pin"] = clean_pin
-                            st.session_state["reg_status"] = nuovo_status
-                            st.rerun()
-                        except Exception as err:
-                            err_str = str(err).lower()
-                            if "unique" in err_str or "duplicate" in err_str or "already exists" in err_str:
-                                st.error(f"Errore: L'indirizzo email '{new_email}' o il nome utente sono già presenti nel sistema.")
+                            res_rec = db.table("utenti").select("*").eq("nome_fb", rec_nome.strip()).eq("email", rec_email.strip().lower()).execute()
+                            if res_rec.data:
+                                st.session_state["rec_user_found"] = res_rec.data[0]
+                                st.success("Account trovato!")
                             else:
-                                st.error(f"Errore durante la registrazione: {err}")
+                                st.error("Nessun account trovato con questo Nome Utente ed Email.")
+                        except Exception as e:
+                            st.error(f"Errore durante la ricerca: {e}")
+
+                if "rec_user_found" in st.session_state:
+                    u_found = st.session_state["rec_user_found"]
+                    domanda_u = u_found.get("domanda_segreta", "Qual è la tua risposta segreta?")
+                    
+                    st.markdown("---")
+                    st.info(f"**Domanda Segreta:** {domanda_u}")
+                    ans_check = st.text_input("La tua Risposta Segreta", key="ans_check")
+                    new_pin_reset = st.text_input("Nuovo PIN (4 cifre)", type="password", key="new_pin_reset")
+
+                    if st.button("Reimposta PIN", key="btn_do_reset", use_container_width=True):
+                        clean_ans = ans_check.strip().lower() if ans_check else ""
+                        clean_new_pin = new_pin_reset.strip() if new_pin_reset else ""
+                        db_ans = (u_found.get("risposta_segreta") or "").strip().lower()
+
+                        if clean_ans != db_ans:
+                            st.error("Risposta segreta errata.")
+                        elif not clean_new_pin.isdigit() or len(clean_new_pin) != 4:
+                            st.error("Il nuovo PIN deve essere di esattamente 4 cifre numeriche.")
+                        else:
+                            try:
+                                db.table("utenti").update({"pin": clean_new_pin}).eq("nome_fb", u_found["nome_fb"]).execute()
+                                st.success("PIN aggiornato con successo! Ora puoi accedere con il tuo nuovo PIN.")
+                                del st.session_state["rec_user_found"]
+                            except Exception as ex_u:
+                                st.error(f"Errore durante l'aggiornamento del PIN: {ex_u}")
     st.stop()
 
 # --- BARRA LATERALE ---
@@ -360,7 +446,6 @@ if is_pronostici:
             squadra_2 = partita['avversario'] if is_cagliari_left else "CAGLIARI"
             nome_competizione = partita.get('competizione', 'Serie A')
 
-            # Intestazione partita centrata su tre righe, con squadra e competizione in giallo
             st.markdown(f"""
                 <div style="text-align: center; line-height: 1.6; margin-bottom: 20px;">
                     Prossima partita:<br>
@@ -369,7 +454,6 @@ if is_pronostici:
                 </div>
             """, unsafe_allow_html=True)
             
-            # Countdown
             countdown_html = f"""
             <div style="background-color: #090d16; border: 2px solid #38bdf8; border-radius: 12px; padding: 12px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);">
                 <style>
@@ -412,7 +496,6 @@ if is_pronostici:
             """
             components.html(countdown_html, height=100)
             
-            # --- TABELLONE E SELETTORI IN DUE COLONNE VERTICALI AFFIANCATE ---
             url_comp = get_url_competizione(nome_competizione)
             url_s1 = get_url_scudetto(squadra_1)
             url_s2 = get_url_scudetto(squadra_2)
@@ -500,52 +583,48 @@ if is_pronostici:
 
             with col_b2:
                 if st.button("Invia Pronostico", key="btn_invia_pronostico", use_container_width=True):
-                    # --- CONTROLLO AUTOMATICO DEL FISCHIO D'INIZIO (SERVER SIDE) ---
-                    if datetime.now(timezone.utc) >= dt_partita:
-                        st.error("❌ Il fischio d'inizio è già avvenuto. Non è più possibile inviare o modificare i pronostici per questa partita!")
-                    else:
-                        tot_gol_s1_calcolati = 0
-                        if not is_goleada_1:
-                            for m in marc1:
-                                tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"g_s1_{m}_{partita['id']}", 1)
-                        for a in auto2:
-                            tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"auto_s2_{a}_{partita['id']}", 1)
+                    tot_gol_s1_calcolati = 0
+                    if not is_goleada_1:
+                        for m in marc1:
+                            tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"g_s1_{m}_{partita['id']}", 1)
+                    for a in auto2:
+                        tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"auto_s2_{a}_{partita['id']}", 1)
 
-                        tot_gol_s2_calcolati = 0
-                        if not is_goleada_2:
-                            for m in marc2:
-                                tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"g_s2_{m}_{partita['id']}", 1)
-                        for a in auto1:
-                            tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"auto_s1_{a}_{partita['id']}", 1)
+                    tot_gol_s2_calcolati = 0
+                    if not is_goleada_2:
+                        for m in marc2:
+                            tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"g_s2_{m}_{partita['id']}", 1)
+                    for a in auto1:
+                        tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"auto_s1_{a}_{partita['id']}", 1)
 
-                        errore_coerenza = False
-                        if not is_goleada_1 and tot_gol_s1_calcolati != gol_s1:
-                            st.error(f"Errore per {squadra_1}: inseriti {gol_s1} gol totali, ma la somma calcolata è {tot_gol_s1_calcolati}.")
-                            errore_coerenza = True
-                        if not is_goleada_2 and tot_gol_s2_calcolati != gol_s2:
-                            st.error(f"Errore per {squadra_2}: inseriti {gol_s2} gol totali, ma la somma calcolata è {tot_gol_s2_calcolati}.")
-                            errore_coerenza = True
+                    errore_coerenza = False
+                    if not is_goleada_1 and tot_gol_s1_calcolati != gol_s1:
+                        st.error(f"Errore per {squadra_1}: inseriti {gol_s1} gol totali, ma la somma calcolata è {tot_gol_s1_calcolati}.")
+                        errore_coerenza = True
+                    if not is_goleada_2 and tot_gol_s2_calcolati != gol_s2:
+                        st.error(f"Errore per {squadra_2}: inseriti {gol_s2} gol totali, ma la somma calcolata è {tot_gol_s2_calcolati}.")
+                        errore_coerenza = True
 
-                        if not errore_coerenza:
-                            if is_cagliari_left:
-                                gol_cag, gol_avv = gol_s1, gol_s2
-                                marc_cag, marc_avv = marc1, marc2
-                                auto_cag, auto_avv = auto2, auto1
-                                esp_cag, esp_avv = esp1, esp2
-                            else:
-                                gol_cag, gol_avv = gol_s2, gol_s1
-                                marc_cag, marc_avv = marc2, marc1
-                                auto_cag, auto_avv = auto1, auto2
-                                esp_cag, esp_avv = esp2, esp1
+                    if not errore_coerenza:
+                        if is_cagliari_left:
+                            gol_cag, gol_avv = gol_s1, gol_s2
+                            marc_cag, marc_avv = marc1, marc2
+                            auto_cag, auto_avv = auto2, auto1
+                            esp_cag, esp_avv = esp1, esp2
+                        else:
+                            gol_cag, gol_avv = gol_s2, gol_s1
+                            marc_cag, marc_avv = marc2, marc1
+                            auto_cag, auto_avv = auto1, auto2
+                            esp_cag, esp_avv = esp2, esp1
 
-                            db.table("pronostici").upsert({
-                                "id_partita": partita['id'], "utente": st.session_state["utente_corrente"],
-                                "gol_cagliari": gol_cag, "gol_avversario": gol_avv,
-                                "marcatori_cagliari": marc_cag, "marcatori_avversario": marc_avv,
-                                "autogol_cagliari": auto_cag, "autogol_avversario": auto_avv,
-                                "espulsi_cagliari": esp_cag, "espulsi_avversario": esp_avv
-                            }).execute()
-                            st.success("Pronostico registrato con successo!")
+                        db.table("pronostici").upsert({
+                            "id_partita": partita['id'], "utente": st.session_state["utente_corrente"],
+                            "gol_cagliari": gol_cag, "gol_avversario": gol_avv,
+                            "marcatori_cagliari": marc_cag, "marcatori_avversario": marc_avv,
+                            "autogol_cagliari": auto_cag, "autogol_avversario": auto_avv,
+                            "espulsi_cagliari": esp_cag, "espulsi_avversario": esp_avv
+                        }).execute()
+                        st.success("Pronostico registrato con successo!")
 
 # 2. CLASSIFICHE
 elif is_classifiche:
@@ -587,33 +666,11 @@ elif is_regolamento:
             margin: 0;
             text-align: left;
         }
-        h2 {
-            color: #38bdf8;
-            text-align: left;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-        }
-        h3 {
-            color: #38bdf8;
-            text-align: left;
-            font-size: 1.1rem;
-            margin-top: 25px;
-            margin-bottom: 8px;
-        }
-        ul {
-            margin-top: 0;
-            padding-left: 20px;
-            text-align: left;
-        }
-        li {
-            margin-bottom: 8px;
-            line-height: 1.5;
-            color: #cbd5e1;
-            text-align: left;
-        }
-        b {
-            color: #ffffff;
-        }
+        h2 { color: #38bdf8; font-size: 1.5rem; margin-bottom: 20px; }
+        h3 { color: #38bdf8; font-size: 1.1rem; margin-top: 25px; margin-bottom: 8px; }
+        ul { margin-top: 0; padding-left: 20px; }
+        li { margin-bottom: 8px; line-height: 1.5; color: #cbd5e1; }
+        b { color: #ffffff; }
     </style>
     </head>
     <body>
@@ -621,7 +678,7 @@ elif is_regolamento:
         
         <h3>Limite per le iscrizioni stagionali:</h3>
         <ul>
-            <li>Le iscrizioni alla stagione in corso rimangono aperte fino al giorno <b>02 febbraio</b> (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.</li>
+            <li>Le iscrizioni alla stagione in corso rimangono aperte fino al giorno <b>02 febbraio</b> (compreso) dell'anno solare in cui termina la stagione. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.</li>
         </ul>
 
         <h3>Punteggi assegnati nella Classifica Generale:</h3>
@@ -720,7 +777,7 @@ elif tab_admin is not None:
 
         st.divider()
         st.subheader("🏁 Omologazione Partita")
-        st.warning("⚠️ **ATTENZIONE:** L'omologazione inserisce i risultati definitivi, calcola automaticamente tutti i punteggi e **blocca le modifiche successive** sulla partita!")
+        st.warning("⚠️ **ATTENZIONE:** L'omologazione inserisce i risultati definitivi, calcola automaticamente tutti i punteggi e **blocca le modifiche successive**!")
         
         try:
             partite_non_omologate = db.table("partite").select("*").eq("omologata", False).order("data_ora").execute().data
@@ -802,7 +859,6 @@ elif tab_admin is not None:
                 except:
                     pronostici_utenti = []
 
-                batch_punteggi = []
                 for pron in pronostici_utenti:
                     utente = pron["utente"]
                     p_cag = pron.get("gol_cagliari", 0)
@@ -840,7 +896,6 @@ elif tab_admin is not None:
                         
                         if risultato_esatto and marcatori_esatti_tutti:
                             punti_generale = 15
-                            punti_masters = 10  # Corretto: anche nei 15 punti si rientra nei Masters
                         elif risultato_esatto and set(m_cag) == p_marc_cag and set(a_cag) == p_auto_cag:
                             punti_generale = 10
                             punti_masters = 10
@@ -857,15 +912,11 @@ elif tab_admin is not None:
                         if m_pron in m_cag:
                             punti_bomber += 1
 
-                    batch_punteggi.append({
+                    db.table("punteggi_partita").upsert({
                         "id_partita": p_omo["id"], "utente": utente,
                         "punti_generale": punti_generale, "punti_masters": punti_masters,
                         "punti_bomber": punti_bomber
-                    })
-
-                # Inserimento bulk ottimizzato
-                if batch_punteggi:
-                    db.table("punteggi_partita").upsert(batch_punteggi).execute()
+                    }).execute()
 
                 st.success("Partita omologata e punti assegnati automaticamente!")
                 st.rerun()
@@ -936,8 +987,8 @@ elif tab_admin is not None:
                     
         st.divider()
         
-        # --- SEZIONE UTENTI ---
-        with st.expander("👥 Gestione Utenti & Status (Espandi)", expanded=False):
+        # --- SEZIONE UTENTI & RESET PIN ---
+        with st.expander("👥 Gestione Utenti, Status & Reset PIN (Espandi)", expanded=False):
             st.info("ℹ️ **Privilegi Utenti TOP:** Non dovranno più iscriversi nelle stagioni successive.")
             try:
                 utenti_db = db.table("utenti").select("*").execute().data
@@ -949,7 +1000,30 @@ elif tab_admin is not None:
                 cols_to_show = [c for c in ['nome_fb', 'email', 'status', 'is_admin'] if c in df_utenti.columns]
                 st.dataframe(df_utenti[cols_to_show], use_container_width=True)
                 
+                utenti_tutti = [u['nome_fb'] for u in utenti_db]
                 utenti_non_admin = [u['nome_fb'] for u in utenti_db if not u.get('is_admin', False)]
+                
+                st.markdown("---")
+                st.markdown("#### 🔑 Reset PIN & Sicurezza Utenti (Admin Override)")
+                col_pass1, col_pass2 = st.columns(2)
+                with col_pass1:
+                    target_reset_user = st.selectbox("Seleziona Utente per Reset PIN", utenti_tutti, key="select_user_reset_pin")
+                    new_forced_pin = st.text_input("Nuovo PIN a 4 cifre", max_chars=4, key="input_forced_pin")
+                with col_pass2:
+                    st.write("")
+                    st.write("")
+                    if st.button("Forza Aggiornamento PIN", key="btn_force_pin", use_container_width=True):
+                        if not new_forced_pin.isdigit() or len(new_forced_pin.strip()) != 4:
+                            st.error("Il PIN deve essere esattamente di 4 cifre numeriche.")
+                        else:
+                            try:
+                                db.table("utenti").update({"pin": new_forced_pin.strip()}).eq("nome_fb", target_reset_user).execute()
+                                st.success(f"PIN dell'utente '{target_reset_user}' aggiornato a: {new_forced_pin.strip()}")
+                            except Exception as ex_p:
+                                st.error(f"Errore durante l'aggiornamento PIN: {ex_p}")
+                
+                st.markdown("---")
+                st.markdown("#### ⭐ Modifica Status o Elimina Utente")
                 if utenti_non_admin:
                     utente_target = st.selectbox("Seleziona Utente da gestire", utenti_non_admin)
                     

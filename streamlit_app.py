@@ -96,22 +96,33 @@ st.markdown(f"""
         max-width: 45% !important;
     }}
 
-    /* Container Unificato per il Selettore dei Gol (Etichetta + Box) */
+    /* Griglia fissa per forzare l'affiancamento dei due selettori gol */
+    .goal-selectors-grid {{
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 12px !important;
+        width: 100% !important;
+        margin: 10px 0 !important;
+    }}
+
     .goal-selector-box {{
         background-color: rgba(30, 41, 59, 0.85) !important;
         border: 1px solid #334155 !important;
         border-radius: 12px !important;
-        padding: 10px !important;
-        margin: 0 auto !important;
-        max-width: 180px !important;
+        padding: 8px !important;
+        width: 140px !important;
         text-align: center !important;
+        flex-shrink: 0 !important;
     }}
 
+    /* Etichetta alleggerita: più piccola e senza grassetto */
     .goal-label {{
-        font-size: 0.9rem !important;
-        color: #38bdf8 !important;
-        font-weight: bold !important;
-        margin-bottom: 6px !important;
+        font-size: 0.75rem !important;
+        color: #94a3b8 !important;
+        font-weight: normal !important;
+        margin-bottom: 4px !important;
         white-space: nowrap !important;
     }}
 
@@ -119,7 +130,7 @@ st.markdown(f"""
     .big-score-input input {{
         font-size: 2rem !important;
         font-weight: bold !important;
-        height: 50px !important;
+        height: 45px !important;
         text-align: center !important;
         color: #881337 !important;
         background-color: #ffffff !important;
@@ -176,11 +187,12 @@ st.markdown(f"""
         display: none;
     }}
 
-    /* Ottimizzazioni Smartphone per evitare a capo sui titoli */
+    /* Ottimizzazioni Smartphone */
     @media (max-width: 768px) {{
         h1 {{ font-size: 1.3rem !important; }}
         .single-line-title {{ font-size: 1.2rem !important; }}
-        .big-score-input input {{ font-size: 1.6rem !important; height: 45px !important; }}
+        .goal-selector-box {{ width: 120px !important; }}
+        .big-score-input input {{ font-size: 1.6rem !important; height: 40px !important; }}
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -415,7 +427,7 @@ if is_pronostici:
 
             st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2}, {nome_competizione} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
             
-            # Countdown con nuova dicitura
+            # Countdown
             countdown_html = f"""
             <div style="background-color: #090d16; border: 2px solid #38bdf8; border-radius: 12px; padding: 12px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);">
                 <style>
@@ -469,7 +481,6 @@ if is_pronostici:
                 </div>
             """, unsafe_allow_html=True)
 
-            # Riga Scudetti
             st.markdown(f"""
                 <div class="scoreboard-container">
                     <div class="scoreboard-column">
@@ -481,30 +492,29 @@ if is_pronostici:
                 </div>
             """, unsafe_allow_html=True)
 
-            # --- SELETTORI GOL AFFIANCATI E COMPATTI (ETICHETTA + BOX UNIFICATI) ---
+            # --- SELETTORI GOL AFFIANCATI E COMPATTI CON GRIGLIA FORZATA ---
             col_id_1 = f"gs1_{partita['id']}"
             col_id_2 = f"gs2_{partita['id']}"
             
             if col_id_1 not in st.session_state: st.session_state[col_id_1] = 0
             if col_id_2 not in st.session_state: st.session_state[col_id_2] = 0
 
-            col_i1, col_i2 = st.columns(2)
-            
-            with col_i1:
-                st.markdown(f"""
+            st.markdown(f"""
+                <div class="goal-selectors-grid">
                     <div class="goal-selector-box">
                         <div class="goal-label">Gol {squadra_1}</div>
-                """, unsafe_allow_html=True)
-                gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=st.session_state[col_id_1], key=col_id_1, label_visibility="collapsed")
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-            with col_i2:
-                st.markdown(f"""
+                    </div>
                     <div class="goal-selector-box">
                         <div class="goal-label">Gol {squadra_2}</div>
-                """, unsafe_allow_html=True)
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
+            col_i1, col_i2 = st.columns(2)
+            with col_i1:
+                gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=st.session_state[col_id_1], key=col_id_1, label_visibility="collapsed")
+            with col_i2:
                 gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=st.session_state[col_id_2], key=col_id_2, label_visibility="collapsed")
-                st.markdown('</div>', unsafe_allow_html=True)
 
             is_goleada_1 = gol_s1 > 9
             is_goleada_2 = gol_s2 > 9
@@ -625,7 +635,7 @@ elif is_classifiche:
         except:
             st.info("Albo d'oro non disponibile.")
 
-# 3. REGOLAMENTO (Allineato a sinistra)
+# 3. REGOLAMENTO (Corretto markdown)
 elif is_regolamento:
     st.markdown("""
     <div class="regolamento-container">
@@ -633,7 +643,7 @@ elif is_regolamento:
         
         <h3>1) Limite Iscrizioni Stagionali:</h3>
         <ul>
-            <li>Le iscrizioni alla stagione in corso rimangono aperte fino al giorno 02 febbraio (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio). Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.</li>
+            <li>Le iscrizioni alla stagione in corso rimangono aperte fino al giorno 02 febbraio (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.</li>
         </ul>
 
         <h3>2) Punteggi Classifica Generale:</h3>

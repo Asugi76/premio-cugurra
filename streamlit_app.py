@@ -101,19 +101,28 @@ st.markdown(f"""
         text-align: center !important;
     }}
 
-    /* Forzatura layout colonne selettori gol anche su mobile via flex container custom */
-    .custom-flex-row {{
-        display: flex !important;
-        flex-direction: row !important;
-        gap: 10px !important;
+    /* --- TABELLA HTML FLUIDA AL 50% PER BLINDARE L'AFFIANCAMENTO DEI SELETTORI GOL --- */
+    .table-selettori {{
         width: 100% !important;
-        align-items: center !important;
-        justify-content: space-between !important;
+        border-collapse: separate !important;
+        border-spacing: 10px 0px !important;
+        margin-bottom: 15px !important;
+    }}
+    .table-selettori td {{
+        width: 50% !important;
+        vertical-align: top !important;
+        padding: 0 !important;
     }}
 
-    .custom-flex-col {{
-        flex: 1 !important;
-        min-width: 0 !important;
+    /* Etichette sopra i selettori gol */
+    .label-gol {{
+        font-size: 0.85rem !important;
+        color: #38bdf8 !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        margin-bottom: 4px !important;
+        display: block !important;
+        text-align: center !important;
     }}
 
     /* Selettori Gol: Bianchi con numeri in Amaranto/Scuro e grandi */
@@ -135,6 +144,27 @@ st.markdown(f"""
         border-radius: 12px !important;
         padding: 8px !important;
         margin-bottom: 5px !important;
+    }}
+
+    /* --- RESTYLING PULSANTI DI CONVALIDA VERDI E BRILLANTI --- */
+    .stButton > button {{
+        width: 100% !important;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100% !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 1.05rem !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 12px !important;
+        border: 1px solid #34d399 !important;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+        transition: all 0.2s ease-in-out !important;
+    }}
+
+    .stButton > button:hover {{
+        background: linear-gradient(135deg, #059669 0%, #047857 100% !important;
+        border-color: #6ee7b7 !important;
+        box-shadow: 0 6px 18px rgba(52, 211, 153, 0.5) !important;
+        transform: translateY(-1px);
     }}
 
     /* --- STILE RADIO BUTTON ORIZZONTALE (MENU PRINCIPALE A PILLOLE) --- */
@@ -408,7 +438,7 @@ if is_pronostici:
 
             st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2}, {nome_competizione} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
             
-            # Countdown con nuova dicitura
+            # Countdown con dicitura
             countdown_html = f"""
             <div style="background-color: #090d16; border: 2px solid #38bdf8; border-radius: 12px; padding: 12px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);">
                 <style>
@@ -451,7 +481,7 @@ if is_pronostici:
             """
             components.html(countdown_html, height=100)
             
-            # --- TABELLONE CON SCUDETTI, ETICHETTE E SELETTORI ALLINEATI E FORZATI AFFIANCATI ---
+            # --- TABELLONE CON SCUDETTI ---
             url_comp = get_url_competizione(nome_competizione)
             url_s1 = get_url_scudetto(squadra_1)
             url_s2 = get_url_scudetto(squadra_2)
@@ -475,39 +505,38 @@ if is_pronostici:
                 </div>
             """, unsafe_allow_html=True)
 
-            # Riga Etichette (Gol Squadra 1 e Gol Squadra 2) sotto gli scudetti
-            st.markdown(f"""
-                <div class="scoreboard-container" style="margin-bottom: 5px;">
-                    <div class="scoreboard-column">
-                        <b style="font-size: 0.95rem; color: #38bdf8;">Gol {squadra_1}</b>
-                    </div>
-                    <div class="scoreboard-middle"></div>
-                    <div class="scoreboard-column">
-                        <b style="font-size: 0.95rem; color: #38bdf8;">Gol {squadra_2}</b>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-
-            # Riga Selettori Gol tramite blocco HTML Flex rigido per garantirne l'affiancamento perfetto su mobile
+            # --- SELETTORI GOL AFFIANCATI TRAMITE TABELLA HTML FLUIDA (50% - 50%) ---
             col_id_1 = f"gs1_{partita['id']}"
             col_id_2 = f"gs2_{partita['id']}"
             
             if col_id_1 not in st.session_state: st.session_state[col_id_1] = 0
             if col_id_2 not in st.session_state: st.session_state[col_id_2] = 0
 
-            st.markdown('<div class="custom-flex-row">', unsafe_allow_html=True)
-            
-            col_f1, col_f2 = st.columns(2)
-            with col_f1:
-                st.markdown('<div class="prediction-box"><div class="big-score-input">', unsafe_allow_html=True)
+            st.markdown(f"""
+                <table class="table-selettori">
+                    <tr>
+                        <td>
+                            <div class="prediction-box">
+                                <span class="label-gol">Gol {squadra_1}</span>
+                                <div class="big-score-input" id="input_s1_wrapper"></div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="prediction-box">
+                                <span class="label-gol">Gol {squadra_2}</span>
+                                <div class="big-score-input" id="input_s2_wrapper"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            """, unsafe_allow_html=True)
+
+            # Rendering effettivo dei due number_input inseriti nelle due colonne Streamlit affiancate
+            col_in1, col_in2 = st.columns(2)
+            with col_in1:
                 gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=st.session_state[col_id_1], key=col_id_1, label_visibility="collapsed")
-                st.markdown('</div></div>', unsafe_allow_html=True)
-            with col_f2:
-                st.markdown('<div class="prediction-box"><div class="big-score-input">', unsafe_allow_html=True)
+            with col_in2:
                 gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=st.session_state[col_id_2], key=col_id_2, label_visibility="collapsed")
-                st.markdown('</div></div>', unsafe_allow_html=True)
-                
-            st.markdown('</div>', unsafe_allow_html=True)
 
             is_goleada_1 = gol_s1 > 9
             is_goleada_2 = gol_s2 > 9

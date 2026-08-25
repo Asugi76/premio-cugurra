@@ -1,7 +1,6 @@
-import streamlit as str_module
 import streamlit as st
 import pandas as pd
-from supabase import create_client, Client
+from supabase import create_client
 from datetime import datetime, timezone
 import streamlit.components.v1 as components
 
@@ -445,19 +444,19 @@ if is_pronostici:
                 st.markdown(f"""
                     <div style="text-align: center; margin-bottom: 5px;">
                         <img src="{url_s1}" width="60" style="display: block; margin: 0 auto 8px auto;">
-                        <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Gol {squadra_1}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Inserisci gol {squadra_1}</div>
                     </div>
                 """, unsafe_allow_html=True)
-                gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=st.session_state[col_id_1], key=col_id_1, label_visibility="collapsed")
+                gol_s1 = st.number_input(f"Inserisci gol {squadra_1}", min_value=0, value=st.session_state[col_id_1], key=col_id_1, label_visibility="collapsed")
 
             with col_squadra_2:
                 st.markdown(f"""
                     <div style="text-align: center; margin-bottom: 5px;">
                         <img src="{url_s2}" width="60" style="display: block; margin: 0 auto 8px auto;">
-                        <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Gol {squadra_2}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Inserisci gol {squadra_2}</div>
                     </div>
                 """, unsafe_allow_html=True)
-                gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=st.session_state[col_id_2], key=col_id_2, label_visibility="collapsed")
+                gol_s2 = st.number_input(f"Inserisci gol {squadra_2}", min_value=0, value=st.session_state[col_id_2], key=col_id_2, label_visibility="collapsed")
 
             is_goleada_1 = gol_s1 > 9
             is_goleada_2 = gol_s2 > 9
@@ -578,41 +577,31 @@ elif is_classifiche:
         except:
             st.info("Albo d'oro non disponibile.")
 
-# 3. REGOLAMENTO (Allineato rigorosamente a sinistra via classe CSS)
+# 3. REGOLAMENTO
 elif is_regolamento:
     st.markdown("""
-        <div class="regolamento-container">
-            <h2>📜 Punteggi e Regolamento del Premio Cugurra</h2>
-            
-            <h3>1) Limite Iscrizioni Stagionali:</h3>
-            <ul>
-                <li>Le iscrizioni alla stagione in corso rimangono aperte fino al giorno <b>02 febbraio</b> (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.</li>
-            </ul>
+## 📜 Punteggi e Regolamento del Premio Cugurra
 
-            <h3>2) Punteggi Classifica Generale:</h3>
-            <ul>
-                <li><b>15 Punti:</b> Risultato e marcatori esatti di tutte e due le squadre.</li>
-                <li><b>12 Punti:</b> Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.</li>
-                <li><b>10 Punti:</b> Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.</li>
-                <li><b>8 Punti:</b> Indovini lo 0-0, OPPURE solo la goleada di una squadra.</li>
-                <li><b>5 Punti:</b> Indovini l'esito (1, X, 2).</li>
-                <li><b>3 Punti:</b> Tutti i marcatori del Cagliari indovinati.</li>
-                <li><b>0 Punti:</b> Non indovini nulla.</li>
-                <li><b>Bonus Espulsioni:</b> +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).</li>
-            </ul>
+### 1) Limite Iscrizioni Stagionali:
+* Le iscrizioni alla stagione in corso rimangono aperte fino al giorno **02 febbraio** (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.
 
-            <h3>3) Masters of Cugurras:</h3>
-            <ul>
-                <li>Classifica dedicata a chi colleziona i pronostici da 10 punti.</li>
-            </ul>
+### 2) Punteggi Classifica Generale:
+* **15 Punti:** Risultato e marcatori esatti di tutte e due le squadre.
+* **12 Punti:** Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.
+* **10 Punti:** Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.
+* **8 Punti:** Indovini lo 0-0, OPPURE solo la goleada di una squadra.
+* **5 Punti:** Indovini l'esito (1, X, 2).
+* **3 Punti:** Tutti i marcatori del Cagliari indovinati.
+* **0 Punti:** Non indovini nulla.
+* **Bonus Espulsioni:** +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).
 
-            <h3>4) Bomber di razza:</h3>
-            <ul>
-                <li>1 punto per ogni marcatore del Cagliari indovinato.</li>
-                <li>Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.</li>
-            </ul>
-        </div>
-    """, unsafe_allow_html=True)
+### 3) Masters of Cugurras:
+* Classifica dedicata a chi colleziona i pronostici da 10 punti.
+
+### 4) Bomber di razza:
+* 1 punto per ogni marcatore del Cagliari indovinato.
+* Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.
+    """)
 
 # 4. ADMIN
 elif tab_admin is not None:

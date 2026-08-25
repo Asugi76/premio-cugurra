@@ -1,6 +1,6 @@
 import streamlit as st
 import datetime
-import pytz
+from zoneinfo import ZoneInfo
 import sqlite3
 import pandas as pd
 import numpy as np
@@ -235,9 +235,7 @@ def parse_lista_giocatori(stringa_input):
     """
     if not stringa_input:
         return []
-    # Uniforma i separatori sostituendo ';' con ','
     stringa_pulita = stringa_input.replace(";", ",")
-    # Splitta e pulisce mantenendo la distinzione dei doppi cognomi
     elementi = [m.strip() for m in stringa_pulita.split(",") if m.strip()]
     return elementi
 
@@ -534,9 +532,9 @@ elif scelta_menu == "🎯 Inserisci Pronostici":
 
             st.divider()
             if st.button("💾 Invia / Aggiorna Pronostico", use_container_width=True):
-                tz_roma = pytz.timezone("Europe/Rome")
+                tz_roma = ZoneInfo("Europe/Rome")
                 ora_attuale = datetime.datetime.now(tz_roma)
-                limite_dt = tz_roma.localize(datetime.datetime.strptime(limite_str, "%Y-%m-%d %H:%M:%S"))
+                limite_dt = datetime.datetime.strptime(limite_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz_roma)
 
                 if ora_attuale >= limite_dt:
                     st.error("⏰ Operazione fallita: Il termine ultimo per inviare il pronostico a questa partita è scaduto.")

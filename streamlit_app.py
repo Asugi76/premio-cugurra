@@ -4,6 +4,7 @@ import pandas as pd
 from supabase import create_client, Client
 from datetime import datetime, timezone
 import streamlit.components.v1 as components
+from collections import Counter
 
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Premio Cugurra", page_icon="⚽", layout="wide")
@@ -211,7 +212,8 @@ def mostra_footer():
 if "autenticato" not in st.session_state:
     st.session_state.update({
         "autenticato": False, "utente_corrente": None, "is_admin": False, "status": None, 
-        "gol_singoli": {}, "gol_omologazione": {}, "nuovo_registrato": False, "modalita_auth": "Accedi"
+        "gol_singoli": {}, "gol_omologazione": {}, "nuovo_registrato": False, "modalita_auth": "Accedi",
+        "in_modifica_pronostico": False
     })
 
 fase_attuale = get_fase()
@@ -442,6 +444,7 @@ if is_pronostici:
             partite_db = []
 
         now_utc = datetime.now(timezone.utc)
+        # Punto 4: L'utente vede solo la partita piu vicina non omologata
         partita = next((p for p in partite_db if datetime.fromisoformat(p['data_ora'].replace("Z", "+00:00")) > now_utc and not p.get('omologata', False)), None)
         
         if not partita:
@@ -449,6 +452,9 @@ if is_pronostici:
         else:
             dt_partita = datetime.fromisoformat(partita['data_ora'].replace("Z", "+00:00"))
             iso_timestamp = dt_partita.isoformat()
+            
+            # Punto 1: Verifica se il match è gia iniziato
+            match_iniziato = now_utc >= dt_partita
 
             campo_val = partita.get('campo') or partita.get('casa_trasferta') or 'Casa'
             is_cagliari_left = campo_val in ["Casa", "Campo Neutro"]
@@ -465,6 +471,25 @@ if is_pronostici:
             except:
                 pronostico_esistente = None
 
+            # Punto 3: Ricostruzione conteggi doppiette/gol multipli in session_state senza modificare il DB
+            if pronostico_esistente and not st.session_state.get(f"loaded_counts_{partita['id']}", False):
+                for key_pref, is_left in [("s1", is_cagliari_left), ("s2", not is_cagliari_left)]:
+                    key_m = "marcatori_cagliari" if is_left else "marcatori_avversario"
+                    key_a = "autogol_cagliari" if is_left else "autogol_avversario"
+                    
+                    m_list = pronostico_esistente.get(key_m, []) or []
+                    a_list = pronostico_esistente.get(key_a, []) or []
+                    
+                    c_m = Counter(m_list)
+                    for m_name, count in c_m.items():
+                        st.session_state.gol_singoli[f"g_{key_pref}_{m_name}_{partita['id']}"] = count
+                        
+                    c_a = Counter(a_list)
+                    for a_name, count in c_a.items():
+                        st.session_state.gol_singoli[f"auto_{key_pref}_{a_name}_{partita['id']}"] = count
+                        
+                st.session_state[f"loaded_counts_{partita['id']}"] = True
+
             st.markdown(f"""
                 <div style="text-align: center; line-height: 1.6; margin-bottom: 20px;">
                     Prossima partita:<br>
@@ -472,6 +497,61 @@ if is_pronostici:
                     {dt_partita.strftime('%d/%m/%Y ore %H:%M')}
                 </div>
             """, unsafe_allow_html=True)
+            
+            # Punto 1: Avviso Lock Pronostici dopo fischio d'inizio
+            if match_iniziato:
+                st.error("🔒 I pronostici per questa partita sono CHIUSI. Il match è già iniziato.")
+            
+            # Punto 2: Box Riepilogo "Il tuo pronostico" e gestione pulsante Modifica
+            if pronostico_esistente:
+                p_s1 = pronostico_esistente.get("gol_cagliari" if is_cagliari_left else "gol_avversario", 0)
+                p_s2 = pronostico_esistente.get("gol_avversario" if is_cagliari_left else "gol_cagliari", 0)
+                
+                m1_list = pronostico_esistente.get("marcatori_cagliari" if is_cagliari_left else "marcatori_avversario", []) or []
+                m2_list = pronostico_esistente.get("marcatori_avversario" if is_cagliari_left else "marcatori_cagliari", []) or []
+                
+                a1_list = pronostico_esistente.get("autogol_cagliari" if is_cagliari_left else "autogol_avversario", []) or []
+                a2_list = pronostico_esistente.get("autogol_avversario" if is_cagliari_left else "autogol_cagliari", []) or []
+                
+                e1_list = pronostico_esistente.get("espulsi_cagliari" if is_cagliari_left else "espulsi_avversario", []) or []
+                e2_list = pronostico_esistente.get("espulsi_avversario" if is_cagliari_left else "espulsi_cagliari", []) or []
+                
+                def fmt_dettagli(m_l, a_l):
+                    res = []
+                    if m_l:
+                        c_m = Counter(m_l)
+                        res.append("Marcatori: " + ", ".join([f"{k} ({v})" if v > 1 else k for k, v in c_m.items()]))
+                    if a_l:
+                        c_a = Counter(a_l)
+                        res.append("Autogol: " + ", ".join([f"{k} ({v})" if v > 1 else k for k, v in c_a.items()]))
+                    return " | ".join(res) if res else "Nessun marcatore/autogol"
+
+                det_s1 = fmt_dettagli(m1_list, a1_list)
+                det_s2 = fmt_dettagli(m2_list, a2_list)
+                det_esp1 = f"Espulsi: {', '.join(e1_list)}" if e1_list else "Nessun espulso"
+                det_esp2 = f"Espulsi: {', '.join(e2_list)}" if e2_list else "Nessun espulso"
+
+                st.success(f"""
+                📌 **IL TUO PRONOSTICO ATTUALE:**
+                * **Risultato:** {squadra_1} {p_s1} - {p_s2} {squadra_2}
+                * **{squadra_1}:** {det_s1} ({det_esp1})
+                * **{squadra_2}:** {det_s2} ({det_esp2})
+                """)
+
+                col_mod_btn1, _ = st.columns([2, 1])
+                with col_mod_btn1:
+                    if not match_iniziato:
+                        if not st.session_state.get("in_modifica_pronostico", False):
+                            if st.button("✏️ Modifica il tuo pronostico", key="btn_enable_edit", use_container_width=True):
+                                st.session_state["in_modifica_pronostico"] = True
+                                st.rerun()
+                        else:
+                            st.info("⚠️ Modalità modifica attiva. Apporta le modifiche qui sotto e clicca su 'Convalida Modifiche'.")
+            else:
+                st.session_state["in_modifica_pronostico"] = True
+
+            # I campi di input si abilitano solo se il match non è iniziato e si è in modalità inserimento/modifica
+            can_edit = (not match_iniziato) and st.session_state.get("in_modifica_pronostico", False)
             
             countdown_html = f"""
             <div style="background-color: #090d16; border: 2px solid #38bdf8; border-radius: 12px; padding: 12px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);">
@@ -545,7 +625,7 @@ if is_pronostici:
                         <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Inserisci gol {squadra_1}</div>
                     </div>
                 """, unsafe_allow_html=True)
-                gol_s1 = st.number_input(f"Inserisci gol {squadra_1}", min_value=0, value=st.session_state[col_id_1], key=col_id_1, label_visibility="collapsed")
+                gol_s1 = st.number_input(f"Inserisci gol {squadra_1}", min_value=0, value=st.session_state[col_id_1], key=col_id_1, label_visibility="collapsed", disabled=not can_edit)
 
             with col_squadra_2:
                 st.markdown(f"""
@@ -554,7 +634,7 @@ if is_pronostici:
                         <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Inserisci gol {squadra_2}</div>
                     </div>
                 """, unsafe_allow_html=True)
-                gol_s2 = st.number_input(f"Inserisci gol {squadra_2}", min_value=0, value=st.session_state[col_id_2], key=col_id_2, label_visibility="collapsed")
+                gol_s2 = st.number_input(f"Inserisci gol {squadra_2}", min_value=0, value=st.session_state[col_id_2], key=col_id_2, label_visibility="collapsed", disabled=not can_edit)
 
             is_goleada_1 = gol_s1 > 9
             is_goleada_2 = gol_s2 > 9
@@ -565,44 +645,50 @@ if is_pronostici:
             rosa_1 = rosa_cag if is_cagliari_left else rosa_avv
             rosa_2 = rosa_avv if is_cagliari_left else rosa_cag
 
-            def render_team_section(team_name, lista_rosa, lista_opp, is_goleada, key_pref):
+            def render_team_section(team_name, lista_rosa, lista_opp, is_goleada, key_pref, gol_team_totali):
                 st.markdown(f"### {team_name}")
+                marcatori = []
+                autogol = []
+                
+                # Punto 5: Se gol totali > 0 e non è goleada, mostra i selettori marcatori/autogol
                 if is_goleada:
                     st.info("Goleada attivata (>9 gol): marcatori disabilitati.")
-                    marcatori = []
+                elif gol_team_totali == 0:
+                    st.info("0 Gol inseriti: sezione marcatori ed autogol nascosta.")
                 else:
                     def_marc = []
                     if pronostico_esistente:
                         def_marc = pronostico_esistente.get("marcatori_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "marcatori_avversario", []) or []
-                    marcatori = st.multiselect(f"Marcatori {team_name}", options=lista_rosa, default=[m for m in def_marc if m in lista_rosa], key=f"m_{key_pref}_{partita['id']}")
+                    marcatori = st.multiselect(f"Marcatori {team_name}", options=lista_rosa, default=list(dict.fromkeys([m for m in def_marc if m in lista_rosa])), key=f"m_{key_pref}_{partita['id']}", disabled=not can_edit)
                     for m in marcatori:
                         k = f"g_{key_pref}_{m}_{partita['id']}"
-                        st.session_state.gol_singoli[k] = st.number_input(f"Gol di {m}", 1, 50, st.session_state.gol_singoli.get(k, 1), key=k)
+                        st.session_state.gol_singoli[k] = st.number_input(f"Gol di {m}", 1, 50, st.session_state.gol_singoli.get(k, 1), key=k, disabled=not can_edit)
 
-                def_auto = []
-                if pronostico_esistente:
-                    def_auto = pronostico_esistente.get("autogol_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "autogol_avversario", []) or []
-                autogol = st.multiselect(f"Autogol a favore ({team_name})", options=lista_opp, default=[a for a in def_auto if a in lista_opp], key=f"a_{key_pref}_{partita['id']}")
-                for a in autogol:
-                    k = f"auto_{key_pref}_{a}_{partita['id']}"
-                    st.session_state.gol_singoli[k] = st.number_input(f"Autogol di {a}", 1, 50, st.session_state.gol_singoli.get(k, 1), key=k)
+                    def_auto = []
+                    if pronostico_esistente:
+                        def_auto = pronostico_esistente.get("autogol_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "autogol_avversario", []) or []
+                    autogol = st.multiselect(f"Autogol a favore ({team_name})", options=lista_opp, default=list(dict.fromkeys([a for a in def_auto if a in lista_opp])), key=f"a_{key_pref}_{partita['id']}", disabled=not can_edit)
+                    for a in autogol:
+                        k = f"auto_{key_pref}_{a}_{partita['id']}"
+                        st.session_state.gol_singoli[k] = st.number_input(f"Autogol di {a}", 1, 50, st.session_state.gol_singoli.get(k, 1), key=k, disabled=not can_edit)
                 
+                # Gli espulsi rimangono sempre visibili (Punto 5)
                 def_esp = []
                 if pronostico_esistente:
                     def_esp = pronostico_esistente.get("espulsi_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "espulsi_avversario", []) or []
-                espulsi = st.multiselect(f"Espulsi ({team_name})", options=lista_rosa, default=[e for e in def_esp if e in lista_rosa], max_selections=3, key=f"e_{key_pref}_{partita['id']}")
+                espulsi = st.multiselect(f"Espulsi ({team_name})", options=lista_rosa, default=[e for e in def_esp if e in lista_rosa], max_selections=3, key=f"e_{key_pref}_{partita['id']}", disabled=not can_edit)
                 return marcatori, autogol, espulsi
 
             col_tab1, col_tab2 = st.columns(2)
-            with col_tab1: marc1, auto1, esp1 = render_team_section(squadra_1, rosa_1, rosa_2, is_goleada_1, "s1")
-            with col_tab2: marc2, auto2, esp2 = render_team_section(squadra_2, rosa_2, rosa_1, is_goleada_2, "s2")
+            with col_tab1: marc1, auto1, esp1 = render_team_section(squadra_1, rosa_1, rosa_2, is_goleada_1, "s1", gol_s1)
+            with col_tab2: marc2, auto2, esp2 = render_team_section(squadra_2, rosa_2, rosa_1, is_goleada_2, "s2", gol_s2)
 
             st.markdown("<br>", unsafe_allow_html=True)
             
             col_b1, col_b2 = st.columns(2)
             
             with col_b1:
-                if st.button("Cancella i dati inseriti", key="btn_cancella_dati", use_container_width=True):
+                if st.button("Cancella i dati inseriti", key="btn_cancella_dati", use_container_width=True, disabled=not can_edit):
                     st.session_state.gol_singoli.clear()
                     keys_to_clear = [
                         k for k in st.session_state.keys() 
@@ -614,8 +700,10 @@ if is_pronostici:
                     st.success("Dati cancellati!")
                     st.rerun()
 
+            btn_label = "Convalida Modifiche" if pronostico_esistente else "Invia Pronostico"
             with col_b2:
-                if st.button("Invia Pronostico", key="btn_invia_pronostico", use_container_width=True):
+                # Punto 1: Pulsante disabilitato se il match è già iniziato
+                if st.button(btn_label, key="btn_invia_pronostico", use_container_width=True, disabled=not can_edit):
                     tot_gol_s1_calcolati = 0
                     if not is_goleada_1:
                         for m in marc1:
@@ -639,19 +727,39 @@ if is_pronostici:
                         errore_coerenza = True
 
                     if not errore_coerenza:
+                        # Espansione marcatori/autogol per supportare doppiette nel DB (Punto 3)
+                        marc1_expanded = []
+                        for m in marc1:
+                            cnt = st.session_state.gol_singoli.get(f"g_s1_{m}_{partita['id']}", 1)
+                            marc1_expanded.extend([m] * cnt)
+
+                        auto1_expanded = []
+                        for a in auto1:
+                            cnt = st.session_state.gol_singoli.get(f"auto_s1_{a}_{partita['id']}", 1)
+                            auto1_expanded.extend([a] * cnt)
+
+                        marc2_expanded = []
+                        for m in marc2:
+                            cnt = st.session_state.gol_singoli.get(f"g_s2_{m}_{partita['id']}", 1)
+                            marc2_expanded.extend([m] * cnt)
+
+                        auto2_expanded = []
+                        for a in auto2:
+                            cnt = st.session_state.gol_singoli.get(f"auto_s2_{a}_{partita['id']}", 1)
+                            auto2_expanded.extend([a] * cnt)
+
                         if is_cagliari_left:
                             gol_cag, gol_avv = gol_s1, gol_s2
-                            marc_cag, marc_avv = marc1, marc2
-                            auto_cag, auto_avv = auto1, auto2
+                            marc_cag, marc_avv = marc1_expanded, marc2_expanded
+                            auto_cag, auto_avv = auto1_expanded, auto2_expanded
                             esp_cag, esp_avv = esp1, esp2
                         else:
                             gol_cag, gol_avv = gol_s2, gol_s1
-                            marc_cag, marc_avv = marc2, marc1
-                            auto_cag, auto_avv = auto2, auto1
+                            marc_cag, marc_avv = marc2_expanded, marc1_expanded
+                            auto_cag, auto_avv = auto2_expanded, auto1_expanded
                             esp_cag, esp_avv = esp2, esp1
 
                         try:
-                            # AGGIUNTO on_conflict PER RISOLVERE ERRORE 23505 SUPABASE
                             db.table("pronostici").upsert(
                                 {
                                     "id_partita": partita['id'], 
@@ -667,7 +775,9 @@ if is_pronostici:
                                 },
                                 on_conflict="id_partita, utente"
                             ).execute()
+                            st.session_state["in_modifica_pronostico"] = False
                             st.success("Pronostico registrato con successo!")
+                            st.rerun()
                         except Exception as db_err:
                             st.error(f"Errore durante l'inserimento su Supabase: {db_err}")
 

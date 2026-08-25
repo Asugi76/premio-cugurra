@@ -312,7 +312,7 @@ if not st.session_state["autenticato"]:
 
                                 check_nome = db.table("utenti").select("nome_fb").eq("nome_fb", clean_nome).execute()
                                 if check_nome.data:
-                                    st.warning(f"Il nome utente '{clean_nome}' è già utilizzato.")
+                                    st.warning("Username già esistente! Sembra che tu abbia un omonimo nel gruppo. Per completare la tua registrazione, aggiungi un numero o un nickname al tuo nome e cognome (es.: Gigi Riva 69, Gianfranco Zola Magicbox ecc ecc) e ricordatelo per accedere al gioco.")
                                     st.stop()
 
                                 check_email = db.table("utenti").select("email").eq("email", clean_email).execute()
@@ -338,7 +338,7 @@ if not st.session_state["autenticato"]:
                             except Exception as err:
                                 err_str = str(err).lower()
                                 if "unique" in err_str or "duplicate" in err_str or "already exists" in err_str:
-                                    st.error(f"Errore: L'email '{new_email}' o il nome utente sono già registrati.")
+                                    st.warning("Username già esistente! Sembra che tu abbia un omonimo nel gruppo. Per completare la tua registrazione, aggiungi un numero o un nickname al tuo nome e cognome (es.: Gigi Riva 69, Gianfranco Zola Magicbox ecc ecc) e ricordatelo per accedere al gioco.")
                                 else:
                                     st.error(f"Errore durante la registrazione: {err}")
 

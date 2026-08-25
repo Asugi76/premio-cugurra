@@ -13,6 +13,7 @@ SUPABASE_URL = "https://kbbxjfxltkchzvkyofdr.supabase.co"
 SUPABASE_KEY = "sb_publishable_vT3i8G3_Lz8QQnDmhUqVOA_83_y_y3B"
 STORAGE_BASE_URL = f"{SUPABASE_URL}/storage/v1/object/public/LOGHI_E_GRAFICHE/"
 SFONDO_URL = f"{STORAGE_BASE_URL}sfondo.jpg"
+DEFAULT_LOGO_URL = f"{STORAGE_BASE_URL}DEFAULT.png"
 
 @st.cache_resource
 def init_supabase(): 
@@ -148,7 +149,7 @@ def get_stagione():
 
 def get_url_scudetto(nome_squadra):
     if not nome_squadra:
-        return f"{STORAGE_BASE_URL}DEFAULT.png"
+        return DEFAULT_LOGO_URL
     return f"{STORAGE_BASE_URL}{nome_squadra.strip().upper()}.png"
 
 def get_url_competizione(nome_competizione):
@@ -182,7 +183,7 @@ def mostra_footer():
     url_logo = f"{STORAGE_BASE_URL}CUGURRAOFFICIAL.png"
     st.markdown(f"""
     <div style="text-align: center; color: #fbbf24; font-weight: bold; background-color: rgba(30, 41, 59, 0.9); padding: 15px; border-radius: 12px; border: 1px solid #334155;">
-        <img src="{url_logo}" width="90" style="margin-bottom: 8px;"><br>
+        <img src="{url_logo}" width="90" onerror="this.src='{DEFAULT_LOGO_URL}'" style="margin-bottom: 8px;"><br>
         <p>"Essere cugurra, esserlo nella mente"</p>
         <p style="font-size: 0.8em; color: #94a3b8;">App by Tifosi del Cagliari & Asugi</p>
     </div>
@@ -419,7 +420,7 @@ if is_pronostici:
 
             st.markdown(f"""
                 <div style="display: flex; justify-content: center; align-items: center; margin-top: 15px; margin-bottom: 10px;">
-                    <img src="{url_comp}" width="48" style="display: block;">
+                    <img src="{url_comp}" width="48" onerror="this.src='{DEFAULT_LOGO_URL}'" style="display: block;">
                 </div>
             """, unsafe_allow_html=True)
 
@@ -434,7 +435,7 @@ if is_pronostici:
             with col_squadra_1:
                 st.markdown(f"""
                     <div style="text-align: center; margin-bottom: 5px;">
-                        <img src="{url_s1}" width="60" style="display: block; margin: 0 auto 8px auto;">
+                        <img src="{url_s1}" width="60" onerror="this.src='{DEFAULT_LOGO_URL}'" style="display: block; margin: 0 auto 8px auto;">
                         <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Inserisci gol {squadra_1}</div>
                     </div>
                 """, unsafe_allow_html=True)
@@ -443,7 +444,7 @@ if is_pronostici:
             with col_squadra_2:
                 st.markdown(f"""
                     <div style="text-align: center; margin-bottom: 5px;">
-                        <img src="{url_s2}" width="60" style="display: block; margin: 0 auto 8px auto;">
+                        <img src="{url_s2}" width="60" onerror="this.src='{DEFAULT_LOGO_URL}'" style="display: block; margin: 0 auto 8px auto;">
                         <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Inserisci gol {squadra_2}</div>
                     </div>
                 """, unsafe_allow_html=True)
@@ -568,7 +569,7 @@ elif is_classifiche:
         except:
             st.info("Albo d'oro non disponibile.")
 
-# 3. REGOLAMENTO (Renderizzato via component HTML per evitare problemi di visualizzazione codice)
+# 3. REGOLAMENTO
 elif is_regolamento:
     regolamento_html = """
     <!DOCTYPE html>

@@ -79,92 +79,69 @@ st.markdown(f"""
         background-color: #1e293b !important;
     }}
 
-    /* --- TABELLONE ORIZZONTALE FORZATO (ANCHE SU MOBILE) --- */
+    /* --- TABELLONE E SELETTORI RIGOROSAMENTE AFFIANCATI E COMPATTI --- */
     .scoreboard-container {{
         display: flex !important;
         flex-direction: row !important;
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
-        gap: 10px !important;
-        margin-bottom: 5px !important;
+        gap: 15px !important;
+        margin-bottom: 10px !important;
     }}
     
     .scoreboard-column {{
         flex: 1 !important;
         text-align: center !important;
-        max-width: 48% !important;
+        max-width: 45% !important;
     }}
 
-    .scoreboard-middle {{
-        flex: 0.1 !important;
+    /* Container Unificato per il Selettore dei Gol (Etichetta + Box) */
+    .goal-selector-box {{
+        background-color: rgba(30, 41, 59, 0.85) !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
+        padding: 10px !important;
+        margin: 0 auto !important;
+        max-width: 180px !important;
         text-align: center !important;
     }}
 
-    /* --- TABELLA HTML FLUIDA AL 50% PER BLINDARE L'AFFIANCAMENTO DEI SELETTORI GOL --- */
-    .table-selettori {{
-        width: 100% !important;
-        border-collapse: separate !important;
-        border-spacing: 10px 0px !important;
-        margin-bottom: 15px !important;
-    }}
-    .table-selettori td {{
-        width: 50% !important;
-        vertical-align: top !important;
-        padding: 0 !important;
-    }}
-
-    /* Etichette sopra i selettori gol */
-    .label-gol {{
-        font-size: 0.85rem !important;
+    .goal-label {{
+        font-size: 0.9rem !important;
         color: #38bdf8 !important;
-        font-weight: 700 !important;
-        text-transform: uppercase !important;
-        margin-bottom: 4px !important;
-        display: block !important;
-        text-align: center !important;
+        font-weight: bold !important;
+        margin-bottom: 6px !important;
+        white-space: nowrap !important;
     }}
 
-    /* Selettori Gol: Bianchi con numeri in Amaranto/Scuro e grandi */
+    /* Selettore Gol: Box bianco ridotto con numeri grandi in Amaranto */
     .big-score-input input {{
-        font-size: 2.2rem !important;
+        font-size: 2rem !important;
         font-weight: bold !important;
-        height: 65px !important;
+        height: 50px !important;
         text-align: center !important;
         color: #881337 !important;
         background-color: #ffffff !important;
         border: 2px solid #38bdf8 !important;
-        border-radius: 12px !important;
+        border-radius: 8px !important;
     }}
 
-    /* Container Box Pronostico */
-    .prediction-box {{
-        background-color: rgba(30, 41, 59, 0.85) !important;
-        border: 1px solid #334155 !important;
-        border-radius: 12px !important;
-        padding: 8px !important;
-        margin-bottom: 5px !important;
-    }}
-
-    /* --- RESTYLING PULSANTI DI CONVALIDA VERDI E BRILLANTI --- */
+    /* --- PERSONALIZZAZIONE PULSANTI D'AZIONE --- */
     .stButton > button {{
-        width: 100% !important;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100% !important;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
         font-weight: 700 !important;
-        font-size: 1.05rem !important;
-        padding: 0.75rem 1rem !important;
-        border-radius: 12px !important;
-        border: 1px solid #34d399 !important;
-        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
-        transition: all 0.2s ease-in-out !important;
+        border: 1px solid #38bdf8 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        transition: all 0.2s ease-in-out;
     }}
-
+    
     .stButton > button:hover {{
-        background: linear-gradient(135deg, #059669 0%, #047857 100% !important;
-        border-color: #6ee7b7 !important;
-        box-shadow: 0 6px 18px rgba(52, 211, 153, 0.5) !important;
-        transform: translateY(-1px);
+        background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
+        border-color: #7dd3fc !important;
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
     }}
 
     /* --- STILE RADIO BUTTON ORIZZONTALE (MENU PRINCIPALE A PILLOLE) --- */
@@ -203,7 +180,7 @@ st.markdown(f"""
     @media (max-width: 768px) {{
         h1 {{ font-size: 1.3rem !important; }}
         .single-line-title {{ font-size: 1.2rem !important; }}
-        .big-score-input input {{ font-size: 2rem !important; height: 60px !important; }}
+        .big-score-input input {{ font-size: 1.6rem !important; height: 45px !important; }}
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -438,7 +415,7 @@ if is_pronostici:
 
             st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2}, {nome_competizione} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
             
-            # Countdown con dicitura
+            # Countdown con nuova dicitura
             countdown_html = f"""
             <div style="background-color: #090d16; border: 2px solid #38bdf8; border-radius: 12px; padding: 12px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);">
                 <style>
@@ -498,45 +475,36 @@ if is_pronostici:
                     <div class="scoreboard-column">
                         <img src="{url_s1}" width="65" style="display: block; margin: 0 auto;">
                     </div>
-                    <div class="scoreboard-middle"></div>
                     <div class="scoreboard-column">
                         <img src="{url_s2}" width="65" style="display: block; margin: 0 auto;">
                     </div>
                 </div>
             """, unsafe_allow_html=True)
 
-            # --- SELETTORI GOL AFFIANCATI TRAMITE TABELLA HTML FLUIDA (50% - 50%) ---
+            # --- SELETTORI GOL AFFIANCATI E COMPATTI (ETICHETTA + BOX UNIFICATI) ---
             col_id_1 = f"gs1_{partita['id']}"
             col_id_2 = f"gs2_{partita['id']}"
             
             if col_id_1 not in st.session_state: st.session_state[col_id_1] = 0
             if col_id_2 not in st.session_state: st.session_state[col_id_2] = 0
 
-            st.markdown(f"""
-                <table class="table-selettori">
-                    <tr>
-                        <td>
-                            <div class="prediction-box">
-                                <span class="label-gol">Gol {squadra_1}</span>
-                                <div class="big-score-input" id="input_s1_wrapper"></div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="prediction-box">
-                                <span class="label-gol">Gol {squadra_2}</span>
-                                <div class="big-score-input" id="input_s2_wrapper"></div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            """, unsafe_allow_html=True)
-
-            # Rendering effettivo dei due number_input inseriti nelle due colonne Streamlit affiancate
-            col_in1, col_in2 = st.columns(2)
-            with col_in1:
+            col_i1, col_i2 = st.columns(2)
+            
+            with col_i1:
+                st.markdown(f"""
+                    <div class="goal-selector-box">
+                        <div class="goal-label">Gol {squadra_1}</div>
+                """, unsafe_allow_html=True)
                 gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=st.session_state[col_id_1], key=col_id_1, label_visibility="collapsed")
-            with col_in2:
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+            with col_i2:
+                st.markdown(f"""
+                    <div class="goal-selector-box">
+                        <div class="goal-label">Gol {squadra_2}</div>
+                """, unsafe_allow_html=True)
                 gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=st.session_state[col_id_2], key=col_id_2, label_visibility="collapsed")
+                st.markdown('</div>', unsafe_allow_html=True)
 
             is_goleada_1 = gol_s1 > 9
             is_goleada_2 = gol_s2 > 9

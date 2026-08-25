@@ -272,10 +272,12 @@ if not st.session_state["autenticato"]:
                 if not check_limite_iscrizioni(fase_attuale):
                     st.error("❌ Le iscrizioni per la stagione in corso sono chiuse. Il termine ultimo era fissato al 2 febbraio.")
                 elif st.session_state.get("nuovo_registrato", False):
-                    st.warning("⚠️ Benvenuto nel Premio Cugurra! Conserva le tue credenziali: Nome Utente, Email, PIN e Risposta Segreta.")
+                    st.warning("⚠️ Benvenuto nel Premio Cugurra! Conserva le tue credenziali d'accesso:")
                     st.markdown(f"**Utente:** `{st.session_state['reg_nome']}`")
                     st.markdown(f"**Email:** `{st.session_state['reg_email']}`")
                     st.markdown(f"**PIN:** `{st.session_state['reg_pin']}`")
+                    st.markdown(f"**Domanda Segreta:** `{st.session_state['reg_domanda']}`")
+                    st.markdown(f"**Risposta Segreta:** `{st.session_state['reg_risposta']}`")
                     st.markdown("<br>", unsafe_allow_html=True)
                     
                     if st.button("Ajò a giocare", key="btn_ajo_giocare", use_container_width=True):
@@ -329,6 +331,8 @@ if not st.session_state["autenticato"]:
                                 st.session_state["reg_nome"] = clean_nome
                                 st.session_state["reg_email"] = clean_email
                                 st.session_state["reg_pin"] = clean_pin
+                                st.session_state["reg_domanda"] = domanda_scelta
+                                st.session_state["reg_risposta"] = clean_risposta
                                 st.session_state["reg_status"] = nuovo_status
                                 st.rerun()
                             except Exception as err:

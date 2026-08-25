@@ -1,3 +1,4 @@
+import streamlit as str_module
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
@@ -635,41 +636,29 @@ elif is_classifiche:
         except:
             st.info("Albo d'oro non disponibile.")
 
-# 3. REGOLAMENTO (Corretto markdown)
+# 3. REGOLAMENTO (Sintassi Markdown nativa per evitare blocchi di codice grezzo)
 elif is_regolamento:
-    st.markdown("""
-    <div class="regolamento-container">
-        <h2>📜 Punteggi e Regolamento del Premio Cugurra</h2>
-        
-        <h3>1) Limite Iscrizioni Stagionali:</h3>
-        <ul>
-            <li>Le iscrizioni alla stagione in corso rimangono aperte fino al giorno 02 febbraio (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.</li>
-        </ul>
+    st.markdown("## 📜 Punteggi e Regolamento del Premio Cugurra")
+    
+    st.markdown("### 1) Limite Iscrizioni Stagionali:")
+    st.markdown("- Le iscrizioni alla stagione in corso rimangono aperte fino al giorno **02 febbraio** (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.")
 
-        <h3>2) Punteggi Classifica Generale:</h3>
-        <ul>
-            <li><b>15 Punti:</b> Risultato e marcatori esatti di tutte e due le squadre.</li>
-            <li><b>12 Punti:</b> Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.</li>
-            <li><b>10 Punti:</b> Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.</li>
-            <li><b>8 Punti:</b> Indovini lo 0-0, OPPURE solo la goleada di una squadra.</li>
-            <li><b>5 Punti:</b> Indovini l'esito (1, X, 2).</li>
-            <li><b>3 Punti:</b> Tutti i marcatori del Cagliari indovinati.</li>
-            <li><b>0 Punti:</b> Non indovini nulla.</li>
-            <li><b>Bonus Espulsioni:</b> +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).</li>
-        </ul>
+    st.markdown("### 2) Punteggi Classifica Generale:")
+    st.markdown("- **15 Punti:** Risultato e marcatori esatti di tutte e due le squadre.")
+    st.markdown("- **12 Punti:** Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.")
+    st.markdown("- **10 Punti:** Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.")
+    st.markdown("- **8 Punti:** Indovini lo 0-0, OPPURE solo la goleada di una squadra.")
+    st.markdown("- **5 Punti:** Indovini l'esito (1, X, 2).")
+    st.markdown("- **3 Punti:** Tutti i marcatori del Cagliari indovinati.")
+    st.markdown("- **0 Punti:** Non indovini nulla.")
+    st.markdown("- **Bonus Espulsioni:** +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).")
 
-        <h3>3) Masters of Cugurras:</h3>
-        <ul>
-            <li>Classifica dedicata a chi colleziona i pronostici da 10 punti.</li>
-        </ul>
+    st.markdown("### 3) Masters of Cugurras:")
+    st.markdown("- Classifica dedicata a chi colleziona i pronostici da 10 punti.")
 
-        <h3>4) Bomber di razza:</h3>
-        <ul>
-            <li>1 punto per ogni marcatore del Cagliari indovinato.</li>
-            <li>Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("### 4) Bomber di razza:")
+    st.markdown("- 1 punto per ogni marcatore del Cagliari indovinato.")
+    st.markdown("- Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.")
 
 # 4. ADMIN
 elif tab_admin is not None:

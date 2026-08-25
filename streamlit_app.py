@@ -52,8 +52,8 @@ st.markdown(f"""
         margin-bottom: 1rem !important;
     }}
 
-    /* Regolamento allineato a sinistra */
-    .regolamento-container, .regolamento-container h3, .regolamento-container li, .regolamento-container p {{
+    /* Regolamento rigorosamente allineato a sinistra */
+    .regolamento-container, .regolamento-container h2, .regolamento-container h3, .regolamento-container li, .regolamento-container p {{
         text-align: left !important;
     }}
     
@@ -78,53 +78,6 @@ st.markdown(f"""
     div[data-baseweb="select"] * {{
         color: #f8fafc !important;
         background-color: #1e293b !important;
-    }}
-
-    /* --- TABELLONE E SELETTORI RIGOROSAMENTE AFFIANCATI E COMPATTI --- */
-    .scoreboard-container {{
-        display: flex !important;
-        flex-direction: row !important;
-        justify-content: center !important;
-        align-items: center !important;
-        width: 100% !important;
-        gap: 15px !important;
-        margin-bottom: 10px !important;
-    }}
-    
-    .scoreboard-column {{
-        flex: 1 !important;
-        text-align: center !important;
-        max-width: 45% !important;
-    }}
-
-    /* Griglia fissa per forzare l'affiancamento dei due selettori gol */
-    .goal-selectors-grid {{
-        display: flex !important;
-        flex-direction: row !important;
-        justify-content: center !important;
-        align-items: center !important;
-        gap: 12px !important;
-        width: 100% !important;
-        margin: 10px 0 !important;
-    }}
-
-    .goal-selector-box {{
-        background-color: rgba(30, 41, 59, 0.85) !important;
-        border: 1px solid #334155 !important;
-        border-radius: 12px !important;
-        padding: 8px !important;
-        width: 140px !important;
-        text-align: center !important;
-        flex-shrink: 0 !important;
-    }}
-
-    /* Etichetta alleggerita: più piccola e senza grassetto */
-    .goal-label {{
-        font-size: 0.75rem !important;
-        color: #94a3b8 !important;
-        font-weight: normal !important;
-        margin-bottom: 4px !important;
-        white-space: nowrap !important;
     }}
 
     /* Selettore Gol: Box bianco ridotto con numeri grandi in Amaranto */
@@ -192,8 +145,6 @@ st.markdown(f"""
     @media (max-width: 768px) {{
         h1 {{ font-size: 1.3rem !important; }}
         .single-line-title {{ font-size: 1.2rem !important; }}
-        .goal-selector-box {{ width: 120px !important; }}
-        .big-score-input input {{ font-size: 1.6rem !important; height: 40px !important; }}
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -471,50 +422,41 @@ if is_pronostici:
             """
             components.html(countdown_html, height=100)
             
-            # --- TABELLONE CON SCUDETTI ---
+            # --- TABELLONE E SELETTORI IN DUE COLONNE VERTICALI AFFIANCATE ---
             url_comp = get_url_competizione(nome_competizione)
             url_s1 = get_url_scudetto(squadra_1)
             url_s2 = get_url_scudetto(squadra_2)
 
             st.markdown(f"""
-                <div style="display: flex; justify-content: center; align-items: center; margin-top: 15px; margin-bottom: 5px;">
+                <div style="display: flex; justify-content: center; align-items: center; margin-top: 15px; margin-bottom: 10px;">
                     <img src="{url_comp}" width="48" style="display: block;">
                 </div>
             """, unsafe_allow_html=True)
 
-            st.markdown(f"""
-                <div class="scoreboard-container">
-                    <div class="scoreboard-column">
-                        <img src="{url_s1}" width="65" style="display: block; margin: 0 auto;">
-                    </div>
-                    <div class="scoreboard-column">
-                        <img src="{url_s2}" width="65" style="display: block; margin: 0 auto;">
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-
-            # --- SELETTORI GOL AFFIANCATI E COMPATTI CON GRIGLIA FORZATA ---
             col_id_1 = f"gs1_{partita['id']}"
             col_id_2 = f"gs2_{partita['id']}"
             
             if col_id_1 not in st.session_state: st.session_state[col_id_1] = 0
             if col_id_2 not in st.session_state: st.session_state[col_id_2] = 0
 
-            st.markdown(f"""
-                <div class="goal-selectors-grid">
-                    <div class="goal-selector-box">
-                        <div class="goal-label">Gol {squadra_1}</div>
-                    </div>
-                    <div class="goal-selector-box">
-                        <div class="goal-label">Gol {squadra_2}</div>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
+            col_squadra_1, col_squadra_2 = st.columns(2)
 
-            col_i1, col_i2 = st.columns(2)
-            with col_i1:
+            with col_squadra_1:
+                st.markdown(f"""
+                    <div style="text-align: center; margin-bottom: 5px;">
+                        <img src="{url_s1}" width="60" style="display: block; margin: 0 auto 8px auto;">
+                        <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Gol {squadra_1}</div>
+                    </div>
+                """, unsafe_allow_html=True)
                 gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=st.session_state[col_id_1], key=col_id_1, label_visibility="collapsed")
-            with col_i2:
+
+            with col_squadra_2:
+                st.markdown(f"""
+                    <div style="text-align: center; margin-bottom: 5px;">
+                        <img src="{url_s2}" width="60" style="display: block; margin: 0 auto 8px auto;">
+                        <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Gol {squadra_2}</div>
+                    </div>
+                """, unsafe_allow_html=True)
                 gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=st.session_state[col_id_2], key=col_id_2, label_visibility="collapsed")
 
             is_goleada_1 = gol_s1 > 9
@@ -636,29 +578,41 @@ elif is_classifiche:
         except:
             st.info("Albo d'oro non disponibile.")
 
-# 3. REGOLAMENTO (Sintassi Markdown nativa per evitare blocchi di codice grezzo)
+# 3. REGOLAMENTO (Allineato rigorosamente a sinistra via classe CSS)
 elif is_regolamento:
-    st.markdown("## 📜 Punteggi e Regolamento del Premio Cugurra")
-    
-    st.markdown("### 1) Limite Iscrizioni Stagionali:")
-    st.markdown("- Le iscrizioni alla stagione in corso rimangono aperte fino al giorno **02 febbraio** (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.")
+    st.markdown("""
+        <div class="regolamento-container">
+            <h2>📜 Punteggi e Regolamento del Premio Cugurra</h2>
+            
+            <h3>1) Limite Iscrizioni Stagionali:</h3>
+            <ul>
+                <li>Le iscrizioni alla stagione in corso rimangono aperte fino al giorno <b>02 febbraio</b> (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.</li>
+            </ul>
 
-    st.markdown("### 2) Punteggi Classifica Generale:")
-    st.markdown("- **15 Punti:** Risultato e marcatori esatti di tutte e due le squadre.")
-    st.markdown("- **12 Punti:** Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.")
-    st.markdown("- **10 Punti:** Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.")
-    st.markdown("- **8 Punti:** Indovini lo 0-0, OPPURE solo la goleada di una squadra.")
-    st.markdown("- **5 Punti:** Indovini l'esito (1, X, 2).")
-    st.markdown("- **3 Punti:** Tutti i marcatori del Cagliari indovinati.")
-    st.markdown("- **0 Punti:** Non indovini nulla.")
-    st.markdown("- **Bonus Espulsioni:** +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).")
+            <h3>2) Punteggi Classifica Generale:</h3>
+            <ul>
+                <li><b>15 Punti:</b> Risultato e marcatori esatti di tutte e due le squadre.</li>
+                <li><b>12 Punti:</b> Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.</li>
+                <li><b>10 Punti:</b> Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.</li>
+                <li><b>8 Punti:</b> Indovini lo 0-0, OPPURE solo la goleada di una squadra.</li>
+                <li><b>5 Punti:</b> Indovini l'esito (1, X, 2).</li>
+                <li><b>3 Punti:</b> Tutti i marcatori del Cagliari indovinati.</li>
+                <li><b>0 Punti:</b> Non indovini nulla.</li>
+                <li><b>Bonus Espulsioni:</b> +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).</li>
+            </ul>
 
-    st.markdown("### 3) Masters of Cugurras:")
-    st.markdown("- Classifica dedicata a chi colleziona i pronostici da 10 punti.")
+            <h3>3) Masters of Cugurras:</h3>
+            <ul>
+                <li>Classifica dedicata a chi colleziona i pronostici da 10 punti.</li>
+            </ul>
 
-    st.markdown("### 4) Bomber di razza:")
-    st.markdown("- 1 punto per ogni marcatore del Cagliari indovinato.")
-    st.markdown("- Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.")
+            <h3>4) Bomber di razza:</h3>
+            <ul>
+                <li>1 punto per ogni marcatore del Cagliari indovinato.</li>
+                <li>Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.</li>
+            </ul>
+        </div>
+    """, unsafe_allow_html=True)
 
 # 4. ADMIN
 elif tab_admin is not None:

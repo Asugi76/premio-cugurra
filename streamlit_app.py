@@ -101,7 +101,22 @@ st.markdown(f"""
         text-align: center !important;
     }}
 
-    /* Selettori Gol: Bianca con numeri in Amaranto/Scuro e sempre affiancati */
+    /* Forzatura layout colonne selettori gol anche su mobile via flex container custom */
+    .custom-flex-row {{
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 10px !important;
+        width: 100% !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+    }}
+
+    .custom-flex-col {{
+        flex: 1 !important;
+        min-width: 0 !important;
+    }}
+
+    /* Selettori Gol: Bianchi con numeri in Amaranto/Scuro e grandi */
     .big-score-input input {{
         font-size: 2.2rem !important;
         font-weight: bold !important;
@@ -158,7 +173,7 @@ st.markdown(f"""
     @media (max-width: 768px) {{
         h1 {{ font-size: 1.3rem !important; }}
         .single-line-title {{ font-size: 1.2rem !important; }}
-        .big-score-input input {{ font-size: 1.8rem !important; height: 55px !important; }}
+        .big-score-input input {{ font-size: 2rem !important; height: 60px !important; }}
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -473,26 +488,26 @@ if is_pronostici:
                 </div>
             """, unsafe_allow_html=True)
 
-            # Riga Selettori Gol tramite blocco HTML Flex per garantirne l'affiancamento assoluto anche su mobile
+            # Riga Selettori Gol tramite blocco HTML Flex rigido per garantirne l'affiancamento perfetto su mobile
             col_id_1 = f"gs1_{partita['id']}"
             col_id_2 = f"gs2_{partita['id']}"
             
-            # Inizializziamo nello state se non esistono
             if col_id_1 not in st.session_state: st.session_state[col_id_1] = 0
             if col_id_2 not in st.session_state: st.session_state[col_id_2] = 0
 
-            # Renderizziamo i number_input affiancati sfruttando il container HTML scoreboard-container
-            col_i1, col_imid, col_i2 = st.columns([2, 0.2, 2])
-            with col_i1:
+            st.markdown('<div class="custom-flex-row">', unsafe_allow_html=True)
+            
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
                 st.markdown('<div class="prediction-box"><div class="big-score-input">', unsafe_allow_html=True)
                 gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=st.session_state[col_id_1], key=col_id_1, label_visibility="collapsed")
                 st.markdown('</div></div>', unsafe_allow_html=True)
-            with col_imid:
-                st.write("")
-            with col_i2:
+            with col_f2:
                 st.markdown('<div class="prediction-box"><div class="big-score-input">', unsafe_allow_html=True)
                 gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=st.session_state[col_id_2], key=col_id_2, label_visibility="collapsed")
                 st.markdown('</div></div>', unsafe_allow_html=True)
+                
+            st.markdown('</div>', unsafe_allow_html=True)
 
             is_goleada_1 = gol_s1 > 9
             is_goleada_2 = gol_s2 > 9

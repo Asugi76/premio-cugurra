@@ -8,6 +8,16 @@ import streamlit.components.v1 as components
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Premio Cugurra", page_icon="⚽", layout="wide")
 
+# --- AUTO-SCROLL IN ALTO AD OGNI RICARICAMENTO ---
+components.html(
+    """
+    <script>
+        window.parent.scrollTo(0, 0);
+    </script>
+    """,
+    height=0,
+)
+
 # --- SUPABASE ---
 SUPABASE_URL = "https://kbbxjfxltkchzvkyofdr.supabase.co"
 SUPABASE_KEY = "sb_publishable_vT3i8G3_Lz8QQnDmhUqVOA_83_y_y3B"
@@ -641,13 +651,22 @@ if is_pronostici:
                             esp_cag, esp_avv = esp2, esp1
 
                         try:
-                            db.table("pronostici").upsert({
-                                "id_partita": partita['id'], "utente": st.session_state["utente_corrente"],
-                                "gol_cagliari": gol_cag, "gol_avversario": gol_avv,
-                                "marcatori_cagliari": marc_cag, "marcatori_avversario": marc_avv,
-                                "autogol_cagliari": auto_cag, "autogol_avversario": auto_avv,
-                                "espulsi_cagliari": esp_cag, "espulsi_avversario": esp_avv
-                            }).execute()
+                            # AGGIUNTO on_conflict PER RISOLVERE ERRORE 23505 SUPABASE
+                            db.table("pronostici").upsert(
+                                {
+                                    "id_partita": partita['id'], 
+                                    "utente": st.session_state["utente_corrente"],
+                                    "gol_cagliari": gol_cag, 
+                                    "gol_avversario": gol_avv,
+                                    "marcatori_cagliari": marc_cag, 
+                                    "marcatori_avversario": marc_avv,
+                                    "autogol_cagliari": auto_cag, 
+                                    "autogol_avversario": auto_avv,
+                                    "espulsi_cagliari": esp_cag, 
+                                    "espulsi_avversario": esp_avv
+                                },
+                                on_conflict="id_partita, utente"
+                            ).execute()
                             st.success("Pronostico registrato con successo!")
                         except Exception as db_err:
                             st.error(f"Errore durante l'inserimento su Supabase: {db_err}")
@@ -942,7 +961,7 @@ elif tab_admin is not None:
                         "id_partita": p_omo["id"], "utente": utente,
                         "punti_generale": punti_generale, "punti_masters": punti_masters,
                         "punti_bomber": punti_bomber
-                    }).execute()
+                    }, on_conflict="id_partita, utente").execute()
 
                 st.success("Partita omologata e punti assegnati automaticamente!")
                 st.rerun()

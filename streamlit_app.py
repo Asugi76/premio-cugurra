@@ -51,11 +51,6 @@ st.markdown(f"""
         font-size: 1.6rem !important;
         margin-bottom: 1rem !important;
     }}
-
-    /* Regolamento rigorosamente allineato a sinistra */
-    .regolamento-container, .regolamento-container h2, .regolamento-container h3, .regolamento-container li, .regolamento-container p {{
-        text-align: left !important;
-    }}
     
     label, .stRadio label, .stTextInput label, .stSelectbox label, div[data-baseweb="radio"] span, div[data-baseweb="radio"] p {{
         color: #ffffff !important;
@@ -573,41 +568,84 @@ elif is_classifiche:
         except:
             st.info("Albo d'oro non disponibile.")
 
-# 3. REGOLAMENTO (Senza numeri nei titoli e allineato a sinistra)
+# 3. REGOLAMENTO (Renderizzato via component HTML per evitare problemi di visualizzazione codice)
 elif is_regolamento:
-    st.markdown("""
-        <div class="regolamento-container">
-            <h2>📜 Punteggi e Regolamento del Premio Cugurra</h2>
-            
-            <h3>Limite per le iscrizioni stagionali:</h3>
-            <ul>
-                <li>Le iscrizioni alla stagione in corso rimangono aperte fino al giorno <b>02 febbraio</b> (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.</li>
-            </ul>
+    regolamento_html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <style>
+        body {
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: transparent;
+            padding: 10px;
+            margin: 0;
+            text-align: left;
+        }
+        h2 {
+            color: #38bdf8;
+            text-align: left;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        h3 {
+            color: #38bdf8;
+            text-align: left;
+            font-size: 1.1rem;
+            margin-top: 25px;
+            margin-bottom: 8px;
+        }
+        ul {
+            margin-top: 0;
+            padding-left: 20px;
+            text-align: left;
+        }
+        li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+            color: #cbd5e1;
+            text-align: left;
+        }
+        b {
+            color: #ffffff;
+        }
+    </style>
+    </head>
+    <body>
+        <h2>📜 Punteggi e Regolamento del Premio Cugurra</h2>
+        
+        <h3>Limite per le iscrizioni stagionali:</h3>
+        <ul>
+            <li>Le iscrizioni alla stagione in corso rimangono aperte fino al giorno <b>02 febbraio</b> (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.</li>
+        </ul>
 
-            <h3>Punteggi assegnati nella Classifica Generale:</h3>
-            <ul>
-                <li><b>15 Punti:</b> Risultato e marcatori esatti di tutte e due le squadre.</li>
-                <li><b>12 Punti:</b> Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.</li>
-                <li><b>10 Punti:</b> Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.</li>
-                <li><b>8 Punti:</b> Indovini lo 0-0, OPPURE solo la goleada di una squadra.</li>
-                <li><b>5 Punti:</b> Indovini l'esito (1, X, 2).</li>
-                <li><b>3 Punti:</b> Tutti i marcatori del Cagliari indovinati.</li>
-                <li><b>0 Punti:</b> Non indovini nulla.</li>
-                <li><b>Bonus Espulsioni:</b> +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).</li>
-            </ul>
+        <h3>Punteggi assegnati nella Classifica Generale:</h3>
+        <ul>
+            <li><b>15 Punti:</b> Risultato e marcatori esatti di tutte e due le squadre.</li>
+            <li><b>12 Punti:</b> Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.</li>
+            <li><b>10 Punti:</b> Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.</li>
+            <li><b>8 Punti:</b> Indovini lo 0-0, OPPURE solo la goleada di una squadra.</li>
+            <li><b>5 Punti:</b> Indovini l'esito (1, X, 2).</li>
+            <li><b>3 Punti:</b> Tutti i marcatori del Cagliari indovinati.</li>
+            <li><b>0 Punti:</b> Non indovini nulla.</li>
+            <li><b>Bonus Espulsioni:</b> +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).</li>
+        </ul>
 
-            <h3>Classifica Masters of Cugurras:</h3>
-            <ul>
-                <li>Classifica dedicata a chi colleziona i pronostici da 10 punti.</li>
-            </ul>
+        <h3>Classifica Masters of Cugurras:</h3>
+        <ul>
+            <li>Classifica dedicata a chi colleziona i pronostici da 10 punti.</li>
+        </ul>
 
-            <h3>Classifica Bomber di razza:</h3>
-            <ul>
-                <li>1 punto per ogni marcatore del Cagliari indovinato.</li>
-                <li>Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.</li>
-            </ul>
-        </div>
-    """, unsafe_allow_html=True)
+        <h3>Classifica Bomber di razza:</h3>
+        <ul>
+            <li>1 punto per ogni marcatore del Cagliari indovinato.</li>
+            <li>Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.</li>
+        </ul>
+    </body>
+    </html>
+    """
+    components.html(regolamento_html, height=750, scrolling=True)
 
 # 4. ADMIN
 elif tab_admin is not None:

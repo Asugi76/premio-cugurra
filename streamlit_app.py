@@ -32,7 +32,29 @@ st.markdown(f"""
         color: #f8fafc !important;
     }}
 
-    h1, h2, h3 {{ color: #38bdf8 !important; text-align: center; }}
+    /* Header e Titoli Principali su una sola riga e in bianco */
+    h1 {{ 
+        color: #ffffff !important; 
+        text-align: center !important; 
+        white-space: nowrap !important;
+        font-size: 1.8rem !important;
+    }}
+    
+    h2, h3 {{ color: #38bdf8 !important; text-align: center; }}
+    
+    /* Titolo Classifiche specifico per forzare una sola riga */
+    .single-line-title {{
+        text-align: center !important;
+        color: #38bdf8 !important;
+        white-space: nowrap !important;
+        font-size: 1.6rem !important;
+        margin-bottom: 1rem !important;
+    }}
+
+    /* Regolamento allineato a sinistra */
+    .regolamento-container, .regolamento-container h3, .regolamento-container li, .regolamento-container p {{
+        text-align: left !important;
+    }}
     
     label, .stRadio label, .stTextInput label, .stSelectbox label, div[data-baseweb="radio"] span, div[data-baseweb="radio"] p {{
         color: #ffffff !important;
@@ -71,24 +93,24 @@ st.markdown(f"""
     .scoreboard-column {{
         flex: 1 !important;
         text-align: center !important;
-        max-width: 45% !important;
+        max-width: 48% !important;
     }}
 
     .scoreboard-middle {{
-        flex: 0.3 !important;
+        flex: 0.1 !important;
         text-align: center !important;
     }}
 
-    /* Input Gol Tabellone (Molto grandi ma responsive) */
+    /* Selettori Gol: Bianca con numeri in Amaranto/Scuro e sempre affiancati */
     .big-score-input input {{
-        font-size: 2.5rem !important;
+        font-size: 2.2rem !important;
         font-weight: bold !important;
-        height: 75px !important;
+        height: 65px !important;
         text-align: center !important;
-        color: #fbbf24 !important;
-        background-color: #0f172a !important;
-        border: 3px solid #38bdf8 !important;
-        border-radius: 16px !important;
+        color: #881337 !important;
+        background-color: #ffffff !important;
+        border: 2px solid #38bdf8 !important;
+        border-radius: 12px !important;
     }}
 
     /* Container Box Pronostico */
@@ -96,7 +118,7 @@ st.markdown(f"""
         background-color: rgba(30, 41, 59, 0.85) !important;
         border: 1px solid #334155 !important;
         border-radius: 12px !important;
-        padding: 10px !important;
+        padding: 8px !important;
         margin-bottom: 5px !important;
     }}
 
@@ -132,8 +154,10 @@ st.markdown(f"""
         display: none;
     }}
 
-    /* Ottimizzazioni Smartphone */
+    /* Ottimizzazioni Smartphone per evitare a capo sui titoli */
     @media (max-width: 768px) {{
+        h1 {{ font-size: 1.3rem !important; }}
+        .single-line-title {{ font-size: 1.2rem !important; }}
         .big-score-input input {{ font-size: 1.8rem !important; height: 55px !important; }}
     }}
     </style>
@@ -207,7 +231,7 @@ stagione_attuale = get_stagione()
 
 # --- LOGIN / REGISTRAZIONE ---
 if not st.session_state["autenticato"]:
-    st.markdown("<h1 style='text-align: center; color: #38bdf8; margin-bottom: 0px;'>⚽️ PREMIO CUGURRA ⚽️</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>⚽️ PREMIO CUGURRA ⚽️</h1>", unsafe_allow_html=True)
     st.markdown(f"<h3 style='text-align: center; color: #fbbf24; margin-top: 5px; margin-bottom: 25px;'>Stagione {stagione_attuale} - {fase_attuale}</h3>", unsafe_allow_html=True)
     
     col_scelta1, col_scelta2 = st.columns(2)
@@ -320,7 +344,7 @@ if st.sidebar.button("Logout", key="sidebar_logout_btn", use_container_width=Tru
     st.rerun()
 
 # --- INTERFACCIA PRINCIPALE ---
-st.title(f"⚽ Premio Cugurra {stagione_attuale} ({fase_attuale})")
+st.markdown(f"<h1>⚽ Premio Cugurra {stagione_attuale} ({fase_attuale})</h1>", unsafe_allow_html=True)
 
 # --- NAVIGAZIONE A PULSANTI ---
 if st.session_state["is_admin"]:
@@ -369,7 +393,7 @@ if is_pronostici:
 
             st.subheader(f"Prossima partita: {squadra_1} vs {squadra_2}, {nome_competizione} ({dt_partita.strftime('%d/%m/%Y ore %H:%M')})")
             
-            # Countdown
+            # Countdown con nuova dicitura
             countdown_html = f"""
             <div style="background-color: #090d16; border: 2px solid #38bdf8; border-radius: 12px; padding: 12px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);">
                 <style>
@@ -381,7 +405,7 @@ if is_pronostici:
                     .pulsing-clock {{ animation: pulse-anim 2s infinite ease-in-out; }}
                 </style>
                 <div class="pulsing-clock">
-                    <div style="font-size: 0.7rem; color: #38bdf8; margin-bottom: 6px; text-transform: uppercase;">⏳ Mancano all'inizio</div>
+                    <div style="font-size: 0.7rem; color: #38bdf8; margin-bottom: 6px; text-transform: uppercase;">⏳ AL FISCHIO D'INIZIO MANCANO ⏳</div>
                     <div id="clock" style="font-size: 1.1rem; color: #fbbf24; text-shadow: 0 0 6px rgba(251, 191, 36, 0.5);">CALCOLO...</div>
                 </div>
             </div>
@@ -412,7 +436,7 @@ if is_pronostici:
             """
             components.html(countdown_html, height=100)
             
-            # --- TABELLONE CON SCUDETTI, ETICHETTE E SELETTORI ALLINEATI ---
+            # --- TABELLONE CON SCUDETTI, ETICHETTE E SELETTORI ALLINEATI E FORZATI AFFIANCATI ---
             url_comp = get_url_competizione(nome_competizione)
             url_s1 = get_url_scudetto(squadra_1)
             url_s2 = get_url_scudetto(squadra_2)
@@ -436,7 +460,7 @@ if is_pronostici:
                 </div>
             """, unsafe_allow_html=True)
 
-            # Riga Etichette (Gol Squadra 1 e Gol Squadra 2) direttamente sotto gli scudetti
+            # Riga Etichette (Gol Squadra 1 e Gol Squadra 2) sotto gli scudetti
             st.markdown(f"""
                 <div class="scoreboard-container" style="margin-bottom: 5px;">
                     <div class="scoreboard-column">
@@ -449,17 +473,25 @@ if is_pronostici:
                 </div>
             """, unsafe_allow_html=True)
 
-            # Riga Selettori Gol
-            col_i1, col_imid, col_i2 = st.columns([2, 0.4, 2])
+            # Riga Selettori Gol tramite blocco HTML Flex per garantirne l'affiancamento assoluto anche su mobile
+            col_id_1 = f"gs1_{partita['id']}"
+            col_id_2 = f"gs2_{partita['id']}"
+            
+            # Inizializziamo nello state se non esistono
+            if col_id_1 not in st.session_state: st.session_state[col_id_1] = 0
+            if col_id_2 not in st.session_state: st.session_state[col_id_2] = 0
+
+            # Renderizziamo i number_input affiancati sfruttando il container HTML scoreboard-container
+            col_i1, col_imid, col_i2 = st.columns([2, 0.2, 2])
             with col_i1:
                 st.markdown('<div class="prediction-box"><div class="big-score-input">', unsafe_allow_html=True)
-                gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=0, key=f"gs1_{partita['id']}", label_visibility="collapsed")
+                gol_s1 = st.number_input(f"Gol {squadra_1}", min_value=0, value=st.session_state[col_id_1], key=col_id_1, label_visibility="collapsed")
                 st.markdown('</div></div>', unsafe_allow_html=True)
             with col_imid:
                 st.write("")
             with col_i2:
                 st.markdown('<div class="prediction-box"><div class="big-score-input">', unsafe_allow_html=True)
-                gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=0, key=f"gs2_{partita['id']}", label_visibility="collapsed")
+                gol_s2 = st.number_input(f"Gol {squadra_2}", min_value=0, value=st.session_state[col_id_2], key=col_id_2, label_visibility="collapsed")
                 st.markdown('</div></div>', unsafe_allow_html=True)
 
             is_goleada_1 = gol_s1 > 9
@@ -558,7 +590,7 @@ if is_pronostici:
 
 # 2. CLASSIFICHE
 elif is_classifiche:
-    st.header("🏆 Classifiche Ufficiali")
+    st.markdown("<h2 class='single-line-title'>🏆 Classifiche Ufficiali 🏆</h2>", unsafe_allow_html=True)
     sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Albo d'Oro"])
     
     with sub_tab1: st.write("In attesa delle prime partite.")
@@ -581,30 +613,41 @@ elif is_classifiche:
         except:
             st.info("Albo d'oro non disponibile.")
 
-# 3. REGOLAMENTO
+# 3. REGOLAMENTO (Allineato a sinistra)
 elif is_regolamento:
-    st.header("📜 Punteggi e Regolamento del Premio Cugurra")
     st.markdown("""
-    ### 1) Limite Iscrizioni Stagionali:
-    * Le iscrizioni alla stagione in corso rimangono aperte fino al giorno 02 febbraio (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio). Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.
+    <div class="regolamento-container">
+        <h2>📜 Punteggi e Regolamento del Premio Cugurra</h2>
+        
+        <h3>1) Limite Iscrizioni Stagionali:</h3>
+        <ul>
+            <li>Le iscrizioni alla stagione in corso rimangono aperte fino al giorno 02 febbraio (compreso) dell'anno solare in cui termina la stagione, ovvero dopo la chiusura del calciomercato invernale del 31 gennaio). Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.</li>
+        </ul>
 
-    ### 2) Punteggi Classifica Generale:
-    * **15 Punti:** Risultato e marcatori esatti di tutte e due le squadre.
-    * **12 Punti:** Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.
-    * **10 Punti:** Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.
-    * **8 Punti:** Indovini lo 0-0, OPPURE solo la goleada di una squadra.
-    * **5 Punti:** Indovini l'esito (1, X, 2).
-    * **3 Punti:** Tutti i marcatori del Cagliari indovinati.
-    * **0 Punti:** Non indovini nulla.
-    * **Bonus Espulsioni:** +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).
+        <h3>2) Punteggi Classifica Generale:</h3>
+        <ul>
+            <li><b>15 Punti:</b> Risultato e marcatori esatti di tutte e due le squadre.</li>
+            <li><b>12 Punti:</b> Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.</li>
+            <li><b>10 Punti:</b> Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.</li>
+            <li><b>8 Punti:</b> Indovini lo 0-0, OPPURE solo la goleada di una squadra.</li>
+            <li><b>5 Punti:</b> Indovini l'esito (1, X, 2).</li>
+            <li><b>3 Punti:</b> Tutti i marcatori del Cagliari indovinati.</li>
+            <li><b>0 Punti:</b> Non indovini nulla.</li>
+            <li><b>Bonus Espulsioni:</b> +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).</li>
+        </ul>
 
-    ### 3) Masters of Cugurras:
-    * Classifica dedicata a chi colleziona i pronostici da 10 punti.
+        <h3>3) Masters of Cugurras:</h3>
+        <ul>
+            <li>Classifica dedicata a chi colleziona i pronostici da 10 punti.</li>
+        </ul>
 
-    ### 4) Bomber di razza:
-    * 1 punto per ogni marcatore del Cagliari indovinato.
-    * Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.
-    """)
+        <h3>4) Bomber di razza:</h3>
+        <ul>
+            <li>1 punto per ogni marcatore del Cagliari indovinato.</li>
+            <li>Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
 
 # 4. ADMIN
 elif tab_admin is not None:

@@ -640,14 +640,17 @@ if is_pronostici:
                             auto_cag, auto_avv = auto2, auto1
                             esp_cag, esp_avv = esp2, esp1
 
-                        db.table("pronostici").upsert({
-                            "id_partita": partita['id'], "utente": st.session_state["utente_corrente"],
-                            "gol_cagliari": gol_cag, "gol_avversario": gol_avv,
-                            "marcatori_cagliari": marc_cag, "marcatori_avversario": marc_avv,
-                            "autogol_cagliari": auto_cag, "autogol_avversario": auto_avv,
-                            "espulsi_cagliari": esp_cag, "espulsi_avversario": esp_avv
-                        }).execute()
-                        st.success("Pronostico registrato con successo!")
+                        try:
+                            db.table("pronostici").upsert({
+                                "id_partita": partita['id'], "utente": st.session_state["utente_corrente"],
+                                "gol_cagliari": gol_cag, "gol_avversario": gol_avv,
+                                "marcatori_cagliari": marc_cag, "marcatori_avversario": marc_avv,
+                                "autogol_cagliari": auto_cag, "autogol_avversario": auto_avv,
+                                "espulsi_cagliari": esp_cag, "espulsi_avversario": esp_avv
+                            }).execute()
+                            st.success("Pronostico registrato con successo!")
+                        except Exception as db_err:
+                            st.error(f"Errore durante l'inserimento su Supabase: {db_err}")
 
 # 2. CLASSIFICHE
 elif is_classifiche:

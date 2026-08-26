@@ -1,12 +1,20 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import streamlit.components.v1 as components
 from collections import Counter
+import extra_streamlit_components as stx
 
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Premio Cugurra", page_icon="⚽", layout="wide")
+
+# --- GESTIONE COOKIE PER PERSISTENZA SESSIONE (1 ORA) ---
+@st.cache_resource
+def get_cookie_manager():
+    return stx.CookieManager()
+
+cookie_manager = get_cookie_manager()
 
 # --- AUTO-SCROLL IN ALTO AD OGNI RICARICAMENTO ---
 components.html(
@@ -234,13 +242,33 @@ def mostra_footer():
     </div>
     """, unsafe_allow_html=True)
 
-# --- GESTIONE SESSIONE ---
+# --- GESTIONE SESSIONE & AUTO-LOGIN DA COOKIE (VALIDITA' 1 ORA) ---
 if "autenticato" not in st.session_state:
     st.session_state.update({
         "autenticato": False, "utente_corrente": None, "is_admin": False, "status": None, 
         "gol_singoli": {}, "gol_omologazione": {}, "nuovo_registrato": False, "modalita_auth": None,
         "in_modifica_pronostico": False
     })
+
+# Tentativo di recupero sessione dal cookie
+if not st.session_state["autenticato"]:
+    try:
+        user_cookie = cookie_manager.get(cookie="cugurra_user_session")
+        if user_cookie and isinstance(user_cookie, dict):
+            u_nome = user_cookie.get("nome_fb")
+            u_pin = user_cookie.get("pin")
+            if u_nome and u_pin:
+                res_c = db.table("utenti").select("*").eq("nome_fb", u_nome).eq("pin", u_pin).execute()
+                if res_c.data:
+                    u_data = res_c.data[0]
+                    st.session_state.update({
+                        "autenticato": True,
+                        "utente_corrente": u_data["nome_fb"],
+                        "is_admin": u_data.get('is_admin', False),
+                        "status": u_data.get('status', 'STANDARD')
+                    })
+    except Exception:
+        pass
 
 fase_attuale = get_fase()
 stagione_attuale = get_stagione()
@@ -268,7 +296,7 @@ if not st.session_state["autenticato"]:
         with col_l1:
             st.subheader("Accedi al tuo account")
             nome_inserito = st.text_input("Nome Utente Facebook", help="Inserisci nome e cognome come appare su Facebook")
-            pin_inserito = st.text_input("PIN personale (4 cifre)", type="password")
+            pin_inserito = st.text_input("PIN personale (4 cifre)", type="password", max_chars=4)
             risposta_inserita = st.text_input("Risposta alla tua Domanda Segreta", type="password", help="Inserisci la risposta segreta scelta in fase di registrazione")
             
             st.markdown("<br>", unsafe_allow_html=True)
@@ -279,6 +307,8 @@ if not st.session_state["autenticato"]:
 
                 if not clean_nome or not clean_pin or not clean_risposta:
                     st.error("Inserisci Nome Utente, PIN e Risposta alla Domanda Segreta per accedere.")
+                elif not clean_pin.isdigit() or len(clean_pin) != 4:
+                    st.error("⚠️ Il PIN deve essere composto **esattamente da 4 cifre numeriche**.")
                 else:
                     try:
                         res = db.table("utenti").select("*").eq("nome_fb", clean_nome).eq("pin", clean_pin).execute()
@@ -293,6 +323,15 @@ if not st.session_state["autenticato"]:
                                     "autenticato": True, "utente_corrente": u["nome_fb"], 
                                     "is_admin": u.get('is_admin', False), "status": u.get('status', 'STANDARD')
                                 })
+                                # Salvataggio cookie di sessione per 1 ora (3600 sec)
+                                try:
+                                    cookie_manager.set(
+                                        "cugurra_user_session",
+                                        {"nome_fb": u["nome_fb"], "pin": clean_pin},
+                                        expires_at=datetime.now() + timedelta(seconds=3600)
+                                    )
+                                except Exception:
+                                    pass
                                 st.rerun()
                         else:
                             st.error("Nome Utente o PIN non corretti. Verifica di non aver inserito spazi extra.")
@@ -323,11 +362,20 @@ if not st.session_state["autenticato"]:
                             "autenticato": True, "utente_corrente": st.session_state["reg_nome"],
                             "status": st.session_state["reg_status"], "is_admin": False, "nuovo_registrato": False
                         })
+                        # Salvataggio cookie di sessione per 1 ora
+                        try:
+                            cookie_manager.set(
+                                "cugurra_user_session",
+                                {"nome_fb": st.session_state["reg_nome"], "pin": st.session_state["reg_pin"]},
+                                expires_at=datetime.now() + timedelta(seconds=3600)
+                            )
+                        except Exception:
+                            pass
                         st.rerun()
                 else:
                     new_nome = st.text_input("Nome Utente Facebook", help="Inserisci il tuo nome e cognome esattamente come lo si legge su Facebook")
                     new_email = st.text_input("Indirizzo Email", help="La tua email verrà utilizzata solo per emergenze (recupero password ecc ecc)")
-                    new_pin = st.text_input("PIN personale (esattamente 4 cifre)", type="password", help="Scegli un PIN numerico a 4 cifre da ricordare")
+                    new_pin = st.text_input("PIN personale (esattamente 4 cifre)", type="password", max_chars=4, help="Scegli un PIN numerico a 4 cifre da ricordare")
                     
                     st.markdown("---")
                     st.markdown("##### 🔒 Domanda e Risposta Segreta (Per l'accesso e recupero PIN)")
@@ -409,7 +457,7 @@ if not st.session_state["autenticato"]:
                     st.markdown("---")
                     st.info(f"**Domanda Segreta:** {domanda_u}")
                     ans_check = st.text_input("La tua Risposta Segreta", key="ans_check")
-                    new_pin_reset = st.text_input("Nuovo PIN (4 cifre)", type="password", key="new_pin_reset")
+                    new_pin_reset = st.text_input("Nuovo PIN (4 cifre)", type="password", max_chars=4, key="new_pin_reset")
 
                     if st.button("Reimposta PIN", key="btn_do_reset", use_container_width=True):
                         clean_ans = ans_check.strip().lower() if ans_check else ""
@@ -419,7 +467,7 @@ if not st.session_state["autenticato"]:
                         if clean_ans != db_ans:
                             st.error("Risposta segreta errata.")
                         elif not clean_new_pin.isdigit() or len(clean_new_pin) != 4:
-                            st.error("Il nuovo PIN deve essere di esattamente 4 cifre numeriche.")
+                            st.error("⚠️ Il nuovo PIN deve essere composto **esattamente da 4 cifre numeriche**.")
                         else:
                             try:
                                 db.table("utenti").update({"pin": clean_new_pin}).eq("nome_fb", u_found["nome_fb"]).execute()
@@ -433,6 +481,10 @@ if not st.session_state["autenticato"]:
 st.sidebar.markdown(f"👤 Utente: **{st.session_state.get('utente_corrente')}**")
 st.sidebar.markdown(f"⭐ Status: **{st.session_state.get('status')}**")
 if st.sidebar.button("Logout", key="sidebar_logout_btn", use_container_width=True):
+    try:
+        cookie_manager.delete("cugurra_user_session")
+    except Exception:
+        pass
     st.session_state.clear()
     st.rerun()
 
@@ -701,7 +753,6 @@ if is_pronostici:
 
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # Rimosso il pulsante "Cancella i dati inseriti" per pulizia interfaccia
             btn_label = "Convalida Modifiche" if pronostico_esistente else "Invia Pronostico"
             if st.button(btn_label, key="btn_invia_pronostico", use_container_width=True, disabled=not can_edit):
                 tot_gol_s1_calcolati = 0
@@ -849,7 +900,7 @@ elif is_regolamento:
 
         <h3>Classifica Masters of Cugurras:</h3>
         <ul>
-            <li>Classifica dedicated a chi colleziona i pronostici da 10 punti.</li>
+            <li>Classifica dedicata a chi colleziona i pronostici da 10 punti.</li>
         </ul>
 
         <h3>Classifica Bomber di razza:</h3>
@@ -933,7 +984,7 @@ elif tab_admin is not None:
                     }).execute()
                     st.success("Partita creata!")
 
-    # 3. OMOLOGAZIONE PARTITA
+    # 3. OMOLOGAZIONE PARTITA (CON GESTIONE SICURA CALCIATORI CEDUTI / ASSENTI)
     with st.expander("🏁 Omologazione Partita e Assegnazione Punti", expanded=False):
         st.warning("⚠️ **ATTENZIONE:** L'omologazione inserisce i risultati definitivi, calcola automaticamente tutti i punteggi e **blocca le modifiche successive**!")
         
@@ -1022,6 +1073,14 @@ elif tab_admin is not None:
                     p_cag = pron.get("gol_cagliari", 0)
                     p_avv = pron.get("gol_avversario", 0)
                     
+                    # Gestione sicura per prevenire eccezioni su calciatori ceduti/assenti
+                    set_m_cag_reali = set(m_cag or [])
+                    set_m_avv_reali = set(m_avv or [])
+                    set_a_cag_reali = set(a_cag or [])
+                    set_a_avv_reali = set(a_avv or [])
+                    set_e_cag_reali = set(e_cag or [])
+                    set_e_avv_reali = set(e_avv or [])
+
                     p_marc_cag = set(pron.get("marcatori_cagliari", []) or [])
                     p_marc_avv = set(pron.get("marcatori_avversario", []) or [])
                     p_auto_cag = set(pron.get("autogol_cagliari", []) or [])
@@ -1038,7 +1097,7 @@ elif tab_admin is not None:
                     reale_goleada_cag = res_cag > 9
                     reale_goleada_avv = res_avv > 9
 
-                    bonus_esp = len(p_esp_cag.intersection(set(e_cag))) + len(p_esp_avv.intersection(set(e_avv)))
+                    bonus_esp = len(p_esp_cag.intersection(set_e_cag_reali)) + len(p_esp_avv.intersection(set_e_avv_reali))
 
                     if (is_goleada_cag and not reale_goleada_cag and p_avv == res_avv) or (is_goleada_avv and not reale_goleada_avv and p_cag == res_cag):
                         punti_generale = 12
@@ -1050,16 +1109,16 @@ elif tab_admin is not None:
                         punti_generale = 8
                     else:
                         risultato_esatto = (p_cag == res_cag and p_avv == res_avv)
-                        marcatori_esatti_tutti = (set(m_cag) == p_marc_cag and set(m_avv) == p_marc_avv and set(a_cag) == p_auto_cag and set(a_avv) == p_auto_avv)
+                        marcatori_esatti_tutti = (set_m_cag_reali == p_marc_cag and set_m_avv_reali == p_marc_avv and set_a_cag_reali == p_auto_cag and set_a_avv_reali == p_auto_avv)
                         
                         if risultato_esatto and marcatori_esatti_tutti:
                             punti_generale = 15
-                        elif risultato_esatto and set(m_cag) == p_marc_cag and set(a_cag) == p_auto_cag:
+                        elif risultato_esatto and set_m_cag_reali == p_marc_cag and set_a_cag_reali == p_auto_cag:
                             punti_generale = 10
                             punti_masters = 10
                         elif (p_cag > p_avv and res_cag > res_avv) or (p_cag < p_avv and res_cag < res_avv) or (p_cag == p_avv and res_cag == res_avv):
                             punti_generale = 5
-                        elif set(m_cag) == p_marc_cag and set(a_cag) == p_auto_cag and len(m_cag) > 0:
+                        elif set_m_cag_reali == p_marc_cag and set_a_cag_reali == p_auto_cag and len(set_m_cag_reali) > 0:
                             punti_generale = 3
                         else:
                             punti_generale = 0
@@ -1067,7 +1126,7 @@ elif tab_admin is not None:
                     punti_generale += bonus_esp
 
                     for m_pron in p_marc_cag:
-                        if m_pron in m_cag:
+                        if m_pron in set_m_cag_reali:
                             punti_bomber += 1
 
                     db.table("punteggi_partita").upsert({
@@ -1170,7 +1229,7 @@ elif tab_admin is not None:
                 st.write("")
                 if st.button("Forza Aggiornamento PIN", key="btn_force_pin", use_container_width=True):
                     if not new_forced_pin.isdigit() or len(new_forced_pin.strip()) != 4:
-                        st.error("Il PIN deve essere esattamente di 4 cifre numeriche.")
+                        st.error("⚠️ Il PIN deve essere esattamente di 4 cifre numeriche.")
                     else:
                         try:
                             db.table("utenti").update({"pin": new_forced_pin.strip()}).eq("nome_fb", target_reset_user).execute()

@@ -238,7 +238,7 @@ def mostra_footer():
     </div>
     """, unsafe_allow_html=True)
 
-# --- GESTIONE SESSIONE & RIPRISTINO COOKIE (MODIFICA 2) ---
+# --- GESTIONE SESSIONE & RIPRISTINO COOKIE ---
 if "autenticato" not in st.session_state:
     st.session_state.update({
         "autenticato": False, "utente_corrente": None, "is_admin": False, "status": None, 
@@ -283,7 +283,6 @@ if not st.session_state["autenticato"]:
         with col_l1:
             st.subheader("Accedi al tuo account")
             nome_inserito = st.text_input("Nome Utente Facebook", help="Inserisci nome e cognome come appare su Facebook")
-            # MODIFICA 1: Limita il campo PIN a 4 caratteri
             pin_inserito = st.text_input("PIN personale (4 cifre)", type="password", max_chars=4)
             risposta_inserita = st.text_input("Risposta alla tua Domanda Segreta", type="password", help="Inserisci la risposta segreta scelta in fase di registrazione")
             
@@ -316,7 +315,6 @@ if not st.session_state["autenticato"]:
                                     "autenticato": True, "utente_corrente": session_info["utente_corrente"], 
                                     "is_admin": session_info["is_admin"], "status": session_info["status"]
                                 })
-                                # MODIFICA 2: Salvataggio Cookie (1 Ora)
                                 cookie_manager.set(
                                     cookie="cugurra_auth_session",
                                     val=session_info,
@@ -357,7 +355,6 @@ if not st.session_state["autenticato"]:
                             "autenticato": True, "utente_corrente": session_info["utente_corrente"],
                             "status": session_info["status"], "is_admin": False, "nuovo_registrato": False
                         })
-                        # MODIFICA 2: Salvataggio Cookie Registrazione
                         cookie_manager.set(
                             cookie="cugurra_auth_session",
                             val=session_info,
@@ -367,7 +364,6 @@ if not st.session_state["autenticato"]:
                 else:
                     new_nome = st.text_input("Nome Utente Facebook", help="Inserisci il tuo nome e cognome esattamente come lo si legge su Facebook")
                     new_email = st.text_input("Indirizzo Email", help="La tua email verrà utilizzata solo per emergenze (recupero password ecc ecc)")
-                    # MODIFICA 1: Limita il campo PIN a 4 caratteri
                     new_pin = st.text_input("PIN personale (esattamente 4 cifre)", type="password", max_chars=4, help="Scegli un PIN numerico a 4 cifre da ricordare")
                     
                     st.markdown("---")
@@ -382,7 +378,6 @@ if not st.session_state["autenticato"]:
 
                         if not new_nome or not new_email or not clean_pin or not clean_risposta:
                             st.error("Compila tutti i campi: Nome, Email, PIN, Domanda e Risposta Segreta.")
-                        # MODIFICA 1: Validazione 4 cifre esatte
                         elif not clean_pin.isdigit() or len(clean_pin) != 4:
                             st.error("⚠️ Il PIN deve essere composto **esattamente da 4 cifre numeriche**.")
                         else:
@@ -451,7 +446,6 @@ if not st.session_state["autenticato"]:
                     st.markdown("---")
                     st.info(f"**Domanda Segreta:** {domanda_u}")
                     ans_check = st.text_input("La tua Risposta Segreta", key="ans_check")
-                    # MODIFICA 1: Limita a max_chars=4
                     new_pin_reset = st.text_input("Nuovo PIN (4 cifre)", type="password", max_chars=4, key="new_pin_reset")
 
                     if st.button("Reimposta PIN", key="btn_do_reset", use_container_width=True):
@@ -461,7 +455,6 @@ if not st.session_state["autenticato"]:
 
                         if clean_ans != db_ans:
                             st.error("Risposta segreta errata.")
-                        # MODIFICA 1: Convalida 4 cifre
                         elif not clean_new_pin.isdigit() or len(clean_new_pin) != 4:
                             st.error("Il nuovo PIN deve essere di esattamente 4 cifre numeriche.")
                         else:
@@ -477,7 +470,6 @@ if not st.session_state["autenticato"]:
 st.sidebar.markdown(f"👤 Utente: **{st.session_state.get('utente_corrente')}**")
 st.sidebar.markdown(f"⭐ Status: **{st.session_state.get('status')}**")
 if st.sidebar.button("Logout", key="sidebar_logout_btn", use_container_width=True):
-    # MODIFICA 2: Cancellazione Cookie in Logout
     cookie_manager.delete("cugurra_auth_session")
     st.session_state.clear()
     st.rerun()
@@ -548,11 +540,11 @@ if is_pronostici:
                     m_list = pronostico_esistente.get(key_m, []) or []
                     a_list = pronostico_esistente.get(key_a, []) or []
                     
-                    c_m = Counter(m_list)
+                    c_m = Counter([x for x in m_list if x])
                     for m_name, count in c_m.items():
                         st.session_state.gol_singoli[f"g_{key_pref}_{m_name}_{partita['id']}"] = count
                         
-                    c_a = Counter(a_list)
+                    c_a = Counter([x for x in a_list if x])
                     for a_name, count in c_a.items():
                         st.session_state.gol_singoli[f"auto_{key_pref}_{a_name}_{partita['id']}"] = count
                         
@@ -573,14 +565,14 @@ if is_pronostici:
                 p_s1 = pronostico_esistente.get("gol_cagliari" if is_cagliari_left else "gol_avversario", 0)
                 p_s2 = pronostico_esistente.get("gol_avversario" if is_cagliari_left else "gol_cagliari", 0)
                 
-                m1_list = pronostico_esistente.get("marcatori_cagliari" if is_cagliari_left else "marcatori_avversario", []) or []
-                m2_list = pronostico_esistente.get("marcatori_avversario" if is_cagliari_left else "marcatori_cagliari", []) or []
+                m1_list = [x for x in (pronostico_esistente.get("marcatori_cagliari" if is_cagliari_left else "marcatori_avversario", []) or []) if x]
+                m2_list = [x for x in (pronostico_esistente.get("marcatori_avversario" if is_cagliari_left else "marcatori_cagliari", []) or []) if x]
                 
-                a1_list = pronostico_esistente.get("autogol_cagliari" if is_cagliari_left else "autogol_avversario", []) or []
-                a2_list = pronostico_esistente.get("autogol_avversario" if is_cagliari_left else "autogol_cagliari", []) or []
+                a1_list = [x for x in (pronostico_esistente.get("autogol_cagliari" if is_cagliari_left else "autogol_avversario", []) or []) if x]
+                a2_list = [x for x in (pronostico_esistente.get("autogol_avversario" if is_cagliari_left else "autogol_cagliari", []) or []) if x]
                 
-                e1_list = pronostico_esistente.get("espulsi_cagliari" if is_cagliari_left else "espulsi_avversario", []) or []
-                e2_list = pronostico_esistente.get("espulsi_avversario" if is_cagliari_left else "espulsi_cagliari", []) or []
+                e1_list = [x for x in (pronostico_esistente.get("espulsi_cagliari" if is_cagliari_left else "espulsi_avversario", []) or []) if x]
+                e2_list = [x for x in (pronostico_esistente.get("espulsi_avversario" if is_cagliari_left else "espulsi_cagliari", []) or []) if x]
                 
                 def fmt_dettagli(m_l, a_l):
                     res = []
@@ -721,7 +713,8 @@ if is_pronostici:
                 else:
                     def_marc = []
                     if pronostico_esistente:
-                        def_marc = pronostico_esistente.get("marcatori_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "marcatori_avversario", []) or []
+                        raw_marc = pronostico_esistente.get("marcatori_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "marcatori_avversario", []) or []
+                        def_marc = [m for m in raw_marc if m]
                     marcatori = st.multiselect(f"Marcatori {team_name}", options=lista_rosa, default=list(dict.fromkeys([m for m in def_marc if m in lista_rosa])), key=f"m_{key_pref}_{partita['id']}", disabled=not can_edit)
                     for m in marcatori:
                         k = f"g_{key_pref}_{m}_{partita['id']}"
@@ -729,7 +722,8 @@ if is_pronostici:
 
                     def_auto = []
                     if pronostico_esistente:
-                        def_auto = pronostico_esistente.get("autogol_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "autogol_avversario", []) or []
+                        raw_auto = pronostico_esistente.get("autogol_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "autogol_avversario", []) or []
+                        def_auto = [a for a in raw_auto if a]
                     autogol = st.multiselect(f"Autogol a favore ({team_name})", options=lista_opp, default=list(dict.fromkeys([a for a in def_auto if a in lista_opp])), key=f"a_{key_pref}_{partita['id']}", disabled=not can_edit)
                     for a in autogol:
                         k = f"auto_{key_pref}_{a}_{partita['id']}"
@@ -737,7 +731,8 @@ if is_pronostici:
                 
                 def_esp = []
                 if pronostico_esistente:
-                    def_esp = pronostico_esistente.get("espulsi_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "espulsi_avversario", []) or []
+                    raw_esp = pronostico_esistente.get("espulsi_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "espulsi_avversario", []) or []
+                    def_esp = [e for e in raw_esp if e]
                 espulsi = st.multiselect(f"Espulsi ({team_name})", options=lista_rosa, default=[e for e in def_esp if e in lista_rosa], max_selections=3, key=f"e_{key_pref}_{partita['id']}", disabled=not can_edit)
                 return marcatori, autogol, espulsi
 
@@ -1062,7 +1057,6 @@ elif tab_admin is not None:
                 except:
                     pronostici_utenti = []
 
-                # MODIFICA 3: Logica Fallback Sicuro Calciatori Assenti / Ceduti
                 for pron in pronostici_utenti:
                     utente = pron["utente"]
                     p_cag = pron.get("gol_cagliari", 0)
@@ -1076,7 +1070,6 @@ elif tab_admin is not None:
                     p_esp_cag_raw = pron.get("espulsi_cagliari", []) or []
                     p_esp_avv_raw = pron.get("espulsi_avversario", []) or []
 
-                    # Fallback sicuro: considera solo calciatori ancora presenti o validi
                     p_marc_cag = set([m for m in p_marc_cag_raw if m])
                     p_marc_avv = set([m for m in p_marc_avv_raw if m])
                     p_auto_cag = set([a for a in p_auto_cag_raw if a])
@@ -1220,13 +1213,11 @@ elif tab_admin is not None:
             col_pass1, col_pass2 = st.columns(2)
             with col_pass1:
                 target_reset_user = st.selectbox("Seleziona Utente per Reset PIN", utenti_tutti, key="select_user_reset_pin")
-                # MODIFICA 1: Limita a max_chars=4
                 new_forced_pin = st.text_input("Nuovo PIN a 4 cifre", max_chars=4, key="input_forced_pin")
             with col_pass2:
                 st.write("")
                 st.write("")
                 if st.button("Forza Aggiornamento PIN", key="btn_force_pin", use_container_width=True):
-                    # MODIFICA 1: Convalida 4 cifre
                     if not new_forced_pin.isdigit() or len(new_forced_pin.strip()) != 4:
                         st.error("Il PIN deve essere esattamente di 4 cifre numeriche.")
                     else:

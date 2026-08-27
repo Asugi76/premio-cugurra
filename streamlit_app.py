@@ -1007,15 +1007,12 @@ elif tab_admin is not None:
                 if not avv:
                     st.error("Inserisci la squadra avversaria.")
                 else:
-                    dt_nuova = datetime(
-                        data_p.year, data_p.month, data_p.day,
-                        ore_sel, min_sel, 0,
-                        tzinfo=FUSO_ITALIA
-                    )
+                    ora_str = f"{ore_sel:02d}:{min_sel:02d}:00"
+                    data_ora_unita = f"{data_p.isoformat()}T{ora_str}"
                     id_str = f"{comp}_{avv}_{data_p}".replace(" ", "_")
                     db.table("partite").insert({
                         "competizione": comp, "avversario": avv, "campo": campo,
-                        "casa_trasferta": campo, "data_ora": dt_nuova.isoformat(), "id_stringa": id_str,
+                        "casa_trasferta": campo, "data_ora": data_ora_unita, "id_stringa": id_str,
                         "rosa_cagliari": rosa_cag_input.replace(";", ","),
                         "rosa_avversaria": rosa_avv_input.replace(";", ","),
                         "omologata": False
@@ -1118,11 +1115,17 @@ elif tab_admin is not None:
                     p_esp_cag_raw = pron.get("espulsi_cagliari", []) or []
                     p_esp_avv_raw = pron.get("espulsi_avversario", []) or []
 
-                    # OTTIMIZZAZIONE: Conversione diretta in set delle espulsioni
-                    p_marc_cag = set(filter(None, p_marc_cag_raw))
-                    p_marc_avv = set(filter(None, p_marc_avv_raw))
-                    p_auto_cag = set(filter(None, p_auto_cag_raw))
-                    p_auto_avv = set(filter(None, p_auto_avv_raw))
+                    # Ottimizzazione e conteggio accurato con Counter (supporta i gol multipli per singolo marcatore)
+                    p_marc_cag_counts = Counter(filter(None, p_marc_cag_raw))
+                    p_marc_avv_counts = Counter(filter(None, p_marc_avv_raw))
+                    p_auto_cag_counts = Counter(filter(None, p_auto_cag_raw))
+                    p_auto_avv_counts = Counter(filter(None, p_auto_avv_raw))
+                    
+                    reale_marc_cag_counts = Counter(filter(None, m_cag))
+                    reale_marc_avv_counts = Counter(filter(None, m_avv))
+                    reale_auto_cag_counts = Counter(filter(None, a_cag))
+                    reale_auto_avv_counts = Counter(filter(None, a_avv))
+
                     p_esp_cag = set(filter(None, p_esp_cag_raw))
                     p_esp_avv = set(filter(None, p_esp_avv_raw))
 
@@ -1147,25 +1150,28 @@ elif tab_admin is not None:
                         punti_generale = 8
                     else:
                         risultato_esatto = (p_cag == res_cag and p_avv == res_avv)
-                        marcatori_esatti_tutti = (set(m_cag) == p_marc_cag and set(m_avv) == p_marc_avv and set(a_cag) == p_auto_cag and set(a_avv) == p_auto_avv)
+                        marcatori_esatti_tutti = (p_marc_cag_counts == reale_marc_cag_counts and p_marc_avv_counts == reale_marc_avv_counts and p_auto_cag_counts == reale_auto_cag_counts and p_auto_avv_counts == reale_auto_avv_counts)
                         
                         if risultato_esatto and marcatori_esatti_tutti:
                             punti_generale = 15
-                        elif risultato_esatto and set(m_cag) == p_marc_cag and set(a_cag) == p_auto_cag:
+                        elif risultato_esatto and p_marc_cag_counts == reale_marc_cag_counts and p_auto_cag_counts == reale_auto_cag_counts:
                             punti_generale = 10
                             punti_masters = 10
                         elif (p_cag > p_avv and res_cag > res_avv) or (p_cag < p_avv and res_cag < res_avv) or (p_cag == p_avv and res_cag == res_avv):
                             punti_generale = 5
-                        elif set(m_cag) == p_marc_cag and set(a_cag) == p_auto_cag and len(m_cag) > 0:
+                        elif p_marc_cag_counts == reale_marc_cag_counts and p_auto_cag_counts == reale_auto_cag_counts and len(p_marc_cag_counts) > 0:
                             punti_generale = 3
                         else:
                             punti_generale = 0
 
                     punti_generale += bonus_esp
 
-                    for m_pron in p_marc_cag:
-                        if m_pron in m_cag:
+                    # Calcolo punti Bomber di razza aggiornato e coerente con la logica richiesta
+                    for giocatore, gol_pred in p_marc_cag_counts.items():
+                        if giocatore in reale_marc_cag_counts and reale_marc_cag_counts[giocatore] > 0:
                             punti_bomber += 1
+                            if gol_pred == reale_marc_cag_counts[giocatore]:
+                                punti_bomber += reale_marc_cag_counts[giocatore]
 
                     db.table("punteggi_partita").upsert({
                         "id_partita": p_omo["id"], "utente": utente,
@@ -1227,29 +1233,23 @@ elif tab_admin is not None:
                     submit_del = st.form_submit_button("Elimina Partita", use_container_width=True)
 
                 if submit_mod:
+                    ora_str = f"{m_ora:02d}:{m_min:02d}:00"
+                    data_ora_unita = f"{m_data.isoformat()}T{ora_str}"
                     id_str = f"{m_comp}_{m_avv}_{m_data}".replace(" ", "_")
 
-                    dt_modificata = datetime(
-                        m_data.year, m_data.month, m_data.day,
-                        m_ora, m_min, 0,
-                        tzinfo=FUSO_ITALIA
-                    )
+                    # CONTROLLO ORARIO E AVVISO ANTECEDENTE
+                    dt_modificata = datetime.fromisoformat(data_ora_unita).replace(tzinfo=FUSO_ITALIA)
                     ora_attuale = datetime.now(FUSO_ITALIA)
 
                     if dt_modificata < ora_attuale:
                         st.warning("⚠️ **Attenzione:** Stai impostando una data/ora antecedente al momento attuale. La modifica verrà comunque salvata.")
 
                     db.table("partite").update({
-                        "competizione": m_comp, 
-                        "avversario": m_avv, 
-                        "campo": m_campo,
-                        "casa_trasferta": m_campo, 
-                        "data_ora": dt_modificata.isoformat(),
-                        "id_stringa": id_str,
+                        "competizione": m_comp, "avversario": m_avv, "campo": m_campo,
+                        "casa_trasferta": m_campo, "data_ora": data_ora_unita, "id_stringa": id_str,
                         "rosa_cagliari": m_rosa_cag.replace(";", ","),
                         "rosa_avversaria": m_rosa_avv.replace(";", ",")
                     }).eq("id", p_selezionata["id"]).execute()
-                    
                     st.success("Partita aggiornata con successo!")
                     st.rerun()
 

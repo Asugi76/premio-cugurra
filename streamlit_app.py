@@ -233,10 +233,9 @@ def check_limite_iscrizioni(fase_str):
 def ricalcola_punteggi_partita(id_partita):
     """
     Ricalcola e sovrascrive i punteggi di tutti gli utenti per una specifica partita
-    seguendo rigorosamente la gerarchia, le esclusive e le regole del regolamento.
+    seguendo rigorosamente la gerarchia, le esclusive e le regole del regolamento[cite: 5].
     """
     try:
-        # Recupera dati partita
         partita_res = db.table("partite").select("*").eq("id", id_partita).execute()
         if not partita_res.data:
             return
@@ -257,7 +256,6 @@ def ricalcola_punteggi_partita(id_partita):
         reale_auto_cag_counts = Counter(filter(None, a_cag_reali))
         reale_auto_avv_counts = Counter(filter(None, a_avv_reali))
 
-        # Recupera pronostici degli utenti per questa partita
         pronostici_res = db.table("pronostici").select("*").eq("id_partita", id_partita).execute()
         pronostici_utenti = pronostici_res.data or []
 
@@ -283,10 +281,8 @@ def ricalcola_punteggi_partita(id_partita):
             reale_goleada_cag = res_cag > 9
             reale_goleada_avv = res_avv > 9
 
-            # Bonus Espulsioni (1 punto per ogni giocatore espulso indovinato, fino a 3)
             bonus_esp = len(p_esp_cag.intersection(set(e_cag_reali))) + len(p_esp_avv.intersection(set(e_avv_reali)))
 
-            # Gerarchia e Mutua Esclusività
             if (is_goleada_cag and not reale_goleada_cag and p_avv == res_avv) or (is_goleada_avv and not reale_goleada_avv and p_cag == res_cag):
                 punti_generale = 12
             elif is_goleada_cag and is_goleada_avv and reale_goleada_cag and reale_goleada_avv:
@@ -318,14 +314,12 @@ def ricalcola_punteggi_partita(id_partita):
 
             punti_generale += bonus_esp
 
-            # Calcolo Bomber di Razza (1 punto per marcatore + bonus +1 per ogni gol reale indovinato)
             for giocatore, gol_pred in p_marc_cag_counts.items():
                 if giocatore in reale_marc_cag_counts and reale_marc_cag_counts[giocatore] > 0:
                     punti_bomber += 1
                     if gol_pred == reale_marc_cag_counts[giocatore]:
                         punti_bomber += reale_marc_cag_counts[giocatore]
 
-            # Sovrascrittura su Supabase via upsert (chiave univoca id_partita, utente)
             db.table("punteggi_partita").upsert({
                 "id_partita": id_partita, 
                 "utente": utente,
@@ -926,7 +920,7 @@ if is_pronostici:
                     except Exception as db_err:
                         st.error(f"Errore durante l'inserimento su Supabase: {db_err}")
 
-# 2. CLASSIFICHE (Con criterio di spareggio rigoroso: a parità di punti, chi ha giocato più partite)
+# 2. CLASSIFICHE
 elif is_classifiche:
     st.markdown("<h2 class='single-line-title'>🏆 Classifiche Ufficiali 🏆</h2>", unsafe_allow_html=True)
     sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Albo d'Oro"])
@@ -954,7 +948,6 @@ elif is_classifiche:
             gen_df = df_punteggi.groupby("utente")["punti_generale"].sum().reset_index()
             gen_df = pd.merge(gen_df, partita_counts, on="utente", how="left").fillna(0)
             gen_df["Partite Giocate"] = gen_df["Partite Giocate"].astype(int)
-            # Spareggio: a parità di punti, comanda chi ha giocato più partite (discendente)
             gen_df = gen_df.sort_values(by=["punti_generale", "Partite Giocate"], ascending=[False, False])
             gen_df.columns = ["Utente", "Punti Totali", "Partite Giocate"]
             st.dataframe(gen_df, use_container_width=True, hide_index=True)
@@ -1061,7 +1054,6 @@ elif tab_admin is not None:
     
     st.markdown("<h2 class='single-line-title'>⚙️ Pannello di Controllo Admin ⚙️</h2>", unsafe_allow_html=True)
     
-    # 1. GESTIONE STAGIONE
     with st.expander("⚙️ Gestione Stagione & Fase Globale", expanded=False):
         fase_scelta = st.selectbox("Cambia Fase Globale", ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"], index=["TEST", "STAGIONE IN CORSO", "ARCHIVIO"].index(fase_attuale) if fase_attuale in ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"] else 0)
         
@@ -1090,7 +1082,6 @@ elif tab_admin is not None:
                 except Exception as ex_st:
                     st.error(f"Errore durante il cambio stagione: {ex_st}")
 
-    # 2. INSERISCI NUOVA PARTITA
     with st.expander("➕ Inserisci Nuova Partita", expanded=False):
         try:
             lista_comp = [c['nome'] for c in db.table("competizioni").select("nome").order("nome").execute().data]
@@ -1125,7 +1116,6 @@ elif tab_admin is not None:
                     }).execute()
                     st.success("Partita creata!")
 
-    # 3. OMOLOGAZIONE PARTITA
     with st.expander("🏁 Omologazione Partita e Assegnazione Punti", expanded=False):
         st.warning("⚠️ **ATTENZIONE:** L'omologazione inserisce i risultati definitivi e blocco modifiche.")
         
@@ -1204,13 +1194,11 @@ elif tab_admin is not None:
                     "omologata": True
                 }).eq("id", p_omo["id"]).execute()
 
-                # Esegue il ricalcolo e la sovrascrittura automatica di tutti i punteggi errati
                 ricalcola_punteggi_partita(p_omo["id"])
 
                 st.success("Partita omologata e punteggi ricalcolati e sovrascritti correttamente!")
                 st.rerun()
 
-    # 4. MODIFICA O ELIMINA PARTITE ATTIVE
     with st.expander("🛠️ Modifica o Elimina Partite Attive", expanded=False):
         try:
             partite_attive = db.table("partite").select("*").eq("omologata", False).order("data_ora").execute().data
@@ -1285,7 +1273,6 @@ elif tab_admin is not None:
                     st.success("Partita eliminata!")
                     st.rerun()
 
-    # 5. GESTIONE UTENTI
     with st.expander("👥 Gestione Utenti, Status & Reset PIN", expanded=False):
         try:
             utenti_db = db.table("utenti").select("*").execute().data
@@ -1352,7 +1339,6 @@ elif tab_admin is not None:
                     except Exception as err:
                         st.error(f"Errore: {err}")
 
-    # 6. GESTIONE ALBO D'ORO ADMIN
     with st.expander("📜 Gestione Albo d'Oro", expanded=False):
         try:
             res_albo_admin = db.table("albo_doros").select("*").order("stagione", desc=True).execute()

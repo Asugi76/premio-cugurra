@@ -821,12 +821,11 @@ if is_pronostici:
                     except Exception as db_err:
                         st.error(f"Errore durante l'inserimento su Supabase: {db_err}")
 
-# 2. CLASSIFICHE (AGGIORNATE E FUNZIONANTI CON DATI REALI)
+# 2. CLASSIFICHE
 elif is_classifiche:
     st.markdown("<h2 class='single-line-title'>🏆 Classifiche Ufficiali 🏆</h2>", unsafe_allow_html=True)
     sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Albo d'Oro"])
     
-    # Recupero dati punteggi e pronostici
     try:
         punteggi_data = db.table("punteggi_partita").select("*").execute().data
         pronostici_data = db.table("pronostici").select("*").execute().data
@@ -838,7 +837,6 @@ elif is_classifiche:
     df_pronostici = pd.DataFrame(pronostici_data)
 
     if not df_punteggi.empty and not df_pronostici.empty:
-        # Calcolo partite giocate/pronosticate per utente per gestire lo spareggio a parità di punti
         partita_counts = df_pronostici.groupby("utente")["id_partita"].nunique().reset_index()
         partita_counts.columns = ["utente", "Partite Giocate"]
     else:
@@ -1117,12 +1115,13 @@ elif tab_admin is not None:
                     p_esp_cag_raw = pron.get("espulsi_cagliari", []) or []
                     p_esp_avv_raw = pron.get("espulsi_avversario", []) or []
 
-                    p_marc_cag = set([m for m in p_marc_cag_raw if m])
-                    p_marc_avv = set([m for m in p_marc_avv_raw if m])
-                    p_auto_cag = set([a for a in p_auto_cag_raw if a])
-                    p_auto_avv = set([a for a in p_auto_avv_raw if a])
-                    p_esp_cag = set([e for e in p_esp_cag_raw if e])
-                    p_esp_avv = set([e for e in p_esp_avv_raw if e])
+                    # OTTIMIZZAZIONE: Conversione diretta in set delle espulsioni
+                    p_marc_cag = set(filter(None, p_marc_cag_raw))
+                    p_marc_avv = set(filter(None, p_marc_avv_raw))
+                    p_auto_cag = set(filter(None, p_auto_cag_raw))
+                    p_auto_avv = set(filter(None, p_auto_avv_raw))
+                    p_esp_cag = set(filter(None, p_esp_cag_raw))
+                    p_esp_avv = set(filter(None, p_esp_avv_raw))
 
                     punti_generale = 0
                     punti_masters = 0
@@ -1228,14 +1227,21 @@ elif tab_admin is not None:
                     ora_str = f"{m_ora:02d}:{m_min:02d}:00"
                     data_ora_unita = f"{m_data.isoformat()}T{ora_str}"
                     id_str = f"{m_comp}_{m_avv}_{m_data}".replace(" ", "_")
-                    
+
+                    # CONTROLLO ORARIO E AVVISO ANTECEDENTE
+                    dt_modificata = datetime.fromisoformat(data_ora_unita).replace(tzinfo=FUSO_ITALIA)
+                    ora_attuale = datetime.now(FUSO_ITALIA)
+
+                    if dt_modificata < ora_attuale:
+                        st.warning("⚠️ **Attenzione:** Stai impostando una data/ora antecedente al momento attuale. La modifica verrà comunque salvata.")
+
                     db.table("partite").update({
                         "competizione": m_comp, "avversario": m_avv, "campo": m_campo,
                         "casa_trasferta": m_campo, "data_ora": data_ora_unita, "id_stringa": id_str,
                         "rosa_cagliari": m_rosa_cag.replace(";", ","),
                         "rosa_avversaria": m_rosa_avv.replace(";", ",")
                     }).eq("id", p_selezionata["id"]).execute()
-                    st.success("Partita aggiornata!")
+                    st.success("Partita aggiornata con successo!")
                     st.rerun()
 
                 if submit_del:

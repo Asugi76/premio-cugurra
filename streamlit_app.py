@@ -22,14 +22,15 @@ components.html(
     height=0,
 )
 
-# --- SUPABASE ---
-SUPABASE_URL = "https://kbbxjfxltkchzvkyofdr.supabase.co"
-SUPABASE_KEY = "sb_publishable_vT3i8G3_Lz8QQnDmhUqVOA_83_y_y3B"
+# --- SUPABASE CONFIGURAZIONE SICURA ---
+# Se disponibile usa st.secrets, altrimenti fallback alle costanti di backup
+SUPABASE_URL = st.secrets.get("SUPABASE_URL", "https://kbbxjfxltkchzvkyofdr.supabase.co")
+SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "sb_publishable_vT3i8G3_Lz8QQnDmhUqVOA_83_y_y3B")
+
 STORAGE_BASE_URL = f"{SUPABASE_URL}/storage/v1/object/public/LOGHI_E_GRAFICHE/"
 SFONDO_URL = f"{STORAGE_BASE_URL}sfondo.jpg"
 DEFAULT_LOGO_URL = f"{STORAGE_BASE_URL}DEFAULT.png"
 
-# Lista definitiva delle 10 domande segrete
 LISTA_DOMANDE_SEGRETE = [
     "Qual è il nome del tuo primo animale domestico?",
     "Qual è il cognome da nubile di tua madre?",
@@ -44,7 +45,7 @@ LISTA_DOMANDE_SEGRETE = [
 ]
 
 @st.cache_resource
-def init_supabase(): 
+def init_supabase() -> Client: 
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 db = init_supabase()
@@ -148,7 +149,6 @@ st.markdown(f"""
         display: none;
     }}
 
-    /* STILE ELEGANTE EXPANDER (MENU A SCOMPARSA ADMIN) */
     .streamlit-expanderHeader {{
         background-color: rgba(30, 41, 59, 0.95) !important;
         border: 1px solid #334155 !important;
@@ -187,7 +187,7 @@ def get_config_valore(chiave_target, default_val):
     try:
         res = db.table("configurazione").select("valore").eq("chiave", chiave_target).execute()
         return res.data[0]['valore'] if res.data else default_val
-    except:
+    except Exception:
         return default_val
 
 def get_fase():
@@ -223,7 +223,7 @@ def check_limite_iscrizioni(fase_str):
             limite_data = datetime(anno_fine, 2, 2, 23, 59, 59)
             if datetime.now() > limite_data:
                 return False
-    except:
+    except Exception:
         pass
     return True
 
@@ -246,7 +246,6 @@ if "autenticato" not in st.session_state:
         "in_modifica_pronostico": False
     })
 
-# Ripristino sessione automatica tramite cookie (1 ora di validità)
 auth_cookie = cookie_manager.get("cugurra_auth_session")
 if auth_cookie and not st.session_state["autenticato"]:
     if isinstance(auth_cookie, dict) and "utente_corrente" in auth_cookie:
@@ -277,7 +276,6 @@ if not st.session_state["autenticato"]:
             
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # ACCEDI (Caricato solo dopo click)
     if st.session_state["modalita_auth"] == "Accedi":
         col_l1, _ = st.columns([2, 1])
         with col_l1:
@@ -326,11 +324,9 @@ if not st.session_state["autenticato"]:
                     except Exception as e:
                         st.error(f"Errore di connessione: {e}")
 
-    # REGISTRATI / RECUPERA PIN (Caricato solo dopo click)
     elif st.session_state["modalita_auth"] == "Registrati":
         tab_reg, tab_rec = st.tabs(["📝 Nuova Registrazione", "🔑 Recupera / Modifica PIN"])
         
-        # TAB 1: NUOVA REGISTRAZIONE
         with tab_reg:
             col_r1, _ = st.columns([2, 1])
             with col_r1:
@@ -417,7 +413,6 @@ if not st.session_state["autenticato"]:
                                 else:
                                     st.error(f"Errore durante la registrazione: {err}")
 
-        # TAB 2: RECUPERA / MODIFICA PIN
         with tab_rec:
             col_rec1, _ = st.columns([2, 1])
             with col_rec1:
@@ -477,7 +472,6 @@ if st.sidebar.button("Logout", key="sidebar_logout_btn", use_container_width=Tru
 # --- INTERFACCIA PRINCIPALE ---
 st.markdown(f"<h1>⚽ Premio Cugurra {stagione_attuale} ({fase_attuale})</h1>", unsafe_allow_html=True)
 
-# --- NAVIGAZIONE A PULSANTI ---
 if st.session_state["is_admin"]:
     menu_options = ["⚙️ Gestione Admin", "📝 Pronostici", "🏆 Classifiche", "📜 Regolamento"]
 else:
@@ -504,7 +498,7 @@ if is_pronostici:
     else:
         try:
             partite_db = db.table("partite").select("*").order("data_ora").execute().data
-        except:
+        except Exception:
             partite_db = []
 
         now_utc = datetime.now(timezone.utc)
@@ -529,7 +523,7 @@ if is_pronostici:
                 res_pron = db.table("pronostici").select("*").eq("id_partita", partita['id']).eq("utente", st.session_state["utente_corrente"]).execute()
                 if res_pron.data:
                     pronostico_esistente = res_pron.data[0]
-            except:
+            except Exception:
                 pronostico_esistente = None
 
             if pronostico_esistente and not st.session_state.get(f"loaded_counts_{partita['id']}", False):
@@ -696,8 +690,8 @@ if is_pronostici:
             is_goleada_2 = gol_s2 > 9
 
             st.markdown("---")
-            rosa_cag = [x.strip() for x in (partita.get("rosa_cagliari") or "").split(",") if x.strip()]
-            rosa_avv = [x.strip() for x in (partita.get("rosa_avversaria") or "").split(",") if x.strip()]
+            rosa_cag = [x.strip() for x in (partita.get("rosa_cagliari") or "").replace(";", ",").split(",") if x.strip()]
+            rosa_avv = [x.strip() for x in (partita.get("rosa_avversaria") or "").replace(";", ",").split(",") if x.strip()]
             rosa_1 = rosa_cag if is_cagliari_left else rosa_avv
             rosa_2 = rosa_avv if is_cagliari_left else rosa_cag
 
@@ -842,7 +836,7 @@ elif is_classifiche:
                 st.dataframe(df_display[cols_display], use_container_width=True, hide_index=True)
             else:
                 st.info("Nessun dato presente nell'Albo d'Oro.")
-        except:
+        except Exception:
             st.info("Albo d'oro non disponibile.")
 
 # 3. REGOLAMENTO
@@ -902,14 +896,11 @@ elif is_regolamento:
     """
     components.html(regolamento_html, height=750, scrolling=True)
 
-# 4. ADMIN (TUTTE LE SEZIONI RACCHIUSE IN MENU A SCOMPARSA ACCATTIVANTI)
+# 4. ADMIN
 elif tab_admin is not None:
-    # Anchor per mantenere l'inquadratura in cima alla pagina Admin
     components.html("<script>window.parent.scrollTo(0, 0);</script>", height=0)
-    
     st.markdown("<h2 class='single-line-title'>⚙️ Pannello di Controllo Admin ⚙️</h2>", unsafe_allow_html=True)
     
-    # 1. GESTIONE STAGIONE
     with st.expander("⚙️ Gestione Stagione & Fase Globale", expanded=False):
         fase_scelta = st.selectbox("Cambia Fase Globale", ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"], index=["TEST", "STAGIONE IN CORSO", "ARCHIVIO"].index(fase_attuale) if fase_attuale in ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"] else 0)
         
@@ -938,11 +929,10 @@ elif tab_admin is not None:
                 except Exception as ex_st:
                     st.error(f"Errore durante il cambio stagione: {ex_st}")
 
-    # 2. INSERISCI NUOVA PARTITA
     with st.expander("➕ Inserisci Nuova Partita", expanded=False):
         try:
             lista_comp = [c['nome'] for c in db.table("competizioni").select("nome").order("nome").execute().data]
-        except:
+        except Exception:
             lista_comp = ["Serie A"]
             
         with st.form("form_nuova_partita"):
@@ -973,13 +963,12 @@ elif tab_admin is not None:
                     }).execute()
                     st.success("Partita creata!")
 
-    # 3. OMOLOGAZIONE PARTITA
     with st.expander("🏁 Omologazione Partita e Assegnazione Punti", expanded=False):
         st.warning("⚠️ **ATTENZIONE:** L'omologazione inserisce i risultati definitivi, calcola automaticamente tutti i punteggi e **blocca le modifiche successive**!")
         
         try:
             partite_non_omologate = db.table("partite").select("*").eq("omologata", False).order("data_ora").execute().data
-        except:
+        except Exception:
             partite_non_omologate = []
 
         if not partite_non_omologate:
@@ -999,8 +988,8 @@ elif tab_admin is not None:
             with col_go1: gol_uff_s1 = st.number_input(f"Gol {s1_omo} (Ufficiali)", min_value=0, value=0, key="gol_u_s1")
             with col_go2: gol_uff_s2 = st.number_input(f"Gol {s2_omo} (Ufficiali)", min_value=0, value=0, key="gol_u_s2")
 
-            rosa_cag_l = [x.strip() for x in (p_omo.get("rosa_cagliari") or "").split(",") if x.strip()]
-            rosa_avv_l = [x.strip() for x in (p_omo.get("rosa_avversaria") or "").split(",") if x.strip()]
+            rosa_cag_l = [x.strip() for x in (p_omo.get("rosa_cagliari") or "").replace(";", ",").split(",") if x.strip()]
+            rosa_avv_l = [x.strip() for x in (p_omo.get("rosa_avversaria") or "").replace(";", ",").split(",") if x.strip()]
             rosa_t1 = rosa_cag_l if is_cag_left_omo else rosa_avv_l
             rosa_t2 = rosa_avv_l if is_cag_left_omo else rosa_cag_l
 
@@ -1033,15 +1022,28 @@ elif tab_admin is not None:
             btn_omologa = st.button("Conferma e Omologa Partita", key="btn_conferma_omologa", use_container_width=True)
 
             if btn_omologa:
+                # Espansione marcatori reali con frequenza
+                m1_exp, m2_exp = [], []
+                for m in marc_uff_1:
+                    m1_exp.extend([m] * st.session_state.gol_omologazione.get(f"omo_g_s1_{m}_{p_omo['id']}", 1))
+                for m in marc_uff_2:
+                    m2_exp.extend([m] * st.session_state.gol_omologazione.get(f"omo_g_s2_{m}_{p_omo['id']}", 1))
+
+                a1_exp, a2_exp = [], []
+                for a in auto_uff_1:
+                    a1_exp.extend([a] * st.session_state.gol_omologazione.get(f"omo_auto_s1_{a}_{p_omo['id']}", 1))
+                for a in auto_uff_2:
+                    a2_exp.extend([a] * st.session_state.gol_omologazione.get(f"omo_auto_s2_{a}_{p_omo['id']}", 1))
+
                 if is_cag_left_omo:
                     res_cag, res_avv = gol_uff_s1, gol_uff_s2
-                    m_cag, m_avv = marc_uff_1, marc_uff_2
-                    a_cag, a_avv = auto_uff_1, auto_uff_2
+                    m_cag, m_avv = m1_exp, m2_exp
+                    a_cag, a_avv = a1_exp, a2_exp
                     e_cag, e_avv = esp_uff_1, esp_uff_2
                 else:
                     res_cag, res_avv = gol_uff_s2, gol_uff_s1
-                    m_cag, m_avv = marc_uff_2, marc_uff_1
-                    a_cag, a_avv = auto_uff_2, auto_uff_1
+                    m_cag, m_avv = m2_exp, m1_exp
+                    a_cag, a_avv = a2_exp, a1_exp
                     e_cag, e_avv = esp_uff_2, esp_uff_1
                 
                 db.table("partite").update({
@@ -1054,7 +1056,7 @@ elif tab_admin is not None:
 
                 try:
                     pronostici_utenti = db.table("pronostici").select("*").eq("id_partita", p_omo["id"]).execute().data
-                except:
+                except Exception:
                     pronostici_utenti = []
 
                 for pron in pronostici_utenti:
@@ -1062,20 +1064,12 @@ elif tab_admin is not None:
                     p_cag = pron.get("gol_cagliari", 0)
                     p_avv = pron.get("gol_avversario", 0)
                     
-                    # Sanificazione dei dati dai pronostici utenti con gestione sicura dei valori None/Nessuno
-                    p_marc_cag_raw = pron.get("marcatori_cagliari", []) or []
-                    p_marc_avv_raw = pron.get("marcatori_avversario", []) or []
-                    p_auto_cag_raw = pron.get("autogol_cagliari", []) or []
-                    p_auto_avv_raw = pron.get("autogol_avversario", []) or []
-                    p_esp_cag_raw = pron.get("espulsi_cagliari", []) or []
-                    p_esp_avv_raw = pron.get("espulsi_avversario", []) or []
-
-                    p_marc_cag = set([m for m in p_marc_cag_raw if m])
-                    p_marc_avv = set([m for m in p_marc_avv_raw if m])
-                    p_auto_cag = set([a for a in p_auto_cag_raw if a])
-                    p_auto_avv = set([a for a in p_auto_avv_raw if a])
-                    p_esp_cag = set([e for e in p_esp_cag_raw if e])
-                    p_esp_avv = set([e for e in p_esp_avv_raw if e])
+                    p_marc_cag_list = [m for m in (pron.get("marcatori_cagliari", []) or []) if m]
+                    p_marc_avv_list = [m for m in (pron.get("marcatori_avversario", []) or []) if m]
+                    p_auto_cag_list = [a for a in (pron.get("autogol_cagliari", []) or []) if a]
+                    p_auto_avv_list = [a for a in (pron.get("autogol_avversario", []) or []) if a]
+                    p_esp_cag = set([e for e in (pron.get("espulsi_cagliari", []) or []) if e])
+                    p_esp_avv = set([e for e in (pron.get("espulsi_avversario", []) or []) if e])
 
                     punti_generale = 0
                     punti_masters = 0
@@ -1088,36 +1082,45 @@ elif tab_admin is not None:
 
                     bonus_esp = len(p_esp_cag.intersection(set(e_cag))) + len(p_esp_avv.intersection(set(e_avv)))
 
-                    if (is_goleada_cag and not reale_goleada_cag and p_avv == res_avv) or (is_goleada_avv and not reale_goleada_avv and p_cag == res_cag):
+                    if (is_goleada_cag and reale_goleada_cag and p_avv == res_avv) or (is_goleada_avv and reale_goleada_avv and p_cag == res_cag):
                         punti_generale = 12
                     elif is_goleada_cag and is_goleada_avv and reale_goleada_cag and reale_goleada_avv:
                         punti_generale = 8
                     elif p_cag == 0 and res_cag == 0 and p_avv == 0 and res_avv == 0:
                         punti_generale = 8
-                    elif is_goleada_cag or is_goleada_avv:
+                    elif (is_goleada_cag and reale_goleada_cag) or (is_goleada_avv and reale_goleada_avv):
                         punti_generale = 8
                     else:
                         risultato_esatto = (p_cag == res_cag and p_avv == res_avv)
-                        marcatori_esatti_tutti = (set(m_cag) == p_marc_cag and set(m_avv) == p_marc_avv and set(a_cag) == p_auto_cag and set(a_avv) == p_auto_avv)
+                        marcatori_esatti_tutti = (Counter(m_cag) == Counter(p_marc_cag_list) and 
+                                                  Counter(m_avv) == Counter(p_marc_avv_list) and 
+                                                  Counter(a_cag) == Counter(p_auto_cag_list) and 
+                                                  Counter(a_avv) == Counter(p_auto_avv_list))
                         
+                        marcatori_cag_esatti = (Counter(m_cag) == Counter(p_marc_cag_list) and Counter(a_cag) == Counter(p_auto_cag_list))
+
                         if risultato_esatto and marcatori_esatti_tutti:
                             punti_generale = 15
-                        elif risultato_esatto and set(m_cag) == p_marc_cag and set(a_cag) == p_auto_cag:
+                        elif risultato_esatto and marcatori_cag_esatti:
                             punti_generale = 10
                             punti_masters = 10
                         elif (p_cag > p_avv and res_cag > res_avv) or (p_cag < p_avv and res_cag < res_avv) or (p_cag == p_avv and res_cag == res_avv):
                             punti_generale = 5
-                        elif set(m_cag) == p_marc_cag and set(a_cag) == p_auto_cag and len(m_cag) > 0:
+                        elif marcatori_cag_esatti and len(m_cag) > 0:
                             punti_generale = 3
                         else:
                             punti_generale = 0
 
                     punti_generale += bonus_esp
 
-                    # Calcolo Bomber di Razza con Fallback (0 punti se il marcatore pronosticato non è nei marcatori reali)
-                    for m_pron in p_marc_cag:
-                        if m_pron in m_cag:
+                    # Calcolo Bomber di Razza
+                    c_m_real = Counter(m_cag)
+                    c_m_pron = Counter(p_marc_cag_list)
+                    for m_pron, count_p in c_m_pron.items():
+                        if m_pron in c_m_real:
                             punti_bomber += 1
+                            if count_p == c_m_real[m_pron]:
+                                punti_bomber += count_p
 
                     db.table("punteggi_partita").upsert({
                         "id_partita": p_omo["id"], "utente": utente,
@@ -1128,11 +1131,10 @@ elif tab_admin is not None:
                 st.success("Partita omologata e punti assegnati automaticamente!")
                 st.rerun()
 
-    # 4. MODIFICA O ELIMINA PARTITE ATTIVE
     with st.expander("🛠️ Modifica o Elimina Partite Attive", expanded=False):
         try:
             partite_attive = db.table("partite").select("*").eq("omologata", False).order("data_ora").execute().data
-        except:
+        except Exception:
             partite_attive = []
 
         if not partite_attive:
@@ -1155,7 +1157,7 @@ elif tab_admin is not None:
                     init_date = dt_esistente.date()
                     init_hour = dt_esistente.hour
                     init_minute_idx = [0, 15, 30, 45].index(dt_esistente.minute) if dt_esistente.minute in [0, 15, 30, 45] else 0
-                except:
+                except Exception:
                     init_date = datetime.today().date()
                     init_hour = 15
                     init_minute_idx = 0
@@ -1192,12 +1194,11 @@ elif tab_admin is not None:
                     st.success("Partita eliminata!")
                     st.rerun()
 
-    # 5. GESTIONE UTENTI, STATUS & RESET PIN
     with st.expander("👥 Gestione Utenti, Status & Reset PIN", expanded=False):
         st.info("ℹ️ **Privilegi Utenti TOP:** Non dovranno più iscriversi nelle stagioni successive.")
         try:
             utenti_db = db.table("utenti").select("*").execute().data
-        except:
+        except Exception:
             utenti_db = []
             
         if utenti_db:
@@ -1260,7 +1261,6 @@ elif tab_admin is not None:
                     except Exception as err:
                         st.error(f"Errore: {err}")
 
-    # 6. GESTIONE ALBO D'ORO ADMIN
     with st.expander("📜 Gestione Albo d'Oro", expanded=False):
         try:
             res_albo_admin = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
@@ -1290,7 +1290,7 @@ elif tab_admin is not None:
                         st.rerun()
                     except Exception as ex_albo:
                         st.error(f"Errore durante l'aggiornamento: {ex_albo}")
-        except:
+        except Exception:
             st.info("Impossibile caricare l'albo d'oro per la gestione.")
 
 mostra_footer()

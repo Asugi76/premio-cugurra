@@ -459,8 +459,12 @@ if not st.session_state["autenticato"]:
 # --- BARRA LATERALE ---
 st.sidebar.markdown(f"👤 Utente: **{st.session_state.get('utente_corrente')}**")
 st.sidebar.markdown(f"⭐ Status: **{st.session_state.get('status')}**")
+
 if st.sidebar.button("Logout", key="sidebar_logout_btn", use_container_width=True):
-    cookie_manager.delete("cugurra_auth_session")
+    try:
+        cookie_manager.delete("cugurra_auth_session")
+    except Exception:
+        pass
     st.session_state.clear()
     st.rerun()
 

@@ -1007,12 +1007,15 @@ elif tab_admin is not None:
                 if not avv:
                     st.error("Inserisci la squadra avversaria.")
                 else:
-                    ora_str = f"{ore_sel:02d}:{min_sel:02d}:00"
-                    data_ora_unita = f"{data_p.isoformat()}T{ora_str}"
+                    dt_nuova = datetime(
+                        data_p.year, data_p.month, data_p.day,
+                        ore_sel, min_sel, 0,
+                        tzinfo=FUSO_ITALIA
+                    )
                     id_str = f"{comp}_{avv}_{data_p}".replace(" ", "_")
                     db.table("partite").insert({
                         "competizione": comp, "avversario": avv, "campo": campo,
-                        "casa_trasferta": campo, "data_ora": data_ora_unita, "id_stringa": id_str,
+                        "casa_trasferta": campo, "data_ora": dt_nuova.isoformat(), "id_stringa": id_str,
                         "rosa_cagliari": rosa_cag_input.replace(";", ","),
                         "rosa_avversaria": rosa_avv_input.replace(";", ","),
                         "omologata": False
@@ -1224,23 +1227,29 @@ elif tab_admin is not None:
                     submit_del = st.form_submit_button("Elimina Partita", use_container_width=True)
 
                 if submit_mod:
-                    ora_str = f"{m_ora:02d}:{m_min:02d}:00"
-                    data_ora_unita = f"{m_data.isoformat()}T{ora_str}"
                     id_str = f"{m_comp}_{m_avv}_{m_data}".replace(" ", "_")
 
-                    # CONTROLLO ORARIO E AVVISO ANTECEDENTE
-                    dt_modificata = datetime.fromisoformat(data_ora_unita).replace(tzinfo=FUSO_ITALIA)
+                    dt_modificata = datetime(
+                        m_data.year, m_data.month, m_data.day,
+                        m_ora, m_min, 0,
+                        tzinfo=FUSO_ITALIA
+                    )
                     ora_attuale = datetime.now(FUSO_ITALIA)
 
                     if dt_modificata < ora_attuale:
                         st.warning("⚠️ **Attenzione:** Stai impostando una data/ora antecedente al momento attuale. La modifica verrà comunque salvata.")
 
                     db.table("partite").update({
-                        "competizione": m_comp, "avversario": m_avv, "campo": m_campo,
-                        "casa_trasferta": m_campo, "data_ora": data_ora_unita, "id_stringa": id_str,
+                        "competizione": m_comp, 
+                        "avversario": m_avv, 
+                        "campo": m_campo,
+                        "casa_trasferta": m_campo, 
+                        "data_ora": dt_modificata.isoformat(),
+                        "id_stringa": id_str,
                         "rosa_cagliari": m_rosa_cag.replace(";", ","),
                         "rosa_avversaria": m_rosa_avv.replace(";", ",")
                     }).eq("id", p_selezionata["id"]).execute()
+                    
                     st.success("Partita aggiornata con successo!")
                     st.rerun()
 

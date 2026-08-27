@@ -185,7 +185,7 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- HELPER FUNCTIONS ---
+# --- HELPER FUNCTIONS & LOGICA PUNTEGGI ---
 def get_config_valore(chiave_target, default_val):
     try:
         res = db.table("configurazione").select("valore").eq("chiave", chiave_target).execute()
@@ -229,6 +229,112 @@ def check_limite_iscrizioni(fase_str):
     except:
         pass
     return True
+
+def ricalcola_punteggi_partita(id_partita):
+    """
+    Ricalcola e sovrascrive i punteggi di tutti gli utenti per una specifica partita
+    seguendo rigorosamente la gerarchia, le esclusive e le regole del regolamento.
+    """
+    try:
+        # Recupera dati partita
+        partita_res = db.table("partite").select("*").eq("id", id_partita).execute()
+        if not partita_res.data:
+            return
+        partita = partita_res.data[0]
+        
+        res_cag = partita.get("risultato_cagliari", 0)
+        res_avv = partita.get("risultato_avversario", 0)
+        
+        m_cag_reali = partita.get("marcatori_cagliari_reali", []) or []
+        m_avv_reali = partita.get("marcatori_avversario_reali", []) or []
+        a_cag_reali = partita.get("autogol_cagliari_reali", []) or []
+        a_avv_reali = partita.get("autogol_avversario_reali", []) or []
+        e_cag_reali = partita.get("espulsi_cagliari_reali", []) or []
+        e_avv_reali = partita.get("espulsi_avversario_reali", []) or []
+
+        reale_marc_cag_counts = Counter(filter(None, m_cag_reali))
+        reale_marc_avv_counts = Counter(filter(None, m_avv_reali))
+        reale_auto_cag_counts = Counter(filter(None, a_cag_reali))
+        reale_auto_avv_counts = Counter(filter(None, a_avv_reali))
+
+        # Recupera pronostici degli utenti per questa partita
+        pronostici_res = db.table("pronostici").select("*").eq("id_partita", id_partita).execute()
+        pronostici_utenti = pronostici_res.data or []
+
+        for pron in pronostici_utenti:
+            utente = pron["utente"]
+            p_cag = pron.get("gol_cagliari", 0)
+            p_avv = pron.get("gol_avversario", 0)
+            
+            p_marc_cag_counts = Counter(filter(None, pron.get("marcatori_cagliari", []) or []))
+            p_marc_avv_counts = Counter(filter(None, pron.get("marcatori_avversario", []) or []))
+            p_auto_cag_counts = Counter(filter(None, pron.get("autogol_cagliari", []) or []))
+            p_auto_avv_counts = Counter(filter(None, pron.get("autogol_avversario", []) or []))
+            
+            p_esp_cag = set(filter(None, pron.get("espulsi_cagliari", []) or []))
+            p_esp_avv = set(filter(None, pron.get("espulsi_avversario", []) or []))
+
+            punti_generale = 0
+            punti_masters = 0
+            punti_bomber = 0
+
+            is_goleada_cag = p_cag > 9
+            is_goleada_avv = p_avv > 9
+            reale_goleada_cag = res_cag > 9
+            reale_goleada_avv = res_avv > 9
+
+            # Bonus Espulsioni (1 punto per ogni giocatore espulso indovinato, fino a 3)
+            bonus_esp = len(p_esp_cag.intersection(set(e_cag_reali))) + len(p_esp_avv.intersection(set(e_avv_reali)))
+
+            # Gerarchia e Mutua Esclusività
+            if (is_goleada_cag and not reale_goleada_cag and p_avv == res_avv) or (is_goleada_avv and not reale_goleada_avv and p_cag == res_cag):
+                punti_generale = 12
+            elif is_goleada_cag and is_goleada_avv and reale_goleada_cag and reale_goleada_avv:
+                punti_generale = 8
+            elif p_cag == 0 and res_cag == 0 and p_avv == 0 and res_avv == 0:
+                punti_generale = 8
+            elif is_goleada_cag or is_goleada_avv:
+                punti_generale = 8
+            else:
+                risultato_esatto = (p_cag == res_cag and p_avv == res_avv)
+                marcatori_esatti_tutti = (
+                    p_marc_cag_counts == reale_marc_cag_counts and 
+                    p_marc_avv_counts == reale_marc_avv_counts and 
+                    p_auto_cag_counts == reale_auto_cag_counts and 
+                    p_auto_avv_counts == reale_auto_avv_counts
+                )
+                
+                if risultato_esatto and marcatori_esatti_tutti:
+                    punti_generale = 15
+                elif risultato_esatto and p_marc_cag_counts == reale_marc_cag_counts and p_auto_cag_counts == reale_auto_cag_counts:
+                    punti_generale = 10
+                    punti_masters = 10
+                elif (p_cag > p_avv and res_cag > res_avv) or (p_cag < p_avv and res_cag < res_avv) or (p_cag == p_avv and res_cag == res_avv):
+                    punti_generale = 5
+                elif p_marc_cag_counts == reale_marc_cag_counts and p_auto_cag_counts == reale_auto_cag_counts and len(p_marc_cag_counts) > 0:
+                    punti_generale = 3
+                else:
+                    punti_generale = 0
+
+            punti_generale += bonus_esp
+
+            # Calcolo Bomber di Razza (1 punto per marcatore + bonus +1 per ogni gol reale indovinato)
+            for giocatore, gol_pred in p_marc_cag_counts.items():
+                if giocatore in reale_marc_cag_counts and reale_marc_cag_counts[giocatore] > 0:
+                    punti_bomber += 1
+                    if gol_pred == reale_marc_cag_counts[giocatore]:
+                        punti_bomber += reale_marc_cag_counts[giocatore]
+
+            # Sovrascrittura su Supabase via upsert (chiave univoca id_partita, utente)
+            db.table("punteggi_partita").upsert({
+                "id_partita": id_partita, 
+                "utente": utente,
+                "punti_generale": punti_generale, 
+                "punti_masters": punti_masters,
+                "punti_bomber": punti_bomber
+            }, on_conflict="id_partita, utente").execute()
+    except Exception as e:
+        st.error(f"Errore durante il ricalcolo dei punteggi: {e}")
 
 def mostra_footer():
     st.divider()
@@ -507,7 +613,6 @@ if is_pronostici:
 
         now_italia = datetime.now(FUSO_ITALIA)
         
-        # Filtro con gestione corretta del fuso italiano
         partite_future = []
         for p in partite_db:
             if not p.get('omologata', False):
@@ -821,7 +926,7 @@ if is_pronostici:
                     except Exception as db_err:
                         st.error(f"Errore durante l'inserimento su Supabase: {db_err}")
 
-# 2. CLASSIFICHE
+# 2. CLASSIFICHE (Con criterio di spareggio rigoroso: a parità di punti, chi ha giocato più partite)
 elif is_classifiche:
     st.markdown("<h2 class='single-line-title'>🏆 Classifiche Ufficiali 🏆</h2>", unsafe_allow_html=True)
     sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Albo d'Oro"])
@@ -849,6 +954,7 @@ elif is_classifiche:
             gen_df = df_punteggi.groupby("utente")["punti_generale"].sum().reset_index()
             gen_df = pd.merge(gen_df, partita_counts, on="utente", how="left").fillna(0)
             gen_df["Partite Giocate"] = gen_df["Partite Giocate"].astype(int)
+            # Spareggio: a parità di punti, comanda chi ha giocato più partite (discendente)
             gen_df = gen_df.sort_values(by=["punti_generale", "Partite Giocate"], ascending=[False, False])
             gen_df.columns = ["Utente", "Punti Totali", "Partite Giocate"]
             st.dataframe(gen_df, use_container_width=True, hide_index=True)
@@ -1098,88 +1204,10 @@ elif tab_admin is not None:
                     "omologata": True
                 }).eq("id", p_omo["id"]).execute()
 
-                try:
-                    pronostici_utenti = db.table("pronostici").select("*").eq("id_partita", p_omo["id"]).execute().data
-                except:
-                    pronostici_utenti = []
+                # Esegue il ricalcolo e la sovrascrittura automatica di tutti i punteggi errati
+                ricalcola_punteggi_partita(p_omo["id"])
 
-                for pron in pronostici_utenti:
-                    utente = pron["utente"]
-                    p_cag = pron.get("gol_cagliari", 0)
-                    p_avv = pron.get("gol_avversario", 0)
-                    
-                    p_marc_cag_raw = pron.get("marcatori_cagliari", []) or []
-                    p_marc_avv_raw = pron.get("marcatori_avversario", []) or []
-                    p_auto_cag_raw = pron.get("autogol_cagliari", []) or []
-                    p_auto_avv_raw = pron.get("autogol_avversario", []) or []
-                    p_esp_cag_raw = pron.get("espulsi_cagliari", []) or []
-                    p_esp_avv_raw = pron.get("espulsi_avversario", []) or []
-
-                    # Ottimizzazione e conteggio accurato con Counter (supporta i gol multipli per singolo marcatore)
-                    p_marc_cag_counts = Counter(filter(None, p_marc_cag_raw))
-                    p_marc_avv_counts = Counter(filter(None, p_marc_avv_raw))
-                    p_auto_cag_counts = Counter(filter(None, p_auto_cag_raw))
-                    p_auto_avv_counts = Counter(filter(None, p_auto_avv_raw))
-                    
-                    reale_marc_cag_counts = Counter(filter(None, m_cag))
-                    reale_marc_avv_counts = Counter(filter(None, m_avv))
-                    reale_auto_cag_counts = Counter(filter(None, a_cag))
-                    reale_auto_avv_counts = Counter(filter(None, a_avv))
-
-                    p_esp_cag = set(filter(None, p_esp_cag_raw))
-                    p_esp_avv = set(filter(None, p_esp_avv_raw))
-
-                    punti_generale = 0
-                    punti_masters = 0
-                    punti_bomber = 0
-
-                    is_goleada_cag = p_cag > 9
-                    is_goleada_avv = p_avv > 9
-                    reale_goleada_cag = res_cag > 9
-                    reale_goleada_avv = res_avv > 9
-
-                    bonus_esp = len(p_esp_cag.intersection(set(e_cag))) + len(p_esp_avv.intersection(set(e_avv)))
-
-                    if (is_goleada_cag and not reale_goleada_cag and p_avv == res_avv) or (is_goleada_avv and not reale_goleada_avv and p_cag == res_cag):
-                        punti_generale = 12
-                    elif is_goleada_cag and is_goleada_avv and reale_goleada_cag and reale_goleada_avv:
-                        punti_generale = 8
-                    elif p_cag == 0 and res_cag == 0 and p_avv == 0 and res_avv == 0:
-                        punti_generale = 8
-                    elif is_goleada_cag or is_goleada_avv:
-                        punti_generale = 8
-                    else:
-                        risultato_esatto = (p_cag == res_cag and p_avv == res_avv)
-                        marcatori_esatti_tutti = (p_marc_cag_counts == reale_marc_cag_counts and p_marc_avv_counts == reale_marc_avv_counts and p_auto_cag_counts == reale_auto_cag_counts and p_auto_avv_counts == reale_auto_avv_counts)
-                        
-                        if risultato_esatto and marcatori_esatti_tutti:
-                            punti_generale = 15
-                        elif risultato_esatto and p_marc_cag_counts == reale_marc_cag_counts and p_auto_cag_counts == reale_auto_cag_counts:
-                            punti_generale = 10
-                            punti_masters = 10
-                        elif (p_cag > p_avv and res_cag > res_avv) or (p_cag < p_avv and res_cag < res_avv) or (p_cag == p_avv and res_cag == res_avv):
-                            punti_generale = 5
-                        elif p_marc_cag_counts == reale_marc_cag_counts and p_auto_cag_counts == reale_auto_cag_counts and len(p_marc_cag_counts) > 0:
-                            punti_generale = 3
-                        else:
-                            punti_generale = 0
-
-                    punti_generale += bonus_esp
-
-                    # Calcolo punti Bomber di razza aggiornato e coerente con la logica richiesta
-                    for giocatore, gol_pred in p_marc_cag_counts.items():
-                        if giocatore in reale_marc_cag_counts and reale_marc_cag_counts[giocatore] > 0:
-                            punti_bomber += 1
-                            if gol_pred == reale_marc_cag_counts[giocatore]:
-                                punti_bomber += reale_marc_cag_counts[giocatore]
-
-                    db.table("punteggi_partita").upsert({
-                        "id_partita": p_omo["id"], "utente": utente,
-                        "punti_generale": punti_generale, "punti_masters": punti_masters,
-                        "punti_bomber": punti_bomber
-                    }, on_conflict="id_partita, utente").execute()
-
-                st.success("Partita omologata e punti assegnati automaticamente!")
+                st.success("Partita omologata e punteggi ricalcolati e sovrascritti correttamente!")
                 st.rerun()
 
     # 4. MODIFICA O ELIMINA PARTITE ATTIVE
@@ -1237,7 +1265,6 @@ elif tab_admin is not None:
                     data_ora_unita = f"{m_data.isoformat()}T{ora_str}"
                     id_str = f"{m_comp}_{m_avv}_{m_data}".replace(" ", "_")
 
-                    # CONTROLLO ORARIO E AVVISO ANTECEDENTE
                     dt_modificata = datetime.fromisoformat(data_ora_unita).replace(tzinfo=FUSO_ITALIA)
                     ora_attuale = datetime.now(FUSO_ITALIA)
 

@@ -2,9 +2,13 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
 from datetime import datetime, timezone, timedelta
+import zoneinfo
 import streamlit.components.v1 as components
 from collections import Counter
 import extra_streamlit_components as stx
+
+# --- FUSO ORARIO ITALIA ---
+FUSO_ITALIA = zoneinfo.ZoneInfo("Europe/Rome")
 
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="Premio Cugurra", page_icon="⚽", layout="wide")
@@ -219,8 +223,8 @@ def check_limite_iscrizioni(fase_str):
         parti = stagione_str.split("/")
         if len(parti) == 2:
             anno_fine = int("20" + parti[1]) if len(parti[1]) == 2 else int(parti[1])
-            limite_data = datetime(anno_fine, 2, 2, 23, 59, 59)
-            if datetime.now() > limite_data:
+            limite_data = datetime(anno_fine, 2, 2, 23, 59, 59, tzinfo=FUSO_ITALIA)
+            if datetime.now(FUSO_ITALIA) > limite_data:
                 return False
     except:
         pass
@@ -315,7 +319,7 @@ if not st.session_state["autenticato"]:
                                 cookie_manager.set(
                                     cookie="cugurra_auth_session",
                                     val=session_info,
-                                    expires_at=datetime.now() + timedelta(hours=1)
+                                    expires_at=datetime.now(FUSO_ITALIA) + timedelta(hours=1)
                                 )
                                 st.rerun()
                         else:
@@ -353,7 +357,7 @@ if not st.session_state["autenticato"]:
                         cookie_manager.set(
                             cookie="cugurra_auth_session",
                             val=session_info,
-                            expires_at=datetime.now() + timedelta(hours=1)
+                            expires_at=datetime.now(FUSO_ITALIA) + timedelta(hours=1)
                         )
                         st.rerun()
                 else:
@@ -501,16 +505,30 @@ if is_pronostici:
         except:
             partite_db = []
 
-        now_utc = datetime.now(timezone.utc)
-        partita = next((p for p in partite_db if datetime.fromisoformat(p['data_ora'].replace("Z", "+00:00")) > now_utc and not p.get('omologata', False)), None)
+        now_italia = datetime.now(FUSO_ITALIA)
         
-        if not partita:
+        # Filtro con gestione corretta del fuso italiano
+        partite_future = []
+        for p in partite_db:
+            if not p.get('omologata', False):
+                raw_dt = p['data_ora'].replace("Z", "")
+                dt_p = datetime.fromisoformat(raw_dt)
+                if dt_p.tzinfo is None:
+                    dt_p = dt_p.replace(tzinfo=FUSO_ITALIA)
+                else:
+                    dt_p = dt_p.astimezone(FUSO_ITALIA)
+                if dt_p > now_italia:
+                    partite_future.append((dt_p, p))
+
+        partita_tuple = partite_future[0] if partite_future else None
+        
+        if not partita_tuple:
             st.info("Nessuna partita disponibile per il pronostico in questo momento.")
         else:
-            dt_partita = datetime.fromisoformat(partita['data_ora'].replace("Z", "+00:00"))
+            dt_partita, partita = partita_tuple
             iso_timestamp = dt_partita.isoformat()
             
-            match_iniziato = now_utc >= dt_partita
+            match_iniziato = now_italia >= dt_partita
 
             campo_val = partita.get('campo') or partita.get('casa_trasferta') or 'Casa'
             is_cagliari_left = campo_val in ["Casa", "Campo Neutro"]
@@ -612,7 +630,7 @@ if is_pronostici:
                 </div>
             </div>
             <script>
-                const targetStr = "{iso_timestamp}".replace("Z", "");
+                const targetStr = "{iso_timestamp}";
                 const targetDate = new Date(targetStr).getTime();
                 function updateTimer() {{
                     const nowTime = new Date().getTime();
@@ -1179,12 +1197,17 @@ elif tab_admin is not None:
                 m_campo = st.selectbox("Campo", ["Casa", "Trasferta", "Campo Neutro"], index=idx_campo)
                 
                 try:
-                    dt_esistente = datetime.fromisoformat(p_selezionata['data_ora'].replace("Z", "+00:00"))
+                    raw_dt_edit = p_selezionata['data_ora'].replace("Z", "")
+                    dt_esistente = datetime.fromisoformat(raw_dt_edit)
+                    if dt_esistente.tzinfo is None:
+                        dt_esistente = dt_esistente.replace(tzinfo=FUSO_ITALIA)
+                    else:
+                        dt_esistente = dt_esistente.astimezone(FUSO_ITALIA)
                     init_date = dt_esistente.date()
                     init_hour = dt_esistente.hour
                     init_minute_idx = [0, 15, 30, 45].index(dt_esistente.minute) if dt_esistente.minute in [0, 15, 30, 45] else 0
                 except:
-                    init_date = datetime.today().date()
+                    init_date = datetime.now(FUSO_ITALIA).date()
                     init_hour = 15
                     init_minute_idx = 0
 

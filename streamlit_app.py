@@ -259,6 +259,9 @@ def ricalcola_punteggi_partita(id_partita):
         pronostici_res = db.table("pronostici").select("*").eq("id_partita", id_partita).execute()
         pronostici_utenti = pronostici_res.data or []
 
+        reale_goleada_cag = res_cag > 9
+        reale_goleada_avv = res_avv > 9
+
         for pron in pronostici_utenti:
             utente = pron["utente"]
             p_cag = pron.get("gol_cagliari", 0)
@@ -278,8 +281,6 @@ def ricalcola_punteggi_partita(id_partita):
 
             is_goleada_cag = p_cag > 9
             is_goleada_avv = p_avv > 9
-            reale_goleada_cag = res_cag > 9
-            reale_goleada_avv = res_avv > 9
 
             bonus_esp = len(p_esp_cag.intersection(set(e_cag_reali))) + len(p_esp_avv.intersection(set(e_avv_reali)))
 
@@ -289,7 +290,7 @@ def ricalcola_punteggi_partita(id_partita):
                 punti_generale = 8
             elif p_cag == 0 and res_cag == 0 and p_avv == 0 and res_avv == 0:
                 punti_generale = 8
-            elif is_goleada_cag or is_goleada_avv:
+            elif (is_goleada_cag and reale_goleada_cag) or (is_goleada_avv and reale_goleada_avv):
                 punti_generale = 8
             else:
                 risultato_esatto = (p_cag == res_cag and p_avv == res_avv)

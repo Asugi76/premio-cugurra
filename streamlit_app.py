@@ -693,7 +693,7 @@ if is_pronostici:
                         res.append("Marcatori: " + ", ".join([f"{k} ({v})" if v > 1 else k for k, v in c_m.items()]))
                     if a_l:
                         c_a = Counter(a_l)
-                        res.append("Autogol: " + ", ".join([f"{k} ({v})" if v > 1 else k for k, v in c_a.items()]))
+                        res.append("Autogol a favore: " + ", ".join([f"{k} ({v})" if v > 1 else k for k, v in c_a.items()]))
                     return " | ".join(res) if res else "Nessun marcatore/autogol"
 
                 det_s1 = fmt_dettagli(m1_list, a1_list)
@@ -1105,7 +1105,6 @@ elif tab_admin is not None:
                 if not avv:
                     str_lib.error("Inserisci la squadra avversaria.")
                 else:
-                    # CORRETTO: Conversione corretta dal fuso orario di Roma a UTC puro per il DB
                     dt_locale = datetime.combine(data_p, datetime.min.time().replace(hour=ore_sel, minute=min_sel)).replace(tzinfo=FUSO_ITALIA)
                     dt_utc = dt_locale.astimezone(zoneinfo.ZoneInfo("UTC"))
                     data_ora_unita = dt_utc.isoformat().replace("+00:00", "Z")
@@ -1179,15 +1178,35 @@ elif tab_admin is not None:
             btn_omologa = str_lib.button("Conferma e Omologa Partita", key="btn_conferma_omologa", use_container_width=True)
 
             if btn_omologa:
+                marc1_expanded = []
+                for m in marc_uff_1:
+                    cnt = str_lib.session_state.gol_omologazione.get(f"omo_g_s1_{m}_{p_omo['id']}", 1)
+                    marc1_expanded.extend([m] * cnt)
+
+                auto1_expanded = []
+                for a in auto_uff_1:
+                    cnt = str_lib.session_state.gol_omologazione.get(f"omo_auto_s1_{a}_{p_omo['id']}", 1)
+                    auto1_expanded.extend([a] * cnt)
+
+                marc2_expanded = []
+                for m in marc_uff_2:
+                    cnt = str_lib.session_state.gol_omologazione.get(f"omo_g_s2_{m}_{p_omo['id']}", 1)
+                    marc2_expanded.extend([m] * cnt)
+
+                auto2_expanded = []
+                for a in auto_uff_2:
+                    cnt = str_lib.session_state.gol_omologazione.get(f"omo_auto_s2_{a}_{p_omo['id']}", 1)
+                    auto2_expanded.extend([a] * cnt)
+
                 if is_cag_left_omo:
                     res_cag, res_avv = gol_uff_s1, gol_uff_s2
-                    m_cag, m_avv = marc_uff_1, marc_uff_2
-                    a_cag, a_avv = auto_uff_1, auto_uff_2
+                    m_cag, m_avv = marc1_expanded, marc2_expanded
+                    a_cag, a_avv = auto1_expanded, auto2_expanded
                     e_cag, e_avv = esp_uff_1, esp_uff_2
                 else:
                     res_cag, res_avv = gol_uff_s2, gol_uff_s1
-                    m_cag, m_avv = marc_uff_2, marc_uff_1
-                    a_cag, a_avv = auto_uff_2, auto_uff_1
+                    m_cag, m_avv = marc2_expanded, marc1_expanded
+                    a_cag, a_avv = auto2_expanded, auto1_expanded
                     e_cag, e_avv = esp_uff_2, esp_uff_1
                 
                 db.table("partite").update({
@@ -1253,7 +1272,6 @@ elif tab_admin is not None:
                     submit_del = str_lib.form_submit_button("Elimina Partita", use_container_width=True)
 
                 if submit_mod:
-                    # CORRETTO: Gestione coerente del fuso orario anche in modifica
                     dt_locale = datetime.combine(m_data, datetime.min.time().replace(hour=m_ora, minute=m_min)).replace(tzinfo=FUSO_ITALIA)
                     dt_utc = dt_locale.astimezone(zoneinfo.ZoneInfo("UTC"))
                     data_ora_unita = dt_utc.isoformat().replace("+00:00", "Z")

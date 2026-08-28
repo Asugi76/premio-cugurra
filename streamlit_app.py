@@ -233,7 +233,7 @@ def check_limite_iscrizioni(fase_str):
 def ricalcola_punteggi_partita(id_partita):
     """
     Ricalcola e sovrascrive i punteggi di tutti gli utenti per una specifica partita
-    seguendo rigorosamente la gerarchia, le esclusive e le regole del regolamento[cite: 5].
+    seguendo rigorosamente la gerarchia, le esclusive e le regole del regolamento.
     """
     try:
         partita_res = db.table("partite").select("*").eq("id", id_partita).execute()

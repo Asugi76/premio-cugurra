@@ -234,6 +234,7 @@ def ricalcola_punteggi_partita(id_partita):
     """
     Ricalcola e sovrascrive i punteggi di tutti gli utenti per una specifica partita
     seguendo rigorosamente la gerarchia, le esclusive e le regole del regolamento.
+    (Gli autogol vengono accreditati alla squadra che ne beneficia).
     """
     try:
         partita_res = db.table("partite").select("*").eq("id", id_partita).execute()

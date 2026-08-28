@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as str_lib
 import pandas as pd
 from supabase import create_client, Client
 from datetime import datetime, timezone, timedelta
@@ -11,7 +11,7 @@ import extra_streamlit_components as stx
 FUSO_ITALIA = zoneinfo.ZoneInfo("Europe/Rome")
 
 # --- CONFIGURAZIONE PAGINA ---
-st.set_page_config(page_title="Premio Cugurra", page_icon="⚽", layout="wide")
+str_lib.set_page_config(page_title="Premio Cugurra", page_icon="⚽", layout="wide")
 
 # --- INIZIALIZZAZIONE COOKIE MANAGER (PERSISTENZA SESSIONE) ---
 cookie_manager = stx.CookieManager(key="cugurra_cookie_mgr")
@@ -47,14 +47,14 @@ LISTA_DOMANDE_SEGRETE = [
     "Qual è la tua destinazione dei sogni per le vacanze?"
 ]
 
-@st.cache_resource
+@str_lib.cache_resource
 def init_supabase(): 
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 db = init_supabase()
 
 # --- CSS & STILI ---
-st.markdown(f"""
+str_lib.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -329,12 +329,12 @@ def ricalcola_punteggi_partita(id_partita):
                 "punti_bomber": punti_bomber
             }, on_conflict="id_partita, utente").execute()
     except Exception as e:
-        st.error(f"Errore durante il ricalcolo dei punteggi: {e}")
+        str_lib.error(f"Errore durante il ricalcolo dei punteggi: {e}")
 
 def mostra_footer():
-    st.divider()
+    str_lib.divider()
     url_logo = f"{STORAGE_BASE_URL}CUGURRAOFFICIAL.png"
-    st.markdown(f"""
+    str_lib.markdown(f"""
     <div style="text-align: center; color: #fbbf24; font-weight: bold; background-color: rgba(30, 41, 59, 0.9); padding: 15px; border-radius: 12px; border: 1px solid #334155;">
         <img src="{url_logo}" width="90" onerror="this.src='{DEFAULT_LOGO_URL}'" style="margin-bottom: 8px;"><br>
         <p>"Essere cugurra, esserlo nella mente"</p>
@@ -343,17 +343,17 @@ def mostra_footer():
     """, unsafe_allow_html=True)
 
 # --- GESTIONE SESSIONE & RIPRISTINO COOKIE ---
-if "autenticato" not in st.session_state:
-    st.session_state.update({
+if "autenticato" not in str_lib.session_state:
+    str_lib.session_state.update({
         "autenticato": False, "utente_corrente": None, "is_admin": False, "status": None, 
         "gol_singoli": {}, "gol_omologazione": {}, "nuovo_registrato": False, "modalita_auth": None,
         "in_modifica_pronostico": False
     })
 
 auth_cookie = cookie_manager.get("cugurra_auth_session")
-if auth_cookie and not st.session_state["autenticato"]:
+if auth_cookie and not str_lib.session_state["autenticato"]:
     if isinstance(auth_cookie, dict) and "utente_corrente" in auth_cookie:
-        st.session_state.update({
+        str_lib.session_state.update({
             "autenticato": True,
             "utente_corrente": auth_cookie.get("utente_corrente"),
             "is_admin": auth_cookie.get("is_admin", False),
@@ -364,40 +364,40 @@ fase_attuale = get_fase()
 stagione_attuale = get_stagione()
 
 # --- LOGIN / REGISTRAZIONE / RECUPERA PIN ---
-if not st.session_state["autenticato"]:
-    st.markdown("<h1>⚽️ PREMIO CUGURRA ⚽️</h1>", unsafe_allow_html=True)
-    st.markdown(f"<h3 style='text-align: center; color: #fbbf24; margin-top: 5px; margin-bottom: 25px;'>Stagione {stagione_attuale} - {fase_attuale}</h3>", unsafe_allow_html=True)
+if not str_lib.session_state["autenticato"]:
+    str_lib.markdown("<h1>⚽️ PREMIO CUGURRA ⚽️</h1>", unsafe_allow_html=True)
+    str_lib.markdown(f"<h3 style='text-align: center; color: #fbbf24; margin-top: 5px; margin-bottom: 25px;'>Stagione {stagione_attuale} - {fase_attuale}</h3>", unsafe_allow_html=True)
     
-    col_scelta1, col_scelta2 = st.columns(2)
+    col_scelta1, col_scelta2 = str_lib.columns(2)
     with col_scelta1:
-        if st.button("ACCEDI", key="btn_switch_accedi", use_container_width=True):
-            st.session_state["modalita_auth"] = "Accedi"
-            st.rerun()
+        if str_lib.button("ACCEDI", key="btn_switch_accedi", use_container_width=True):
+            str_lib.session_state["modalita_auth"] = "Accedi"
+            str_lib.rerun()
     with col_scelta2:
-        if st.button("REGISTRATI / RECUPERA PIN", key="btn_switch_registrati", use_container_width=True):
-            st.session_state["modalita_auth"] = "Registrati"
-            st.rerun()
+        if str_lib.button("REGISTRATI / RECUPERA PIN", key="btn_switch_registrati", use_container_width=True):
+            str_lib.session_state["modalita_auth"] = "Registrati"
+            str_lib.rerun()
             
-    st.markdown("<br>", unsafe_allow_html=True)
+    str_lib.markdown("<br>", unsafe_allow_html=True)
     
-    if st.session_state["modalita_auth"] == "Accedi":
-        col_l1, _ = st.columns([2, 1])
+    if str_lib.session_state["modalita_auth"] == "Accedi":
+        col_l1, _ = str_lib.columns([2, 1])
         with col_l1:
-            st.subheader("Accedi al tuo account")
-            nome_inserito = st.text_input("Nome Utente Facebook", help="Inserisci nome e cognome come appare su Facebook")
-            pin_inserito = st.text_input("PIN personale (4 cifre)", type="password", max_chars=4)
-            risposta_inserita = st.text_input("Risposta alla tua Domanda Segreta", type="password", help="Inserisci la risposta segreta scelta in fase di registrazione")
+            str_lib.subheader("Accedi al tuo account")
+            nome_inserito = str_lib.text_input("Nome Utente Facebook", help="Inserisci nome e cognome come appare su Facebook")
+            pin_inserito = str_lib.text_input("PIN personale (4 cifre)", type="password", max_chars=4)
+            risposta_inserita = str_lib.text_input("Risposta alla tua Domanda Segreta", type="password", help="Inserisci la risposta segreta scelta in fase di registrazione")
             
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Ajò a giocare", key="btn_submit_accedi", use_container_width=True):
+            str_lib.markdown("<br>", unsafe_allow_html=True)
+            if str_lib.button("Ajò a giocare", key="btn_submit_accedi", use_container_width=True):
                 clean_nome = nome_inserito.strip() if nome_inserito else ""
                 clean_pin = pin_inserito.strip() if pin_inserito else ""
                 clean_risposta = risposta_inserita.strip().lower() if risposta_inserita else ""
 
                 if not clean_nome or not clean_pin or not clean_risposta:
-                    st.error("Inserisci Nome Utente, PIN e Risposta alla Domanda Segreta per accedere.")
+                    str_lib.error("Inserisci Nome Utente, PIN e Risposta alla Domanda Segreta per accedere.")
                 elif len(clean_pin) != 4 or not clean_pin.isdigit():
-                    st.error("⚠️ Il PIN deve essere composto **esattamente da 4 cifre numeriche**.")
+                    str_lib.error("⚠️ Il PIN deve essere composto **esattamente da 4 cifre numeriche**.")
                 else:
                     try:
                         res = db.table("utenti").select("*").eq("nome_fb", clean_nome).eq("pin", clean_pin).execute()
@@ -406,14 +406,14 @@ if not st.session_state["autenticato"]:
                             risposta_db = (u.get("risposta_segreta") or "").strip().lower()
                             
                             if risposta_db and risposta_db != clean_risposta:
-                                st.error("Risposta alla Domanda Segreta non corretta.")
+                                str_lib.error("Risposta alla Domanda Segreta non corretta.")
                             else:
                                 session_info = {
                                     "utente_corrente": u["nome_fb"], 
                                     "is_admin": u.get('is_admin', False), 
                                     "status": u.get('status', 'STANDARD')
                                 }
-                                st.session_state.update({
+                                str_lib.session_state.update({
                                     "autenticato": True, "utente_corrente": session_info["utente_corrente"], 
                                     "is_admin": session_info["is_admin"], "status": session_info["status"]
                                 })
@@ -422,36 +422,36 @@ if not st.session_state["autenticato"]:
                                     val=session_info,
                                     expires_at=datetime.now(FUSO_ITALIA) + timedelta(hours=1)
                                 )
-                                st.rerun()
+                                str_lib.rerun()
                         else:
-                            st.error("Nome Utente o PIN non corretti. Verifica di non aver inserito spazi extra.")
+                            str_lib.error("Nome Utente o PIN non corretti. Verifica di non aver inserito spazi extra.")
                     except Exception as e:
-                        st.error(f"Errore di connessione: {e}")
+                        str_lib.error(f"Errore di connessione: {e}")
 
-    elif st.session_state["modalita_auth"] == "Registrati":
-        tab_reg, tab_rec = st.tabs(["📝 Nuova Registrazione", "🔑 Recupera / Modifica PIN"])
+    elif str_lib.session_state["modalita_auth"] == "Registrati":
+        tab_reg, tab_rec = str_lib.tabs(["📝 Nuova Registrazione", "🔑 Recupera / Modifica PIN"])
         
         with tab_reg:
-            col_r1, _ = st.columns([2, 1])
+            col_r1, _ = str_lib.columns([2, 1])
             with col_r1:
                 if not check_limite_iscrizioni(fase_attuale):
-                    st.error("❌ Le iscrizioni per la stagione in corso sono chiuse. Il termine ultimo era fissato al 2 febbraio.")
-                elif st.session_state.get("nuovo_registrato", False):
-                    st.warning("⚠️ Benvenuto nel Premio Cugurra! Conserva le tue credenziali d'accesso:")
-                    st.markdown(f"**Utente:** `{st.session_state['reg_nome']}`")
-                    st.markdown(f"**Email:** `{st.session_state['reg_email']}`")
-                    st.markdown(f"**PIN:** `{st.session_state['reg_pin']}`")
-                    st.markdown(f"**Domanda Segreta:** `{st.session_state['reg_domanda']}`")
-                    st.markdown(f"**Risposta Segreta:** `{st.session_state['reg_risposta']}`")
-                    st.markdown("<br>", unsafe_allow_html=True)
+                    str_lib.error("❌ Le iscrizioni per la stagione in corso sono chiuse. Il termine ultimo era fissato al 2 febbraio.")
+                elif str_lib.session_state.get("nuovo_registrato", False):
+                    str_lib.warning("⚠️ Benvenuto nel Premio Cugurra! Conserva le tue credenziali d'accesso:")
+                    str_lib.markdown(f"**Utente:** `{str_lib.session_state['reg_nome']}`")
+                    str_lib.markdown(f"**Email:** `{str_lib.session_state['reg_email']}`")
+                    str_lib.markdown(f"**PIN:** `{str_lib.session_state['reg_pin']}`")
+                    str_lib.markdown(f"**Domanda Segreta:** `{str_lib.session_state['reg_domanda']}`")
+                    str_lib.markdown(f"**Risposta Segreta:** `{str_lib.session_state['reg_risposta']}`")
+                    str_lib.markdown("<br>", unsafe_allow_html=True)
                     
-                    if st.button("Ajò a giocare", key="btn_ajo_giocare", use_container_width=True):
+                    if str_lib.button("Ajò a giocare", key="btn_ajo_giocare", use_container_width=True):
                         session_info = {
-                            "utente_corrente": st.session_state["reg_nome"],
+                            "utente_corrente": str_lib.session_state["reg_nome"],
                             "is_admin": False,
-                            "status": st.session_state["reg_status"]
+                            "status": str_lib.session_state["reg_status"]
                         }
-                        st.session_state.update({
+                        str_lib.session_state.update({
                             "autenticato": True, "utente_corrente": session_info["utente_corrente"],
                             "status": session_info["status"], "is_admin": False, "nuovo_registrato": False
                         })
@@ -460,26 +460,26 @@ if not st.session_state["autenticato"]:
                             val=session_info,
                             expires_at=datetime.now(FUSO_ITALIA) + timedelta(hours=1)
                         )
-                        st.rerun()
+                        str_lib.rerun()
                 else:
-                    new_nome = st.text_input("Nome Utente Facebook", help="Inserisci il tuo nome e cognome esattamente come lo si legge su Facebook")
-                    new_email = st.text_input("Indirizzo Email", help="La tua email verrà utilizzata solo per emergenze")
-                    new_pin = st.text_input("PIN personale (esattamente 4 cifre)", type="password", max_chars=4)
+                    new_nome = str_lib.text_input("Nome Utente Facebook", help="Inserisci il tuo nome e cognome esattamente come lo si legge su Facebook")
+                    new_email = str_lib.text_input("Indirizzo Email", help="La tua email verrà utilizzata solo per emergenze")
+                    new_pin = str_lib.text_input("PIN personale (esattamente 4 cifre)", type="password", max_chars=4)
                     
-                    st.markdown("---")
-                    st.markdown("##### 🔒 Domanda e Risposta Segreta")
-                    domanda_scelta = st.selectbox("Scegli una Domanda Segreta", LISTA_DOMANDE_SEGRETE)
-                    risposta_scelta = st.text_input("Risposta alla Domanda Segreta")
+                    str_lib.markdown("---")
+                    str_lib.markdown("##### 🔒 Domanda e Risposta Segreta")
+                    domanda_scelta = str_lib.selectbox("Scegli una Domanda Segreta", LISTA_DOMANDE_SEGRETE)
+                    risposta_scelta = str_lib.text_input("Risposta alla Domanda Segreta")
 
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    if st.button("Completa Registrazione", key="btn_submit_registrazione", use_container_width=True):
+                    str_lib.markdown("<br>", unsafe_allow_html=True)
+                    if str_lib.button("Completa Registrazione", key="btn_submit_registrazione", use_container_width=True):
                         clean_pin = new_pin.strip() if new_pin else ""
                         clean_risposta = risposta_scelta.strip() if risposta_scelta else ""
 
                         if not new_nome or not new_email or not clean_pin or not clean_risposta:
-                            st.error("Compila tutti i campi.")
+                            str_lib.error("Compila tutti i campi.")
                         elif not clean_pin.isdigit() or len(clean_pin) != 4:
-                            st.error("⚠️ Il PIN deve essere composto **esattamente da 4 cifre numeriche**.")
+                            str_lib.error("⚠️ Il PIN deve essere composto **esattamente da 4 cifre numeriche**.")
                         else:
                             try:
                                 clean_email = new_email.strip().lower()
@@ -487,13 +487,13 @@ if not st.session_state["autenticato"]:
 
                                 check_nome = db.table("utenti").select("nome_fb").eq("nome_fb", clean_nome).execute()
                                 if check_nome.data:
-                                    st.warning(f"Il nome utente '{clean_nome}' è già utilizzato.")
-                                    st.stop()
+                                    str_lib.warning(f"Il nome utente '{clean_nome}' è già utilizzato.")
+                                    str_lib.stop()
 
                                 check_email = db.table("utenti").select("email").eq("email", clean_email).execute()
                                 if check_email.data:
-                                    st.warning(f"L'indirizzo email '{new_email}' risulta già registrato.")
-                                    st.stop()
+                                    str_lib.warning(f"L'indirizzo email '{new_email}' risulta già registrato.")
+                                    str_lib.stop()
 
                                 nuovo_status = "TOP" if fase_attuale == "TEST" else "STANDARD"
                                 db.table("utenti").insert({
@@ -502,94 +502,94 @@ if not st.session_state["autenticato"]:
                                     "status": nuovo_status, "is_admin": False
                                 }).execute()
                                 
-                                st.session_state["nuovo_registrato"] = True
-                                st.session_state["reg_nome"] = clean_nome
-                                st.session_state["reg_email"] = clean_email
-                                st.session_state["reg_pin"] = clean_pin
-                                st.session_state["reg_domanda"] = domanda_scelta
-                                st.session_state["reg_risposta"] = clean_risposta
-                                st.session_state["reg_status"] = nuovo_status
-                                st.rerun()
+                                str_lib.session_state["nuovo_registrato"] = True
+                                str_lib.session_state["reg_nome"] = clean_nome
+                                str_lib.session_state["reg_email"] = clean_email
+                                str_lib.session_state["reg_pin"] = clean_pin
+                                str_lib.session_state["reg_domanda"] = domanda_scelta
+                                str_lib.session_state["reg_risposta"] = clean_risposta
+                                str_lib.session_state["reg_status"] = nuovo_status
+                                str_lib.rerun()
                             except Exception as err:
-                                st.error(f"Errore durante la registrazione: {err}")
+                                str_lib.error(f"Errore durante la registrazione: {err}")
 
         with tab_rec:
-            col_rec1, _ = st.columns([2, 1])
+            col_rec1, _ = str_lib.columns([2, 1])
             with col_rec1:
-                st.subheader("Recupera o reimposta il tuo PIN")
-                rec_nome = st.text_input("Nome Utente Facebook (registrato)", key="rec_nome")
-                rec_email = st.text_input("Email (registrata)", key="rec_email")
+                str_lib.subheader("Recupera o reimposta il tuo PIN")
+                rec_nome = str_lib.text_input("Nome Utente Facebook (registrato)", key="rec_nome")
+                rec_email = str_lib.text_input("Email (registrata)", key="rec_email")
                 
-                if st.button("Cerca Account", key="btn_cerca_acc", use_container_width=True):
+                if str_lib.button("Cerca Account", key="btn_cerca_acc", use_container_width=True):
                     if not rec_nome or not rec_email:
-                        st.error("Inserisci Nome Utente ed Email.")
+                        str_lib.error("Inserisci Nome Utente ed Email.")
                     else:
                         try:
                             res_rec = db.table("utenti").select("*").eq("nome_fb", rec_nome.strip()).eq("email", rec_email.strip().lower()).execute()
                             if res_rec.data:
-                                st.session_state["rec_user_found"] = res_rec.data[0]
-                                st.success("Account trovato!")
+                                str_lib.session_state["rec_user_found"] = res_rec.data[0]
+                                str_lib.success("Account trovato!")
                             else:
-                                st.error("Nessun account trovato.")
+                                str_lib.error("Nessun account trovato.")
                         except Exception as e:
-                            st.error(f"Errore durante la ricerca: {e}")
+                            str_lib.error(f"Errore durante la ricerca: {e}")
 
-                if "rec_user_found" in st.session_state:
-                    u_found = st.session_state["rec_user_found"]
+                if "rec_user_found" in str_lib.session_state:
+                    u_found = str_lib.session_state["rec_user_found"]
                     domanda_u = u_found.get("domanda_segreta", "Qual è la tua risposta segreta?")
                     
-                    st.markdown("---")
-                    st.info(f"**Domanda Segreta:** {domanda_u}")
-                    ans_check = st.text_input("La tua Risposta Segreta", key="ans_check")
-                    new_pin_reset = st.text_input("Nuovo PIN (4 cifre)", type="password", max_chars=4, key="new_pin_reset")
+                    str_lib.markdown("---")
+                    str_lib.info(f"**Domanda Segreta:** {domanda_u}")
+                    ans_check = str_lib.text_input("La tua Risposta Segreta", key="ans_check")
+                    new_pin_reset = str_lib.text_input("Nuovo PIN (4 cifre)", type="password", max_chars=4, key="new_pin_reset")
 
-                    if st.button("Reimposta PIN", key="btn_do_reset", use_container_width=True):
+                    if str_lib.button("Reimposta PIN", key="btn_do_reset", use_container_width=True):
                         clean_ans = ans_check.strip().lower() if ans_check else ""
                         clean_new_pin = new_pin_reset.strip() if new_pin_reset else ""
                         db_ans = (u_found.get("risposta_segreta") or "").strip().lower()
 
                         if clean_ans != db_ans:
-                            st.error("Risposta segreta errata.")
+                            str_lib.error("Risposta segreta errata.")
                         elif not clean_new_pin.isdigit() or len(clean_new_pin) != 4:
-                            st.error("Il PIN deve essere di 4 cifre numeriche.")
+                            str_lib.error("Il PIN deve essere di 4 cifre numeriche.")
                         else:
                             try:
                                 db.table("utenti").update({"pin": clean_new_pin}).eq("nome_fb", u_found["nome_fb"]).execute()
-                                st.success("PIN aggiornato con successo!")
-                                del st.session_state["rec_user_found"]
+                                str_lib.success("PIN aggiornato con successo!")
+                                del str_lib.session_state["rec_user_found"]
                             except Exception as ex_u:
-                                st.error(f"Errore: {ex_u}")
-    st.stop()
+                                str_lib.error(f"Errore: {ex_u}")
+    str_lib.stop()
 
 # --- BARRA LATERALE ---
-st.sidebar.markdown(f"👤 Utente: **{st.session_state.get('utente_corrente')}**")
-st.sidebar.markdown(f"⭐ Status: **{st.session_state.get('status')}**")
+str_lib.sidebar.markdown(f"👤 Utente: **{str_lib.session_state.get('utente_corrente')}**")
+str_lib.sidebar.markdown(f"⭐ Status: **{str_lib.session_state.get('status')}**")
 
-if st.sidebar.button("Logout", key="sidebar_logout_btn", use_container_width=True):
+if str_lib.sidebar.button("Logout", key="sidebar_logout_btn", use_container_width=True):
     try:
         cookie_manager.delete("cugurra_auth_session")
     except Exception:
         pass
-    st.session_state.clear()
-    st.rerun()
+    str_lib.session_state.clear()
+    str_lib.rerun()
 
 # --- INTERFACCIA PRINCIPALE ---
-st.markdown(f"<h1>⚽ Premio Cugurra {stagione_attuale} ({fase_attuale})</h1>", unsafe_allow_html=True)
+str_lib.markdown(f"<h1>⚽ Premio Cugurra {stagione_attuale} ({fase_attuale})</h1>", unsafe_allow_html=True)
 
 # --- NAVIGAZIONE ---
-if st.session_state["is_admin"]:
+if str_lib.session_state["is_admin"]:
     menu_options = ["⚙️ Gestione Admin", "📝 Pronostici", "🏆 Classifiche", "📜 Regolamento"]
 else:
     menu_options = ["📝 Pronostici", "🏆 Classifiche", "📜 Regolamento"]
 
-selected_tab = st.radio(
+selected_tab = str_lib.radio(
     "Navigazione Principale",
     options=menu_options,
     label_visibility="collapsed",
     horizontal=True
 )
 
-st.write("") 
+str_lib.write("") 
 
 tab_admin = selected_tab if selected_tab == "⚙️ Gestione Admin" else None
 is_pronostici = (selected_tab == "📝 Pronostici")
@@ -599,7 +599,7 @@ is_regolamento = (selected_tab == "📜 Regolamento")
 # 1. PRONOSTICI
 if is_pronostici:
     if fase_attuale == "ARCHIVIO":
-        st.warning("Stagione in archivio. Pronostici disabilitati.")
+        str_lib.warning("Stagione in archivio. Pronostici disabilitati.")
     else:
         try:
             partite_db = db.table("partite").select("*").order("data_ora").execute().data
@@ -623,7 +623,7 @@ if is_pronostici:
         partita_tuple = partite_future[0] if partite_future else None
         
         if not partita_tuple:
-            st.info("Nessuna partita disponibile per il pronostico in questo momento.")
+            str_lib.info("Nessuna partita disponibile per il pronostico in questo momento.")
         else:
             dt_partita, partita = partita_tuple
             iso_timestamp = dt_partita.isoformat()
@@ -638,13 +638,13 @@ if is_pronostici:
 
             pronostico_esistente = None
             try:
-                res_pron = db.table("pronostici").select("*").eq("id_partita", partita['id']).eq("utente", st.session_state["utente_corrente"]).execute()
+                res_pron = db.table("pronostici").select("*").eq("id_partita", partita['id']).eq("utente", str_lib.session_state["utente_corrente"]).execute()
                 if res_pron.data:
                     pronostico_esistente = res_pron.data[0]
             except:
                 pronostico_esistente = None
 
-            if pronostico_esistente and not st.session_state.get(f"loaded_counts_{partita['id']}", False):
+            if pronostico_esistente and not str_lib.session_state.get(f"loaded_counts_{partita['id']}", False):
                 for key_pref, is_left in [("s1", is_cagliari_left), ("s2", not is_cagliari_left)]:
                     key_m = "marcatori_cagliari" if is_left else "marcatori_avversario"
                     key_a = "autogol_cagliari" if is_left else "autogol_avversario"
@@ -654,15 +654,15 @@ if is_pronostici:
                     
                     c_m = Counter([x for x in m_list if x])
                     for m_name, count in c_m.items():
-                        st.session_state.gol_singoli[f"g_{key_pref}_{m_name}_{partita['id']}"] = count
+                        str_lib.session_state.gol_singoli[f"g_{key_pref}_{m_name}_{partita['id']}"] = count
                         
                     c_a = Counter([x for x in a_list if x])
                     for a_name, count in c_a.items():
-                        st.session_state.gol_singoli[f"auto_{key_pref}_{a_name}_{partita['id']}"] = count
+                        str_lib.session_state.gol_singoli[f"auto_{key_pref}_{a_name}_{partita['id']}"] = count
                         
-                st.session_state[f"loaded_counts_{partita['id']}"] = True
+                str_lib.session_state[f"loaded_counts_{partita['id']}"] = True
 
-            st.markdown(f"""
+            str_lib.markdown(f"""
                 <div style="text-align: center; line-height: 1.6; margin-bottom: 20px;">
                     Prossima partita:<br>
                     <span style="color: #fbbf24; font-weight: bold; font-size: 1.2rem;">{squadra_1} vs {squadra_2}, {nome_competizione}</span><br>
@@ -671,7 +671,7 @@ if is_pronostici:
             """, unsafe_allow_html=True)
             
             if match_iniziato:
-                st.error("🔒 I pronostici per questa partita sono CHIUSI. Il match è già iniziato.")
+                str_lib.error("🔒 I pronostici per questa partita sono CHIUSI. Il match è già iniziato.")
             
             if pronostico_esistente:
                 p_s1 = pronostico_esistente.get("gol_cagliari" if is_cagliari_left else "gol_avversario", 0)
@@ -701,26 +701,26 @@ if is_pronostici:
                 det_esp1 = f"Espulsi: {', '.join(e1_list)}" if e1_list else "Nessun espulso"
                 det_esp2 = f"Espulsi: {', '.join(e2_list)}" if e2_list else "Nessun espulso"
 
-                st.success(f"""
+                str_lib.success(f"""
                 📌 **IL TUO PRONOSTICO ATTUALE:**
                 * **Risultato:** {squadra_1} {p_s1} - {p_s2} {squadra_2}
                 * **{squadra_1}:** {det_s1} ({det_esp1})
                 * **{squadra_2}:** {det_s2} ({det_esp2})
                 """)
 
-                col_mod_btn1, _ = st.columns([2, 1])
+                col_mod_btn1, _ = str_lib.columns([2, 1])
                 with col_mod_btn1:
                     if not match_iniziato:
-                        if not st.session_state.get("in_modifica_pronostico", False):
-                            if st.button("✏️ Modifica il tuo pronostico", key="btn_enable_edit", use_container_width=True):
-                                st.session_state["in_modifica_pronostico"] = True
-                                st.rerun()
+                        if not str_lib.session_state.get("in_modifica_pronostico", False):
+                            if str_lib.button("✏️ Modifica il tuo pronostico", key="btn_enable_edit", use_container_width=True):
+                                str_lib.session_state["in_modifica_pronostico"] = True
+                                str_lib.rerun()
                         else:
-                            st.info("⚠️ Modalità modifica attiva.")
+                            str_lib.info("⚠️ Modalità modifica attiva.")
             else:
-                st.session_state["in_modifica_pronostico"] = True
+                str_lib.session_state["in_modifica_pronostico"] = True
 
-            can_edit = (not match_iniziato) and st.session_state.get("in_modifica_pronostico", False)
+            can_edit = (not match_iniziato) and str_lib.session_state.get("in_modifica_pronostico", False)
             
             countdown_html = f"""
             <div style="background-color: #090d16; border: 2px solid #38bdf8; border-radius: 12px; padding: 12px; text-align: center; font-family: 'Press Start 2P', monospace; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);">
@@ -757,7 +757,7 @@ if is_pronostici:
             url_s1 = get_url_scudetto(squadra_1)
             url_s2 = get_url_scudetto(squadra_2)
 
-            st.markdown(f"""
+            str_lib.markdown(f"""
                 <div style="display: flex; justify-content: center; align-items: center; margin-top: 15px; margin-bottom: 10px;">
                     <img src="{url_comp}" width="48" onerror="this.src='{DEFAULT_LOGO_URL}'" style="display: block;">
                 </div>
@@ -766,126 +766,126 @@ if is_pronostici:
             col_id_1 = f"gs1_{partita['id']}"
             col_id_2 = f"gs2_{partita['id']}"
 
-            if col_id_1 not in st.session_state: 
+            if col_id_1 not in str_lib.session_state: 
                 val_init_1 = pronostico_esistente.get("gol_cagliari" if is_cagliari_left else "gol_avversario", 0) if pronostico_esistente else 0
-                st.session_state[col_id_1] = val_init_1
-            if col_id_2 not in st.session_state: 
+                str_lib.session_state[col_id_1] = val_init_1
+            if col_id_2 not in str_lib.session_state: 
                 val_init_2 = pronostico_esistente.get("gol_avversario" if is_cagliari_left else "gol_cagliari", 0) if pronostico_esistente else 0
-                st.session_state[col_id_2] = val_init_2
+                str_lib.session_state[col_id_2] = val_init_2
 
-            col_squadra_1, col_squadra_2 = st.columns(2)
+            col_squadra_1, col_squadra_2 = str_lib.columns(2)
 
             with col_squadra_1:
-                st.markdown(f"""
+                str_lib.markdown(f"""
                     <div style="text-align: center; margin-bottom: 5px;">
                         <img src="{url_s1}" width="60" onerror="this.src='{DEFAULT_LOGO_URL}'" style="display: block; margin: 0 auto 8px auto;">
                         <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Inserisci gol {squadra_1}</div>
                     </div>
                 """, unsafe_allow_html=True)
-                gol_s1 = st.number_input(f"Inserisci gol {squadra_1}", min_value=0, value=st.session_state[col_id_1], key=col_id_1, label_visibility="collapsed", disabled=not can_edit)
+                gol_s1 = str_lib.number_input(f"Inserisci gol {squadra_1}", min_value=0, value=str_lib.session_state[col_id_1], key=col_id_1, label_visibility="collapsed", disabled=not can_edit)
 
             with col_squadra_2:
-                st.markdown(f"""
+                str_lib.markdown(f"""
                     <div style="text-align: center; margin-bottom: 5px;">
                         <img src="{url_s2}" width="60" onerror="this.src='{DEFAULT_LOGO_URL}'" style="display: block; margin: 0 auto 8px auto;">
                         <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Inserisci gol {squadra_2}</div>
                     </div>
                 """, unsafe_allow_html=True)
-                gol_s2 = st.number_input(f"Inserisci gol {squadra_2}", min_value=0, value=st.session_state[col_id_2], key=col_id_2, label_visibility="collapsed", disabled=not can_edit)
+                gol_s2 = str_lib.number_input(f"Inserisci gol {squadra_2}", min_value=0, value=str_lib.session_state[col_id_2], key=col_id_2, label_visibility="collapsed", disabled=not can_edit)
 
             is_goleada_1 = gol_s1 > 9
             is_goleada_2 = gol_s2 > 9
 
-            st.markdown("---")
+            str_lib.markdown("---")
             rosa_cag = [x.strip() for x in (partita.get("rosa_cagliari") or "").split(",") if x.strip()]
             rosa_avv = [x.strip() for x in (partita.get("rosa_avversaria") or "").split(",") if x.strip()]
             rosa_1 = rosa_cag if is_cagliari_left else rosa_avv
             rosa_2 = rosa_avv if is_cagliari_left else rosa_cag
 
             def render_team_section(team_name, lista_rosa, lista_opp, is_goleada, key_pref, gol_team_totali):
-                st.markdown(f"### {team_name}")
+                str_lib.markdown(f"### {team_name}")
                 marcatori = []
                 autogol = []
                 
                 if is_goleada:
-                    st.info("Goleada attivata (>9 gol): marcatori disabilitati.")
+                    str_lib.info("Goleada attivata (>9 gol): marcatori disabilitati.")
                 elif gol_team_totali == 0:
-                    st.info("0 Gol inseriti: sezione marcatori ed autogol nascosta.")
+                    str_lib.info("0 Gol inseriti: sezione marcatori ed autogol nascosta.")
                 else:
                     def_marc = []
                     if pronostico_esistente:
                         raw_marc = pronostico_esistente.get("marcatori_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "marcatori_avversario", []) or []
                         def_marc = [m for m in raw_marc if m]
-                    marcatori = st.multiselect(f"Marcatori {team_name}", options=lista_rosa, default=list(dict.fromkeys([m for m in def_marc if m in lista_rosa])), key=f"m_{key_pref}_{partita['id']}", disabled=not can_edit)
+                    marcatori = str_lib.multiselect(f"Marcatori {team_name}", options=lista_rosa, default=list(dict.fromkeys([m for m in def_marc if m in lista_rosa])), key=f"m_{key_pref}_{partita['id']}", disabled=not can_edit)
                     for m in marcatori:
                         k = f"g_{key_pref}_{m}_{partita['id']}"
-                        st.session_state.gol_singoli[k] = st.number_input(f"Gol di {m}", 1, 50, st.session_state.gol_singoli.get(k, 1), key=k, disabled=not can_edit)
+                        str_lib.session_state.gol_singoli[k] = str_lib.number_input(f"Gol di {m}", 1, 50, str_lib.session_state.gol_singoli.get(k, 1), key=k, disabled=not can_edit)
 
                     def_auto = []
                     if pronostico_esistente:
                         raw_auto = pronostico_esistente.get("autogol_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "autogol_avversario", []) or []
                         def_auto = [a for a in raw_auto if a]
-                    autogol = st.multiselect(f"Autogol a favore ({team_name})", options=lista_opp, default=list(dict.fromkeys([a for a in def_auto if a in lista_opp])), key=f"a_{key_pref}_{partita['id']}", disabled=not can_edit)
+                    autogol = str_lib.multiselect(f"Autogol a favore ({team_name})", options=lista_opp, default=list(dict.fromkeys([a for a in def_auto if a in lista_opp])), key=f"a_{key_pref}_{partita['id']}", disabled=not can_edit)
                     for a in autogol:
                         k = f"auto_{key_pref}_{a}_{partita['id']}"
-                        st.session_state.gol_singoli[k] = st.number_input(f"Autogol di {a}", 1, 50, st.session_state.gol_singoli.get(k, 1), key=k, disabled=not can_edit)
+                        str_lib.session_state.gol_singoli[k] = str_lib.number_input(f"Autogol di {a}", 1, 50, str_lib.session_state.gol_singoli.get(k, 1), key=k, disabled=not can_edit)
                 
                 def_esp = []
                 if pronostico_esistente:
                     raw_esp = pronostico_esistente.get("espulsi_cagliari" if (is_cagliari_left and key_pref=="s1") or (not is_cagliari_left and key_pref=="s2") else "espulsi_avversario", []) or []
                     def_esp = [e for e in raw_esp if e]
-                espulsi = st.multiselect(f"Espulsi ({team_name})", options=lista_rosa, default=[e for e in def_esp if e in lista_rosa], max_selections=3, key=f"e_{key_pref}_{partita['id']}", disabled=not can_edit)
+                espulsi = str_lib.multiselect(f"Espulsi ({team_name})", options=lista_rosa, default=[e for e in def_esp if e in lista_rosa], max_selections=3, key=f"e_{key_pref}_{partita['id']}", disabled=not can_edit)
                 return marcatori, autogol, espulsi
 
-            col_tab1, col_tab2 = st.columns(2)
+            col_tab1, col_tab2 = str_lib.columns(2)
             with col_tab1: marc1, auto1, esp1 = render_team_section(squadra_1, rosa_1, rosa_2, is_goleada_1, "s1", gol_s1)
             with col_tab2: marc2, auto2, esp2 = render_team_section(squadra_2, rosa_2, rosa_1, is_goleada_2, "s2", gol_s2)
 
-            st.markdown("<br>", unsafe_allow_html=True)
+            str_lib.markdown("<br>", unsafe_allow_html=True)
             
             btn_label = "Convalida Modifiche" if pronostico_esistente else "Invia Pronostico"
-            if st.button(btn_label, key="btn_invia_pronostico", use_container_width=True, disabled=not can_edit):
+            if str_lib.button(btn_label, key="btn_invia_pronostico", use_container_width=True, disabled=not can_edit):
                 tot_gol_s1_calcolati = 0
                 if not is_goleada_1:
                     for m in marc1:
-                        tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"g_s1_{m}_{partita['id']}", 1)
+                        tot_gol_s1_calcolati += str_lib.session_state.gol_singoli.get(f"g_s1_{m}_{partita['id']}", 1)
                 for a in auto1:
-                    tot_gol_s1_calcolati += st.session_state.gol_singoli.get(f"auto_s1_{a}_{partita['id']}", 1)
+                    tot_gol_s1_calcolati += str_lib.session_state.gol_singoli.get(f"auto_s1_{a}_{partita['id']}", 1)
 
                 tot_gol_s2_calcolati = 0
                 if not is_goleada_2:
                     for m in marc2:
-                        tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"g_s2_{m}_{partita['id']}", 1)
+                        tot_gol_s2_calcolati += str_lib.session_state.gol_singoli.get(f"g_s2_{m}_{partita['id']}", 1)
                 for a in auto2:
-                    tot_gol_s2_calcolati += st.session_state.gol_singoli.get(f"auto_s2_{a}_{partita['id']}", 1)
+                    tot_gol_s2_calcolati += str_lib.session_state.gol_singoli.get(f"auto_s2_{a}_{partita['id']}", 1)
 
                 errore_coerenza = False
                 if not is_goleada_1 and tot_gol_s1_calcolati != gol_s1:
-                    st.error(f"Errore per {squadra_1}: inseriti {gol_s1} gol totali, ma la somma calcolata è {tot_gol_s1_calcolati}.")
+                    str_lib.error(f"Errore per {squadra_1}: inseriti {gol_s1} gol totali, ma la somma calcolata è {tot_gol_s1_calcolati}.")
                     errore_coerenza = True
                 if not is_goleada_2 and tot_gol_s2_calcolati != gol_s2:
-                    st.error(f"Errore per {squadra_2}: inseriti {gol_s2} gol totali, ma la somma calcolata è {tot_gol_s2_calcolati}.")
+                    str_lib.error(f"Errore per {squadra_2}: inseriti {gol_s2} gol totali, ma la somma calcolata è {tot_gol_s2_calcolati}.")
                     errore_coerenza = True
 
                 if not errore_coerenza:
                     marc1_expanded = []
                     for m in marc1:
-                        cnt = st.session_state.gol_singoli.get(f"g_s1_{m}_{partita['id']}", 1)
+                        cnt = str_lib.session_state.gol_singoli.get(f"g_s1_{m}_{partita['id']}", 1)
                         marc1_expanded.extend([m] * cnt)
 
                     auto1_expanded = []
                     for a in auto1:
-                        cnt = st.session_state.gol_singoli.get(f"auto_s1_{a}_{partita['id']}", 1)
+                        cnt = str_lib.session_state.gol_singoli.get(f"auto_s1_{a}_{partita['id']}", 1)
                         auto1_expanded.extend([a] * cnt)
 
                     marc2_expanded = []
                     for m in marc2:
-                        cnt = st.session_state.gol_singoli.get(f"g_s2_{m}_{partita['id']}", 1)
+                        cnt = str_lib.session_state.gol_singoli.get(f"g_s2_{m}_{partita['id']}", 1)
                         marc2_expanded.extend([m] * cnt)
 
                     auto2_expanded = []
                     for a in auto2:
-                        cnt = st.session_state.gol_singoli.get(f"auto_s2_{a}_{partita['id']}", 1)
+                        cnt = str_lib.session_state.gol_singoli.get(f"auto_s2_{a}_{partita['id']}", 1)
                         auto2_expanded.extend([a] * cnt)
 
                     if is_cagliari_left:
@@ -903,7 +903,7 @@ if is_pronostici:
                         db.table("pronostici").upsert(
                             {
                                 "id_partita": partita['id'], 
-                                "utente": st.session_state["utente_corrente"],
+                                "utente": str_lib.session_state["utente_corrente"],
                                 "gol_cagliari": gol_cag, 
                                 "gol_avversario": gol_avv,
                                 "marcatori_cagliari": marc_cag, 
@@ -915,16 +915,16 @@ if is_pronostici:
                             },
                             on_conflict="id_partita, utente"
                         ).execute()
-                        st.session_state["in_modifica_pronostico"] = False
-                        st.success("Pronostico registrato con successo!")
-                        st.rerun()
+                        str_lib.session_state["in_modifica_pronostico"] = False
+                        str_lib.success("Pronostico registrato con successo!")
+                        str_lib.rerun()
                     except Exception as db_err:
-                        st.error(f"Errore durante l'inserimento su Supabase: {db_err}")
+                        str_lib.error(f"Errore durante l'inserimento su Supabase: {db_err}")
 
 # 2. CLASSIFICHE
 elif is_classifiche:
-    st.markdown("<h2 class='single-line-title'>🏆 Classifiche Ufficiali 🏆</h2>", unsafe_allow_html=True)
-    sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Albo d'Oro"])
+    str_lib.markdown("<h2 class='single-line-title'>🏆 Classifiche Ufficiali 🏆</h2>", unsafe_allow_html=True)
+    sub_tab1, sub_tab2, sub_tab3, sub_tab4 = str_lib.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Albo d'Oro"])
     
     try:
         punteggi_data = db.table("punteggi_partita").select("*").execute().data
@@ -944,39 +944,39 @@ elif is_classifiche:
 
     with sub_tab1:
         if df_punteggi.empty:
-            st.info("In attesa delle prime partite omologate per la classifica generale.")
+            str_lib.info("In attesa delle prime partite omologate per la classifica generale.")
         else:
             gen_df = df_punteggi.groupby("utente")["punti_generale"].sum().reset_index()
             gen_df = pd.merge(gen_df, partita_counts, on="utente", how="left").fillna(0)
             gen_df["Partite Giocate"] = gen_df["Partite Giocate"].astype(int)
             gen_df = gen_df.sort_values(by=["punti_generale", "Partite Giocate"], ascending=[False, False])
             gen_df.columns = ["Utente", "Punti Totali", "Partite Giocate"]
-            st.dataframe(gen_df, use_container_width=True, hide_index=True)
+            str_lib.dataframe(gen_df, use_container_width=True, hide_index=True)
 
     with sub_tab2:
         if df_punteggi.empty:
-            st.info("Classifica Masters of Cugurras vuota.")
+            str_lib.info("Classifica Masters of Cugurras vuota.")
         else:
             masters_df = df_punteggi[df_punteggi["punti_masters"] > 0].groupby("utente")["punti_masters"].count().reset_index()
             masters_df = pd.merge(masters_df, partita_counts, on="utente", how="left").fillna(0)
             masters_df["Partite Giocate"] = masters_df["Partite Giocate"].astype(int)
             masters_df = masters_df.sort_values(by=["punti_masters", "Partite Giocate"], ascending=[False, False])
             masters_df.columns = ["Utente", "Totale Masters (10 Punti)", "Partite Giocate"]
-            st.dataframe(masters_df, use_container_width=True, hide_index=True)
+            str_lib.dataframe(masters_df, use_container_width=True, hide_index=True)
 
     with sub_tab3:
         if df_punteggi.empty:
-            st.info("Classifica Bomber di razza vuota.")
+            str_lib.info("Classifica Bomber di razza vuota.")
         else:
             bomber_df = df_punteggi.groupby("utente")["punti_bomber"].sum().reset_index()
             bomber_df = pd.merge(bomber_df, partita_counts, on="utente", how="left").fillna(0)
             bomber_df["Partite Giocate"] = bomber_df["Partite Giocate"].astype(int)
             bomber_df = bomber_df.sort_values(by=["punti_bomber", "Partite Giocate"], ascending=[False, False])
             bomber_df.columns = ["Utente", "Punti Bomber", "Partite Giocate"]
-            st.dataframe(bomber_df, use_container_width=True, hide_index=True)
+            str_lib.dataframe(bomber_df, use_container_width=True, hide_index=True)
 
     with sub_tab4:
-        st.subheader("📜 Albo d'Oro")
+        str_lib.subheader("📜 Albo d'Oro")
         try:
             res_albo_pub = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
             if res_albo_pub.data:
@@ -986,11 +986,11 @@ elif is_classifiche:
                     "premio_masters_of_cugurras": "Masters of Cugurras", "premio_bomber_di_razza": "Bomber di razza"
                 })
                 cols_display = [c for c in ["Stagione", "Vincitore Premio Cugurra", "Masters of Cugurras", "Bomber di razza"] if c in df_display.columns]
-                st.dataframe(df_display[cols_display], use_container_width=True, hide_index=True)
+                str_lib.dataframe(df_display[cols_display], use_container_width=True, hide_index=True)
             else:
-                st.info("Nessun dato presente nell'Albo d'Oro.")
+                str_lib.info("Nessun dato presente nell'Albo d'Oro.")
         except:
-            st.info("Albo d'oro non disponibile.")
+            str_lib.info("Albo d'oro non disponibile.")
 
 # 3. REGOLAMENTO
 elif is_regolamento:
@@ -1053,20 +1053,20 @@ elif is_regolamento:
 elif tab_admin is not None:
     components.html("<script>window.parent.scrollTo(0, 0);</script>", height=0)
     
-    st.markdown("<h2 class='single-line-title'>⚙️ Pannello di Controllo Admin ⚙️</h2>", unsafe_allow_html=True)
+    str_lib.markdown("<h2 class='single-line-title'>⚙️ Pannello di Controllo Admin ⚙️</h2>", unsafe_allow_html=True)
     
-    with st.expander("⚙️ Gestione Stagione & Fase Globale", expanded=False):
-        fase_scelta = st.selectbox("Cambia Fase Globale", ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"], index=["TEST", "STAGIONE IN CORSO", "ARCHIVIO"].index(fase_attuale) if fase_attuale in ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"] else 0)
+    with str_lib.expander("⚙️ Gestione Stagione & Fase Globale", expanded=False):
+        fase_scelta = str_lib.selectbox("Cambia Fase Globale", ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"], index=["TEST", "STAGIONE IN CORSO", "ARCHIVIO"].index(fase_attuale) if fase_attuale in ["TEST", "STAGIONE IN CORSO", "ARCHIVIO"] else 0)
         
-        st.markdown(f"Stagione corrente attiva: **{stagione_attuale}**")
-        col_st1, col_st2 = st.columns(2)
+        str_lib.markdown(f"Stagione corrente attiva: **{stagione_attuale}**")
+        col_st1, col_st2 = str_lib.columns(2)
         with col_st1:
-            if st.button("Aggiorna Fase Globale", key="btn_aggiorna_fase", use_container_width=True):
+            if str_lib.button("Aggiorna Fase Globale", key="btn_aggiorna_fase", use_container_width=True):
                 db.table("configurazione").update({"valore": fase_scelta}).eq("chiave", "fase_corrente").execute()
-                st.success("Fase aggiornata!")
-                st.rerun()
+                str_lib.success("Fase aggiornata!")
+                str_lib.rerun()
         with col_st2:
-            if st.button("🚀 Passa a Nuova Stagione (+1 anno & Test)", key="btn_nuova_stagione", use_container_width=True):
+            if str_lib.button("🚀 Passa a Nuova Stagione (+1 anno & Test)", key="btn_nuova_stagione", use_container_width=True):
                 try:
                     parti_anno = stagione_attuale.split("/")
                     if len(parti_anno) == 2:
@@ -1078,35 +1078,38 @@ elif tab_admin is not None:
                     
                     db.table("configurazione").update({"valore": nuova_stagione_str}).eq("chiave", "stagione_corrente").execute()
                     db.table("configurazione").update({"valore": "TEST"}).eq("chiave", "fase_corrente").execute()
-                    st.success(f"Stagione passata con successo a {nuova_stagione_str} in modalità TEST!")
-                    st.rerun()
+                    str_lib.success(f"Stagione passata con successo a {nuova_stagione_str} in modalità TEST!")
+                    str_lib.rerun()
                 except Exception as ex_st:
-                    st.error(f"Errore durante il cambio stagione: {ex_st}")
+                    str_lib.error(f"Errore durante il cambio stagione: {ex_st}")
 
-    with st.expander("➕ Inserisci Nuova Partita", expanded=False):
+    with str_lib.expander("➕ Inserisci Nuova Partita", expanded=False):
         try:
             lista_comp = [c['nome'] for c in db.table("competizioni").select("nome").order("nome").execute().data]
         except:
             lista_comp = ["Serie A"]
             
-        with st.form("form_nuova_partita"):
-            comp = st.selectbox("Competizione", lista_comp)
-            avv = st.text_input("Squadra Avversaria")
-            campo = st.selectbox("Campo", ["Casa", "Trasferta", "Campo Neutro"])
-            data_p = st.date_input("Data Partita")
-            ore_sel = st.selectbox("Ora", list(range(0, 24)), index=15)
-            min_sel = st.selectbox("Minuti", [0, 15, 30, 45], index=0)
-            rosa_cag_input = st.text_area("Convocati Cagliari", "")
-            rosa_avv_input = st.text_area("Convocati Avversaria", "")
+        with str_lib.form("form_nuova_partita"):
+            comp = str_lib.selectbox("Competizione", lista_comp)
+            avv = str_lib.text_input("Squadra Avversaria")
+            campo = str_lib.selectbox("Campo", ["Casa", "Trasferta", "Campo Neutro"])
+            data_p = str_lib.date_input("Data Partita")
+            ore_sel = str_lib.selectbox("Ora", list(range(0, 24)), index=15)
+            min_sel = str_lib.selectbox("Minuti", [0, 15, 30, 45], index=0)
+            rosa_cag_input = str_lib.text_area("Convocati Cagliari", "")
+            rosa_avv_input = str_lib.text_area("Convocati Avversaria", "")
             
-            submitted_partita = st.form_submit_button("Crea Partita nel Database", use_container_width=True)
+            submitted_partita = str_lib.form_submit_button("Crea Partita nel Database", use_container_width=True)
 
             if submitted_partita:
                 if not avv:
-                    st.error("Inserisci la squadra avversaria.")
+                    str_lib.error("Inserisci la squadra avversaria.")
                 else:
-                    ora_str = f"{ore_sel:02d}:{min_sel:02d}:00"
-                    data_ora_unita = f"{data_p.isoformat()}T{ora_str}"
+                    # CORRETTO: Conversione corretta dal fuso orario di Roma a UTC puro per il DB
+                    dt_locale = datetime.combine(data_p, datetime.min.time().replace(hour=ore_sel, minute=min_sel)).replace(tzinfo=FUSO_ITALIA)
+                    dt_utc = dt_locale.astimezone(zoneinfo.ZoneInfo("UTC"))
+                    data_ora_unita = dt_utc.isoformat().replace("+00:00", "Z")
+                    
                     id_str = f"{comp}_{avv}_{data_p}".replace(" ", "_")
                     db.table("partite").insert({
                         "competizione": comp, "avversario": avv, "campo": campo,
@@ -1115,10 +1118,10 @@ elif tab_admin is not None:
                         "rosa_avversaria": rosa_avv_input.replace(";", ","),
                         "omologata": False
                     }).execute()
-                    st.success("Partita creata!")
+                    str_lib.success("Partita creata!")
 
-    with st.expander("🏁 Omologazione Partita e Assegnazione Punti", expanded=False):
-        st.warning("⚠️ **ATTENZIONE:** L'omologazione inserisce i risultati definitivi e blocco modifiche.")
+    with str_lib.expander("🏁 Omologazione Partita e Assegnazione Punti", expanded=False):
+        str_lib.warning("⚠️ **ATTENZIONE:** L'omologazione inserisce i risultati definitivi e blocco modifiche.")
         
         try:
             partite_non_omologate = db.table("partite").select("*").eq("omologata", False).order("data_ora").execute().data
@@ -1126,10 +1129,10 @@ elif tab_admin is not None:
             partite_non_omologate = []
 
         if not partite_non_omologate:
-            st.info("Nessuna partita in attesa di omologazione.")
+            str_lib.info("Nessuna partita in attesa di omologazione.")
         else:
             dict_omo = {f"{p['competizione']} - Cagliari vs {p['avversario']} ({p['data_ora'][:10]}) [ID: {p['id']}]": p for p in partite_non_omologate}
-            scelta_omo_str = st.selectbox("Seleziona partita da omologare", list(dict_omo.keys()), key="select_omo")
+            scelta_omo_str = str_lib.selectbox("Seleziona partita da omologare", list(dict_omo.keys()), key="select_omo")
             p_omo = dict_omo[scelta_omo_str]
 
             campo_omo = p_omo.get('campo') or p_omo.get('casa_trasferta') or 'Casa'
@@ -1137,43 +1140,43 @@ elif tab_admin is not None:
             s1_omo = "CAGLIARI" if is_cag_left_omo else p_omo['avversario']
             s2_omo = p_omo['avversario'] if is_cag_left_omo else "CAGLIARI"
 
-            st.markdown(f"### Risultato Ufficiale: {s1_omo} vs {s2_omo}")
-            col_go1, col_go2 = st.columns(2)
-            with col_go1: gol_uff_s1 = st.number_input(f"Gol {s1_omo} (Ufficiali)", min_value=0, value=0, key="gol_u_s1")
-            with col_go2: gol_uff_s2 = st.number_input(f"Gol {s2_omo} (Ufficiali)", min_value=0, value=0, key="gol_u_s2")
+            str_lib.markdown(f"### Risultato Ufficiale: {s1_omo} vs {s2_omo}")
+            col_go1, col_go2 = str_lib.columns(2)
+            with col_go1: gol_uff_s1 = str_lib.number_input(f"Gol {s1_omo} (Ufficiali)", min_value=0, value=0, key="gol_u_s1")
+            with col_go2: gol_uff_s2 = str_lib.number_input(f"Gol {s2_omo} (Ufficiali)", min_value=0, value=0, key="gol_u_s2")
 
             rosa_cag_l = [x.strip() for x in (p_omo.get("rosa_cagliari") or "").split(",") if x.strip()]
             rosa_avv_l = [x.strip() for x in (p_omo.get("rosa_avversaria") or "").split(",") if x.strip()]
             rosa_t1 = rosa_cag_l if is_cag_left_omo else rosa_avv_l
             rosa_t2 = rosa_avv_l if is_cag_left_omo else rosa_cag_l
 
-            st.markdown("#### Marcatori e Dettagli")
-            col_mo1, col_mo2 = st.columns(2)
+            str_lib.markdown("#### Marcatori e Dettagli")
+            col_mo1, col_mo2 = str_lib.columns(2)
             with col_mo1:
-                st.markdown(f"**{s1_omo}**")
-                marc_uff_1 = st.multiselect(f"Marcatori {s1_omo}", options=rosa_t1, key="mu_1")
+                str_lib.markdown(f"**{s1_omo}**")
+                marc_uff_1 = str_lib.multiselect(f"Marcatori {s1_omo}", options=rosa_t1, key="mu_1")
                 for m in marc_uff_1:
                     k_m1 = f"omo_g_s1_{m}_{p_omo['id']}"
-                    st.session_state.gol_omologazione[k_m1] = st.number_input(f"Gol di {m}", 1, 20, 1, key=k_m1)
-                auto_uff_1 = st.multiselect(f"Autogol a favore di {s1_omo}", options=rosa_t2, key="au_1")
+                    str_lib.session_state.gol_omologazione[k_m1] = str_lib.number_input(f"Gol di {m}", 1, 20, 1, key=k_m1)
+                auto_uff_1 = str_lib.multiselect(f"Autogol a favore di {s1_omo}", options=rosa_t2, key="au_1")
                 for a in auto_uff_1:
                     k_a1 = f"omo_auto_s1_{a}_{p_omo['id']}"
-                    st.session_state.gol_omologazione[k_a1] = st.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a1)
-                esp_uff_1 = st.multiselect(f"Espulsi {s1_omo}", options=rosa_t1, key="eu_1")
+                    str_lib.session_state.gol_omologazione[k_a1] = str_lib.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a1)
+                esp_uff_1 = str_lib.multiselect(f"Espulsi {s1_omo}", options=rosa_t1, key="eu_1")
 
             with col_mo2:
-                st.markdown(f"**{s2_omo}**")
-                marc_uff_2 = st.multiselect(f"Marcatori {s2_omo}", options=rosa_t2, key="mu_2")
+                str_lib.markdown(f"**{s2_omo}**")
+                marc_uff_2 = str_lib.multiselect(f"Marcatori {s2_omo}", options=rosa_t2, key="mu_2")
                 for m in marc_uff_2:
                     k_m2 = f"omo_g_s2_{m}_{p_omo['id']}"
-                    st.session_state.gol_omologazione[k_m2] = st.number_input(f"Gol di {m}", 1, 20, 1, key=k_m2)
-                auto_uff_2 = st.multiselect(f"Autogol a favore di {s2_omo}", options=rosa_t1, key="au_2")
+                    str_lib.session_state.gol_omologazione[k_m2] = str_lib.number_input(f"Gol di {m}", 1, 20, 1, key=k_m2)
+                auto_uff_2 = str_lib.multiselect(f"Autogol a favore di {s2_omo}", options=rosa_t1, key="au_2")
                 for a in auto_uff_2:
                     k_a2 = f"omo_auto_s2_{a}_{p_omo['id']}"
-                    st.session_state.gol_omologazione[k_a2] = st.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a2)
-                esp_uff_2 = st.multiselect(f"Espulsi {s2_omo}", options=rosa_t2, key="eu_2")
+                    str_lib.session_state.gol_omologazione[k_a2] = str_lib.number_input(f"Autogol di {a}", 1, 20, 1, key=k_a2)
+                esp_uff_2 = str_lib.multiselect(f"Espulsi {s2_omo}", options=rosa_t2, key="eu_2")
 
-            btn_omologa = st.button("Conferma e Omologa Partita", key="btn_conferma_omologa", use_container_width=True)
+            btn_omologa = str_lib.button("Conferma e Omologa Partita", key="btn_conferma_omologa", use_container_width=True)
 
             if btn_omologa:
                 if is_cag_left_omo:
@@ -1197,29 +1200,29 @@ elif tab_admin is not None:
 
                 ricalcola_punteggi_partita(p_omo["id"])
 
-                st.success("Partita omologata e punteggi ricalcolati e sovrascritti correttamente!")
-                st.rerun()
+                str_lib.success("Partita omologata e punteggi ricalcolati e sovrascritti correttamente!")
+                str_lib.rerun()
 
-    with st.expander("🛠️ Modifica o Elimina Partite Attive", expanded=False):
+    with str_lib.expander("🛠️ Modifica o Elimina Partite Attive", expanded=False):
         try:
             partite_attive = db.table("partite").select("*").eq("omologata", False).order("data_ora").execute().data
         except:
             partite_attive = []
 
         if not partite_attive:
-            st.info("Nessuna partita attiva da modificare.")
+            str_lib.info("Nessuna partita attiva da modificare.")
         else:
             dict_partite = {f"{p['competizione']} - Cagliari vs {p['avversario']} ({p['data_ora'][:10]}) [ID: {p['id']}]": p for p in partite_attive}
-            scelta_partita_str = st.selectbox("Seleziona partita attiva da modificare o eliminare", list(dict_partite.keys()))
+            scelta_partita_str = str_lib.selectbox("Seleziona partita attiva da modificare o eliminare", list(dict_partite.keys()))
             p_selezionata = dict_partite[scelta_partita_str]
 
-            with st.form("form_modifica_partita"):
-                m_comp = st.text_input("Competizione", value=p_selezionata.get("competizione", ""))
-                m_avv = st.text_input("Squadra Avversaria", value=p_selezionata.get("avversario", ""))
+            with str_lib.form("form_modifica_partita"):
+                m_comp = str_lib.text_input("Competizione", value=p_selezionata.get("competizione", ""))
+                m_avv = str_lib.text_input("Squadra Avversaria", value=p_selezionata.get("avversario", ""))
                 
                 attuale_campo = p_selezionata.get("campo") or p_selezionata.get("casa_trasferta") or "Casa"
                 idx_campo = ["Casa", "Trasferta", "Campo Neutro"].index(attuale_campo) if attuale_campo in ["Casa", "Trasferta", "Campo Neutro"] else 0
-                m_campo = st.selectbox("Campo", ["Casa", "Trasferta", "Campo Neutro"], index=idx_campo)
+                m_campo = str_lib.selectbox("Campo", ["Casa", "Trasferta", "Campo Neutro"], index=idx_campo)
                 
                 try:
                     raw_dt_edit = p_selezionata['data_ora'].replace("Z", "")
@@ -1236,29 +1239,31 @@ elif tab_admin is not None:
                     init_hour = 15
                     init_minute_idx = 0
 
-                m_data = st.date_input("Data Partita", value=init_date)
-                m_ora = st.selectbox("Ora", list(range(0, 24)), index=init_hour)
-                m_min = st.selectbox("Minuti", [0, 15, 30, 45], index=init_minute_idx)
+                m_data = str_lib.date_input("Data Partita", value=init_date)
+                m_ora = str_lib.selectbox("Ora", list(range(0, 24)), index=init_hour)
+                m_min = str_lib.selectbox("Minuti", [0, 15, 30, 45], index=init_minute_idx)
                 
-                m_rosa_cag = st.text_area("Convocati Cagliari", value=p_selezionata.get("rosa_cagliari", ""))
-                m_rosa_avv = st.text_area("Convocati Avversaria", value=p_selezionata.get("rosa_avversaria", ""))
+                m_rosa_cag = str_lib.text_area("Convocati Cagliari", value=p_selezionata.get("rosa_cagliari", ""))
+                m_rosa_avv = str_lib.text_area("Convocati Avversaria", value=p_selezionata.get("rosa_avversaria", ""))
 
-                col_mod1, col_mod2 = st.columns(2)
+                col_mod1, col_mod2 = str_lib.columns(2)
                 with col_mod1:
-                    submit_mod = st.form_submit_button("Salva Modifiche", use_container_width=True)
+                    submit_mod = str_lib.form_submit_button("Salva Modifiche", use_container_width=True)
                 with col_mod2:
-                    submit_del = st.form_submit_button("Elimina Partita", use_container_width=True)
+                    submit_del = str_lib.form_submit_button("Elimina Partita", use_container_width=True)
 
                 if submit_mod:
-                    ora_str = f"{m_ora:02d}:{m_min:02d}:00"
-                    data_ora_unita = f"{m_data.isoformat()}T{ora_str}"
+                    # CORRETTO: Gestione coerente del fuso orario anche in modifica
+                    dt_locale = datetime.combine(m_data, datetime.min.time().replace(hour=m_ora, minute=m_min)).replace(tzinfo=FUSO_ITALIA)
+                    dt_utc = dt_locale.astimezone(zoneinfo.ZoneInfo("UTC"))
+                    data_ora_unita = dt_utc.isoformat().replace("+00:00", "Z")
+                    
                     id_str = f"{m_comp}_{m_avv}_{m_data}".replace(" ", "_")
 
-                    dt_modificata = datetime.fromisoformat(data_ora_unita).replace(tzinfo=FUSO_ITALIA)
                     ora_attuale = datetime.now(FUSO_ITALIA)
 
-                    if dt_modificata < ora_attuale:
-                        st.warning("⚠️ **Attenzione:** Stai impostando una data/ora antecedente al momento attuale. La modifica verrà comunque salvata.")
+                    if dt_locale < ora_attuale:
+                        str_lib.warning("⚠️ **Attenzione:** Stai impostando una data/ora antecedente al momento attuale. La modifica verrà comunque salvata.")
 
                     db.table("partite").update({
                         "competizione": m_comp, "avversario": m_avv, "campo": m_campo,
@@ -1266,15 +1271,15 @@ elif tab_admin is not None:
                         "rosa_cagliari": m_rosa_cag.replace(";", ","),
                         "rosa_avversaria": m_rosa_avv.replace(";", ",")
                     }).eq("id", p_selezionata["id"]).execute()
-                    st.success("Partita aggiornata con successo!")
-                    st.rerun()
+                    str_lib.success("Partita aggiornata con successo!")
+                    str_lib.rerun()
 
                 if submit_del:
                     db.table("partite").delete().eq("id", p_selezionata["id"]).execute()
-                    st.success("Partita eliminata!")
-                    st.rerun()
+                    str_lib.success("Partita eliminata!")
+                    str_lib.rerun()
 
-    with st.expander("👥 Gestione Utenti, Status & Reset PIN", expanded=False):
+    with str_lib.expander("👥 Gestione Utenti, Status & Reset PIN", expanded=False):
         try:
             utenti_db = db.table("utenti").select("*").execute().data
         except:
@@ -1283,72 +1288,72 @@ elif tab_admin is not None:
         if utenti_db:
             df_utenti = pd.DataFrame(utenti_db)
             cols_to_show = [c for c in ['nome_fb', 'email', 'status', 'is_admin'] if c in df_utenti.columns]
-            st.dataframe(df_utenti[cols_to_show], use_container_width=True)
+            str_lib.dataframe(df_utenti[cols_to_show], use_container_width=True)
             
             utenti_tutti = [u['nome_fb'] for u in utenti_db]
             utenti_non_admin = [u['nome_fb'] for u in utenti_db if not u.get('is_admin', False)]
             
-            st.markdown("---")
-            st.markdown("#### 🔑 Reset PIN & Sicurezza Utenti")
-            col_pass1, col_pass2 = st.columns(2)
+            str_lib.markdown("---")
+            str_lib.markdown("#### 🔑 Reset PIN & Sicurezza Utenti")
+            col_pass1, col_pass2 = str_lib.columns(2)
             with col_pass1:
-                target_reset_user = st.selectbox("Seleziona Utente per Reset PIN", utenti_tutti, key="select_user_reset_pin")
-                new_forced_pin = st.text_input("Nuovo PIN a 4 cifre", max_chars=4, key="input_forced_pin")
+                target_reset_user = str_lib.selectbox("Seleziona Utente per Reset PIN", utenti_tutti, key="select_user_reset_pin")
+                new_forced_pin = str_lib.text_input("Nuovo PIN a 4 cifre", max_chars=4, key="input_forced_pin")
             with col_pass2:
-                st.write("")
-                st.write("")
-                if st.button("Forza Aggiornamento PIN", key="btn_force_pin", use_container_width=True):
+                str_lib.write("")
+                str_lib.write("")
+                if str_lib.button("Forza Aggiornamento PIN", key="btn_force_pin", use_container_width=True):
                     if not new_forced_pin.isdigit() or len(new_forced_pin.strip()) != 4:
-                        st.error("Il PIN deve essere esattamente di 4 cifre numeriche.")
+                        str_lib.error("Il PIN deve essere esattamente di 4 cifre numeriche.")
                     else:
                         try:
                             db.table("utenti").update({"pin": new_forced_pin.strip()}).eq("nome_fb", target_reset_user).execute()
-                            st.success(f"PIN aggiornato per {target_reset_user}")
+                            str_lib.success(f"PIN aggiornato per {target_reset_user}")
                         except Exception as ex_p:
-                            st.error(f"Errore: {ex_p}")
+                            str_lib.error(f"Errore: {ex_p}")
             
-            st.markdown("---")
-            st.markdown("#### ⭐ Modifica Status o Elimina Utente")
+            str_lib.markdown("---")
+            str_lib.markdown("#### ⭐ Modifica Status o Elimina Utente")
             if utenti_non_admin:
-                utente_target = st.selectbox("Seleziona Utente da gestire", utenti_non_admin)
+                utente_target = str_lib.selectbox("Seleziona Utente da gestire", utenti_non_admin)
                 
-                col_u1, col_u2, col_u3 = st.columns(3)
+                col_u1, col_u2, col_u3 = str_lib.columns(3)
                 azione_utente = "Promuovi a TOP"
                 with col_u1:
-                    if st.button("Promuovi TOP", key="btn_promuovi", use_container_width=True):
+                    if str_lib.button("Promuovi TOP", key="btn_promuovi", use_container_width=True):
                         azione_utente = "Promuovi a TOP"
                 with col_u2:
-                    if st.button("Retrocedi STANDARD", key="btn_retrocedi", use_container_width=True):
+                    if str_lib.button("Retrocedi STANDARD", key="btn_retrocedi", use_container_width=True):
                         azione_utente = "Retrocedi a STANDARD"
                 with col_u3:
-                    if st.button("Elimina", key="btn_elimina_utente", use_container_width=True):
+                    if str_lib.button("Elimina", key="btn_elimina_utente", use_container_width=True):
                         azione_utente = "Elimina Utente"
                 
-                st.write(f"Azione selezionata: **{azione_utente}** per l'utente **{utente_target}**")
-                btn_esegui_utente = st.button("Esegui Modifica Utente", key="btn_esegui_mod_utente", use_container_width=True)
+                str_lib.write(f"Azione selezionata: **{azione_utente}** per l'utente **{utente_target}**")
+                btn_esegui_utente = str_lib.button("Esegui Modifica Utente", key="btn_esegui_mod_utente", use_container_width=True)
 
                 if btn_esegui_utente:
                     try:
                         if azione_utente == "Elimina Utente":
                             db.table("utenti").delete().eq("nome_fb", utente_target).execute()
-                            st.success(f"Utente {utente_target} rimosso.")
+                            str_lib.success(f"Utente {utente_target} rimosso.")
                         else:
                             nuovo_status = "TOP" if azione_utente == "Promuovi a TOP" else "STANDARD"
                             db.table("utenti").update({"status": nuovo_status}).eq("nome_fb", utente_target).execute()
-                            st.success(f"Utente {utente_target} ora ha status {nuovo_status}.")
-                        st.rerun()
+                            str_lib.success(f"Utente {utente_target} ora ha status {nuovo_status}.")
+                        str_lib.rerun()
                     except Exception as err:
-                        st.error(f"Errore: {err}")
+                        str_lib.error(f"Errore: {err}")
 
-    with st.expander("📜 Gestione Albo d'Oro", expanded=False):
+    with str_lib.expander("📜 Gestione Albo d'Oro", expanded=False):
         try:
             res_albo_admin = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
             if res_albo_admin.data:
                 df_albo_admin = pd.DataFrame(res_albo_admin.data)
-                edited_df = st.data_editor(
+                edited_df = str_lib.data_editor(
                     df_albo_admin, num_rows="dynamic", use_container_width=True, key="editor_albo_admin"
                 )
-                btn_salva_albo = st.button("Salva Modifiche Albo d'Oro", key="btn_salva_albo", use_container_width=True)
+                btn_salva_albo = str_lib.button("Salva Modifiche Albo d'Oro", key="btn_salva_albo", use_container_width=True)
 
                 if btn_salva_albo:
                     try:
@@ -1365,11 +1370,11 @@ elif tab_admin is not None:
                                 db.table("albo_doros").update(data_to_save).eq("id", int(row_id)).execute()
                             else:
                                 db.table("albo_doros").insert(data_to_save).execute()
-                        st.success("Albo d'Oro aggiornato con successo!")
-                        st.rerun()
+                        str_lib.success("Albo d'Oro aggiornato con successo!")
+                        str_lib.rerun()
                     except Exception as ex_albo:
-                        st.error(f"Errore durante l'aggiornamento: {ex_albo}")
+                        str_lib.error(f"Errore durante l'aggiornamento: {ex_albo}")
         except:
-            st.info("Impossibile caricare l'albo d'oro per la gestione.")
+            str_lib.info("Impossibile caricare l'albo d'oro per la gestione.")
 
 mostra_footer()

@@ -1368,12 +1368,15 @@ elif tab_admin is not None:
                                 "premio_masters_of_cugurras": r.get("premio_masters_of_cugurras"),
                                 "premio_bomber_di_razza": r.get("premio_bomber_di_razza")
                             }
-                            if pd.notna(row_id) and row_id:
+                            
+                            # Pulisce i valori NaN di pandas convertendoli in None per evitare errori PostgREST
+                            data_to_save = {k: (None if pd.isna(v) else v) for k, v in data_to_save.items()}
+
+                            if pd.notna(row_id) and row_id != "":
                                 db.table("albo_doros").update(data_to_save).eq("id", int(row_id)).execute()
                             else:
-                                if "id" in data_to_save:
-                                    del data_to_save["id"]
                                 db.table("albo_doros").insert(data_to_save).execute()
+                                
                         str_lib.success("Albo d'Oro aggiornato con successo!")
                         str_lib.rerun()
                     except Exception as ex_albo:

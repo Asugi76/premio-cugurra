@@ -1,3 +1,4 @@
+import os
 import streamlit as str_lib
 import pandas as pd
 from supabase import create_client, Client
@@ -902,6 +903,68 @@ if is_pronostici:
                     except Exception as db_err:
                         str_lib.error(f"Errore durante l'inserimento su Supabase: {db_err}")
 
+    # --- MENU A SCOMPARSA "RICEVUTE" (Storico gare omologate) ---
+    str_lib.markdown("---")
+    with str_lib.expander("Ricevute (Storico Pronostici Gare Omologate)"):
+        str_lib.write("Consulta lo storico dei pronostici relativi esclusivamente alle partite già omologate.")
+        
+        current_user_name = str_lib.session_state.get("utente_corrente")
+        is_current_admin = str_lib.session_state.get("is_admin", False)
+        
+        try:
+            query = db.table("pronostici") \
+                .select("id, utente, id_partita, gol_cagliari, gol_avversario, partite(home_team, away_team, status, omologata, risultato_cagliari, risultato_avversario, competizione, avversario, campo, casa_trasferta)") \
+                .eq("partite.omologata", True)
+            
+            if current_user_name is not None and not is_current_admin:
+                query = query.eq("utente", current_user_name)
+            elif current_user_name is None:
+                query = None
+                str_lib.info("Effettua il login per visualizzare le tue ricevute personali o accedi come Admin per lo storico generale.")
+            
+            if query is not None:
+                response = query.execute()
+                data = response.data
+                
+                if data:
+                    formatted_data = []
+                    for row in data:
+                        match_info = row.get("partite", {})
+                        if match_info:
+                            c_val = match_info.get('campo') or match_info.get('casa_trasferta') or 'Casa'
+                            is_left_cag = c_val in ["Casa", "Campo Neutro"]
+                            s_home = "CAGLIARI" if is_left_cag else match_info.get('avversario')
+                            s_away = match_info.get('avversario') if is_left_cag else "CAGLIARI"
+                            
+                            res_c = match_info.get('risultato_cagliari', 0)
+                            res_a = match_info.get('risultato_avversario', 0)
+                            res_h_fin = res_c if is_left_cag else res_a
+                            res_a_fin = res_a if is_left_cag else res_c
+
+                            p_c = row.get('gol_cagliari', 0)
+                            p_a = row.get('gol_avversario', 0)
+                            p_h_pred = p_c if is_left_cag else p_a
+                            p_a_pred = p_a if is_left_cag else p_c
+
+                            formatted_data.append({
+                                "Utente": row.get("utente"),
+                                "Competizione": match_info.get('competizione', 'Serie A'),
+                                "Partita": f"{s_home} - {s_away}",
+                                "Risultato Finale": f"{res_h_fin} - {res_a_fin}",
+                                "Pronostico": f"{p_h_pred} - {p_a_pred}",
+                                "Stato": "Omologata"
+                            })
+                    
+                    if formatted_data:
+                        df_receipts = pd.DataFrame(formatted_data)
+                        str_lib.dataframe(df_receipts, use_container_width=True, hide_index=True)
+                    else:
+                        str_lib.info("Nessuna ricevuta disponibile per le partite omologate.")
+                else:
+                    str_lib.info("Nessun pronostico trovato per le partite omologate.")
+        except Exception as e:
+            str_lib.error(f"Impossibile caricare le ricevute in questo momento. Dettaglio: {e}")
+
 # 2. CLASSIFICHE
 elif is_classifiche:
     str_lib.markdown("<h2 class='single-line-title'>🏆 Classifiche Ufficiali 🏆</h2>", unsafe_allow_html=True)
@@ -938,7 +1001,6 @@ elif is_classifiche:
         if df_punteggi.empty:
             str_lib.info("Classifica Masters of Cugurras vuota.")
         else:
-            # CORRETTO: somma effettiva dei punti Masters anziché fare il .count() delle occorrenze
             masters_df = df_punteggi.groupby("utente")["punti_masters"].sum().reset_index()
             masters_df = pd.merge(masters_df, partita_counts, on="utente", how="left").fillna(0)
             masters_df["Partite Giocate"] = masters_df["Partite Giocate"].astype(int)

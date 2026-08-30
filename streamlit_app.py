@@ -1069,35 +1069,39 @@ elif tab_admin is not None:
         except:
             lista_comp = ["Serie A"]
             
-        with str_lib.form("form_nuova_partita"):
-            comp = str_lib.selectbox("Competizione", lista_comp)
-            avv = str_lib.text_input("Squadra Avversaria")
-            campo = str_lib.selectbox("Campo", ["Casa", "Trasferta", "Campo Neutro"])
-            data_p = str_lib.date_input("Data Partita")
-            ore_sel = str_lib.selectbox("Ora", list(range(0, 24)), index=15)
-            min_sel = str_lib.selectbox("Minuti", [0, 15, 30, 45], index=0)
-            rosa_cag_input = str_lib.text_area("Convocati Cagliari", "")
-            rosa_avv_input = str_lib.text_area("Convocati Avversaria", "")
+        comp = str_lib.selectbox("Competizione", lista_comp, key="new_partita_comp")
+        avv = str_lib.text_input("Squadra Avversaria", key="new_partita_avv")
+        campo = str_lib.selectbox("Campo", ["Casa", "Trasferta", "Campo Neutro"], key="new_partita_campo")
+        data_p = str_lib.date_input("Data Partita", key="new_partita_data")
+        
+        col_ora_min_1, col_ora_min_2 = str_lib.columns(2)
+        with col_ora_min_1:
+            ore_sel = str_lib.selectbox("Ora", list(range(0, 24)), index=15, key="new_partita_ora")
+        with col_ora_min_2:
+            min_sel = str_lib.selectbox("Minuti", [0, 15, 30, 45], index=0, key="new_partita_min")
             
-            submitted_partita = str_lib.form_submit_button("Crea Partita nel Database", use_container_width=True)
+        rosa_cag_input = str_lib.text_area("Convocati Cagliari", key="new_partita_rosa_cag")
+        rosa_avv_input = str_lib.text_area("Convocati Avversaria", key="new_partita_rosa_avv")
+        
+        submitted_partita = str_lib.button("Crea Partita nel Database", key="btn_crea_partita_db", use_container_width=True)
 
-            if submitted_partita:
-                if not avv:
-                    str_lib.error("Inserisci la squadra avversaria.")
-                else:
-                    dt_locale = datetime.combine(data_p, datetime.min.time().replace(hour=ore_sel, minute=min_sel)).replace(tzinfo=FUSO_ITALIA)
-                    dt_utc = dt_locale.astimezone(zoneinfo.ZoneInfo("UTC"))
-                    data_ora_unita = dt_utc.isoformat().replace("+00:00", "Z")
-                    
-                    id_str = f"{comp}_{avv}_{data_p}".replace(" ", "_")
-                    db.table("partite").insert({
-                        "competizione": comp, "avversario": avv, "campo": campo,
-                        "casa_trasferta": campo, "data_ora": data_ora_unita, "id_stringa": id_str,
-                        "rosa_cagliari": rosa_cag_input.replace(";", ","),
-                        "rosa_avversaria": rosa_avv_input.replace(";", ","),
-                        "omologata": False
-                    }).execute()
-                    str_lib.success("Partita creata!")
+        if submitted_partita:
+            if not avv:
+                str_lib.error("Inserisci la squadra avversaria.")
+            else:
+                dt_locale = datetime.combine(data_p, datetime.min.time().replace(hour=ore_sel, minute=min_sel)).replace(tzinfo=FUSO_ITALIA)
+                dt_utc = dt_locale.astimezone(zoneinfo.ZoneInfo("UTC"))
+                data_ora_unita = dt_utc.isoformat().replace("+00:00", "Z")
+                
+                id_str = f"{comp}_{avv}_{data_p}".replace(" ", "_")
+                db.table("partite").insert({
+                    "competizione": comp, "avversario": avv, "campo": campo,
+                    "casa_trasferta": campo, "data_ora": data_ora_unita, "id_stringa": id_str,
+                    "rosa_cagliari": rosa_cag_input.replace(";", ","),
+                    "rosa_avversaria": rosa_avv_input.replace(";", ","),
+                    "omologata": False
+                }).execute()
+                str_lib.success("Partita creata!")
 
     with str_lib.expander("🏁 Omologazione Partita e Assegnazione Punti", expanded=False):
         str_lib.warning("⚠️ **ATTENZIONE:** L'omologazione inserisce i risultati definitivi e blocco modifiche.")

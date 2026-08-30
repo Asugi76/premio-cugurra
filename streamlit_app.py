@@ -234,7 +234,6 @@ def ricalcola_punteggi_partita(id_partita):
     """
     Ricalcola e sovrascrive i punteggi di tutti gli utenti per una specifica partita
     seguendo rigorosamente la gerarchia, le esclusive e le regole del regolamento.
-    (Gli autogol vengono accreditati alla squadra che ne beneficia).
     """
     try:
         partita_res = db.table("partite").select("*").eq("id", id_partita).execute()
@@ -260,9 +259,6 @@ def ricalcola_punteggi_partita(id_partita):
         pronostici_res = db.table("pronostici").select("*").eq("id_partita", id_partita).execute()
         pronostici_utenti = pronostici_res.data or []
 
-        reale_goleada_cag = res_cag > 9
-        reale_goleada_avv = res_avv > 9
-
         for pron in pronostici_utenti:
             utente = pron["utente"]
             p_cag = pron.get("gol_cagliari", 0)
@@ -280,18 +276,9 @@ def ricalcola_punteggi_partita(id_partita):
             punti_masters = 0
             punti_bomber = 0
 
-            is_goleada_cag = p_cag > 9
-            is_goleada_avv = p_avv > 9
-
             bonus_esp = len(p_esp_cag.intersection(set(e_cag_reali))) + len(p_esp_avv.intersection(set(e_avv_reali)))
 
-            if (is_goleada_cag and not reale_goleada_cag and p_avv == res_avv) or (is_goleada_avv and not reale_goleada_avv and p_cag == res_cag):
-                punti_generale = 12
-            elif is_goleada_cag and is_goleada_avv and reale_goleada_cag and reale_goleada_avv:
-                punti_generale = 8
-            elif p_cag == 0 and res_cag == 0 and p_avv == 0 and res_avv == 0:
-                punti_generale = 8
-            elif (is_goleada_cag and reale_goleada_cag) or (is_goleada_avv and reale_goleada_avv):
+            if p_cag == 0 and res_cag == 0 and p_avv == 0 and res_avv == 0:
                 punti_generale = 8
             else:
                 risultato_esatto = (p_cag == res_cag and p_avv == res_avv)
@@ -794,23 +781,18 @@ if is_pronostici:
                 """, unsafe_allow_html=True)
                 gol_s2 = str_lib.number_input(f"Inserisci gol {squadra_2}", min_value=0, value=str_lib.session_state[col_id_2], key=col_id_2, label_visibility="collapsed", disabled=not can_edit)
 
-            is_goleada_1 = gol_s1 > 9
-            is_goleada_2 = gol_s2 > 9
-
             str_lib.markdown("---")
             rosa_cag = [x.strip() for x in (partita.get("rosa_cagliari") or "").split(",") if x.strip()]
             rosa_avv = [x.strip() for x in (partita.get("rosa_avversaria") or "").split(",") if x.strip()]
             rosa_1 = rosa_cag if is_cagliari_left else rosa_avv
             rosa_2 = rosa_avv if is_cagliari_left else rosa_cag
 
-            def render_team_section(team_name, lista_rosa, lista_opp, is_goleada, key_pref, gol_team_totali):
+            def render_team_section(team_name, lista_rosa, lista_opp, key_pref, gol_team_totali):
                 str_lib.markdown(f"### {team_name}")
                 marcatori = []
                 autogol = []
                 
-                if is_goleada:
-                    str_lib.info("Goleada attivata (>9 gol): marcatori disabilitati.")
-                elif gol_team_totali == 0:
+                if gol_team_totali == 0:
                     str_lib.info("0 Gol inseriti: sezione marcatori ed autogol nascosta.")
                 else:
                     def_marc = []
@@ -839,32 +821,30 @@ if is_pronostici:
                 return marcatori, autogol, espulsi
 
             col_tab1, col_tab2 = str_lib.columns(2)
-            with col_tab1: marc1, auto1, esp1 = render_team_section(squadra_1, rosa_1, rosa_2, is_goleada_1, "s1", gol_s1)
-            with col_tab2: marc2, auto2, esp2 = render_team_section(squadra_2, rosa_2, rosa_1, is_goleada_2, "s2", gol_s2)
+            with col_tab1: marc1, auto1, esp1 = render_team_section(squadra_1, rosa_1, rosa_2, "s1", gol_s1)
+            with col_tab2: marc2, auto2, esp2 = render_team_section(squadra_2, rosa_2, rosa_1, "s2", gol_s2)
 
             str_lib.markdown("<br>", unsafe_allow_html=True)
             
             btn_label = "Convalida Modifiche" if pronostico_esistente else "Invia Pronostico"
             if str_lib.button(btn_label, key="btn_invia_pronostico", use_container_width=True, disabled=not can_edit):
                 tot_gol_s1_calcolati = 0
-                if not is_goleada_1:
-                    for m in marc1:
-                        tot_gol_s1_calcolati += str_lib.session_state.gol_singoli.get(f"g_s1_{m}_{partita['id']}", 1)
+                for m in marc1:
+                    tot_gol_s1_calcolati += str_lib.session_state.gol_singoli.get(f"g_s1_{m}_{partita['id']}", 1)
                 for a in auto1:
                     tot_gol_s1_calcolati += str_lib.session_state.gol_singoli.get(f"auto_s1_{a}_{partita['id']}", 1)
 
                 tot_gol_s2_calcolati = 0
-                if not is_goleada_2:
-                    for m in marc2:
-                        tot_gol_s2_calcolati += str_lib.session_state.gol_singoli.get(f"g_s2_{m}_{partita['id']}", 1)
+                for m in marc2:
+                    tot_gol_s2_calcolati += str_lib.session_state.gol_singoli.get(f"g_s2_{m}_{partita['id']}", 1)
                 for a in auto2:
                     tot_gol_s2_calcolati += str_lib.session_state.gol_singoli.get(f"auto_s2_{a}_{partita['id']}", 1)
 
                 errore_coerenza = False
-                if not is_goleada_1 and tot_gol_s1_calcolati != gol_s1:
+                if tot_gol_s1_calcolati != gol_s1:
                     str_lib.error(f"Errore per {squadra_1}: inseriti {gol_s1} gol totali, ma la somma calcolata è {tot_gol_s1_calcolati}.")
                     errore_coerenza = True
-                if not is_goleada_2 and tot_gol_s2_calcolati != gol_s2:
+                if tot_gol_s2_calcolati != gol_s2:
                     str_lib.error(f"Errore per {squadra_2}: inseriti {gol_s2} gol totali, ma la somma calcolata è {tot_gol_s2_calcolati}.")
                     errore_coerenza = True
 
@@ -1026,9 +1006,8 @@ elif is_regolamento:
         <h3>Punteggi assegnati nella Classifica Generale:</h3>
         <ul>
             <li><b>15 Punti:</b> Risultato e marcatori esatti di tutte e due le squadre.</li>
-            <li><b>12 Punti:</b> Goleada di una squadra (+ di 9 gol) + numero esatto dei gol della squadra che la subisce.</li>
             <li><b>10 Punti:</b> Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.</li>
-            <li><b>8 Punti:</b> Indovini lo 0-0, OPPURE solo la goleada di una squadra.</li>
+            <li><b>8 Punti:</b> Indovini lo 0-0.</li>
             <li><b>5 Punti:</b> Indovini l'esito (1, X, 2).</li>
             <li><b>3 Punti:</b> Tutti i marcatori del Cagliari indovinati.</li>
             <li><b>0 Punti:</b> Non indovini nulla.</li>

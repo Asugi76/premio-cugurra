@@ -1371,6 +1371,8 @@ elif tab_admin is not None:
                             if pd.notna(row_id) and row_id:
                                 db.table("albo_doros").update(data_to_save).eq("id", int(row_id)).execute()
                             else:
+                                if "id" in data_to_save:
+                                    del data_to_save["id"]
                                 db.table("albo_doros").insert(data_to_save).execute()
                         str_lib.success("Albo d'Oro aggiornato con successo!")
                         str_lib.rerun()

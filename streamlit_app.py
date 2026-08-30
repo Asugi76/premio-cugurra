@@ -938,11 +938,12 @@ elif is_classifiche:
         if df_punteggi.empty:
             str_lib.info("Classifica Masters of Cugurras vuota.")
         else:
-            masters_df = df_punteggi[df_punteggi["punti_masters"] > 0].groupby("utente")["punti_masters"].count().reset_index()
+            # CORRETTO: somma effettiva dei punti Masters anziché fare il .count() delle occorrenze
+            masters_df = df_punteggi.groupby("utente")["punti_masters"].sum().reset_index()
             masters_df = pd.merge(masters_df, partita_counts, on="utente", how="left").fillna(0)
             masters_df["Partite Giocate"] = masters_df["Partite Giocate"].astype(int)
             masters_df = masters_df.sort_values(by=["punti_masters", "Partite Giocate"], ascending=[False, False])
-            masters_df.columns = ["Utente", "Totale Masters (10 Punti)", "Partite Giocate"]
+            masters_df.columns = ["Utente", "Punti Masters", "Partite Giocate"]
             str_lib.dataframe(masters_df, use_container_width=True, hide_index=True)
 
     with sub_tab3:

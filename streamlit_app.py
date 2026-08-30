@@ -913,7 +913,7 @@ if is_pronostici:
         
         try:
             query = db.table("pronostici") \
-                .select("id, utente, id_partita, gol_cagliari, gol_avversario, partite(home_team, away_team, status, omologata, risultato_cagliari, risultato_avversario, competizione, avversario, campo, casa_trasferta)") \
+                .select("id, utente, id_partita, gol_cagliari, gol_avversario, partite(avversario, status, omologata, risultato_cagliari, risultato_avversario, competizione, campo, casa_trasferta)") \
                 .eq("partite.omologata", True)
             
             if current_user_name is not None and not is_current_admin:

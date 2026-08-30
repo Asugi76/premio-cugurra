@@ -1376,3 +1376,4 @@ elif tab_admin is not None:
             str_lib.info("Impossibile caricare l'albo d'oro per la gestione.")
 
 mostra_footer()
+```[cite: 2]

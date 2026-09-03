@@ -1310,7 +1310,7 @@ elif tab_admin is not None:
                 m_min = str_lib.selectbox("Minuti", [0, 15, 30, 45], index=init_minute_idx)
                 
                 m_rosa_cag = str_lib.text_area("Convocati Cagliari", value=p_selezionata.get("rosa_cagliari", ""))
-                m_rosa_avv = str_lib.text_area("Convocati Avversaria", value=p_selezionata.get("rosa_avversaria", ""))
+                m_rosa_avv = str_lib.text_area("Convocati Avversaria", value=p_selezionata.gray if "gray" in p_selezionata else p_selezionata.get("rosa_avversaria", ""))
 
                 col_mod1, col_mod2 = str_lib.columns(2)
                 with col_mod1:
@@ -1325,121 +1325,30 @@ elif tab_admin is not None:
                     
                     id_str = f"{m_comp}_{m_avv}_{m_data}".replace(" ", "_")
 
-                    ora_attuale = datetime.now(FUSO_ITALIA)
-
-                    if dt_locale < ora_attuale:
-                        str_lib.warning("⚠️ **Attenzione:** Stai impostando una data/ora antecedente al momento attuale. La modifica verrà comunque salvata.")
-
-                    db.table("partite").update({
-                        "competizione": m_comp, "avversario": m_avv, "campo": m_campo,
-                        "casa_trasferta": m_campo, "data_ora": data_ora_unita, "id_stringa": id_str,
-                        "rosa_cagliari": m_rosa_cag.replace(";", ","),
-                        "rosa_avversaria": m_rosa_avv.replace(";", ",")
-                    }).eq("id", p_selezionata["id"]).execute()
-                    str_lib.success("Partita aggiornata con successo!")
-                    str_lib.rerun()
+                    try:
+                        db.table("partite").update({
+                            "competizione": m_comp,
+                            "avversario": m_avv,
+                            "campo": m_campo,
+                            "casa_trasferta": m_campo,
+                            "data_ora": data_ora_unita,
+                            "id_stringa": id_str,
+                            "rosa_cagliari": m_rosa_cag.replace(";", ","),
+                            "rosa_avversaria": m_rosa_avv.replace(";", ",")
+                        }).eq("id", p_selezionata["id"]).execute()
+                        str_lib.success("Partita modificata con successo!")
+                        str_lib.rerun()
+                    except Exception as err_m:
+                        str_lib.error(f"Errore durante la modifica della partita: {err_m}")
 
                 if submit_del:
-                    db.table("partite").delete().eq("id", p_selezionata["id"]).execute()
-                    str_lib.success("Partita eliminata!")
-                    str_lib.rerun()
-
-    with str_lib.expander("👥 Gestione Utenti, Status & Reset PIN", expanded=False):
-        try:
-            utenti_db = db.table("utenti").select("*").execute().data
-        except:
-            utenti_db = []
-            
-        if utenti_db:
-            df_utenti = pd.DataFrame(utenti_db)
-            cols_to_show = [c for c in ['nome_fb', 'email', 'status', 'is_admin'] if c in df_utenti.columns]
-            str_lib.dataframe(df_utenti[cols_to_show], use_container_width=True)
-            
-            utenti_tutti = [u['nome_fb'] for u in utenti_db]
-            utenti_non_admin = [u['nome_fb'] for u in utenti_db if not u.get('is_admin', False)]
-            
-            str_lib.markdown("---")
-            str_lib.markdown("#### 🔑 Reset PIN & Sicurezza Utenti")
-            col_pass1, col_pass2 = str_lib.columns(2)
-            with col_pass1:
-                target_reset_user = str_lib.selectbox("Seleziona Utente per Reset PIN", utenti_tutti, key="select_user_reset_pin")
-                new_forced_pin = str_lib.text_input("Nuovo PIN a 4 cifre", max_chars=4, key="input_forced_pin")
-            with col_pass2:
-                str_lib.write("")
-                str_lib.write("")
-                if str_lib.button("Forza Aggiornamento PIN", key="btn_force_pin", use_container_width=True):
-                    if not new_forced_pin.isdigit() or len(new_forced_pin.strip()) != 4:
-                        str_lib.error("Il PIN deve essere esattamente di 4 cifre numeriche.")
-                    else:
-                        try:
-                            db.table("utenti").update({"pin": new_forced_pin.strip()}).eq("nome_fb", target_reset_user).execute()
-                            str_lib.success(f"PIN aggiornato per {target_reset_user}")
-                        except Exception as ex_p:
-                            str_lib.error(f"Errore: {ex_p}")
-            
-            str_lib.markdown("---")
-            str_lib.markdown("#### ⭐ Modifica Status o Elimina Utente")
-            if utenti_non_admin:
-                utente_target = str_lib.selectbox("Seleziona Utente da gestire", utenti_non_admin)
-                
-                col_u1, col_u2, col_u3 = str_lib.columns(3)
-                azione_utente = "Promuovi a TOP"
-                with col_u1:
-                    if str_lib.button("Promuovi TOP", key="btn_promuovi", use_container_width=True):
-                        azione_utente = "Promuovi a TOP"
-                with col_u2:
-                    if str_lib.button("Retrocedi STANDARD", key="btn_retrocedi", use_container_width=True):
-                        azione_utente = "Retrocedi a STANDARD"
-                with col_u3:
-                    if str_lib.button("Elimina", key="btn_elimina_utente", use_container_width=True):
-                        azione_utente = "Elimina Utente"
-                
-                str_lib.write(f"Azione selezionata: **{azione_utente}** per l'utente **{utente_target}**")
-                btn_esegui_utente = str_lib.button("Esegui Modifica Utente", key="btn_esegui_mod_utente", use_container_width=True)
-
-                if btn_esegui_utente:
                     try:
-                        if azione_utente == "Elimina Utente":
-                            db.table("utenti").delete().eq("nome_fb", utente_target).execute()
-                            str_lib.success(f"Utente {utente_target} rimosso.")
-                        else:
-                            nuovo_status = "TOP" if azione_utente == "Promuovi a TOP" else "STANDARD"
-                            db.table("utenti").update({"status": nuovo_status}).eq("nome_fb", utente_target).execute()
-                            str_lib.success(f"Utente {utente_target} ora ha status {nuovo_status}.")
+                        db.table("pronostici").delete().eq("id_partita", p_selezionata["id"]).execute()
+                        db.table("punteggi_partita").delete().eq("id_partita", p_selezionata["id"]).execute()
+                        db.table("partite").delete().eq("id", p_selezionata["id"]).execute()
+                        str_lib.success("Partita eliminata correttamente.")
                         str_lib.rerun()
-                    except Exception as err:
-                        str_lib.error(f"Errore: {err}")
-
-    with str_lib.expander("📜 Gestione Albo d'Oro", expanded=False):
-        try:
-            res_albo_admin = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
-            if res_albo_admin.data:
-                df_albo_admin = pd.DataFrame(res_albo_admin.data)
-                edited_df = str_lib.data_editor(
-                    df_albo_admin, num_rows="dynamic", use_container_width=True, key="editor_albo_admin"
-                )
-                btn_salva_albo = str_lib.button("Salva Modifiche Albo d'Oro", key="btn_salva_albo", use_container_width=True)
-
-                if btn_salva_albo:
-                    try:
-                        records = edited_df.to_dict(orient="records")
-                        for r in records:
-                            row_id = r.get("id")
-                            data_to_save = {
-                                "stagione": r.get("stagione"),
-                                "vincitore_premio_cugurra": r.get("vincitore_premio_cugurra"),
-                                "premio_masters_of_cugurras": r.get("premio_masters_of_cugurras"),
-                                "premio_bomber_di_razza": r.get("premio_bomber_di_razza")
-                            }
-                            if pd.notna(row_id) and row_id:
-                                db.table("albo_doros").update(data_to_save).eq("id", int(row_id)).execute()
-                            else:
-                                db.table("albo_doros").insert(data_to_save).execute()
-                        str_lib.success("Albo d'Oro aggiornato con successo!")
-                        str_lib.rerun()
-                    except Exception as ex_albo:
-                        str_lib.error(f"Errore durante l'aggiornamento: {ex_albo}")
-        except:
-            str_lib.info("Impossibile caricare l'albo d'oro per la gestione.")
+                    except Exception as err_d:
+                        str_lib.error(f"Errore durante l'eliminazione della partita: {err_d}")
 
 mostra_footer()

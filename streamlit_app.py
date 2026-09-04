@@ -1116,7 +1116,7 @@ elif is_classifiche:
                     pass
                 return ''
 
-            styled_df = df_display_6.style.applymap(color_podium, subset=["Pos. 1-10", "Pos. 11-20"])
+            styled_df = df_display_6.style.map(color_podium, subset=["Pos. 1-10", "Pos. 11-20"])
             str_lib.dataframe(styled_df, use_container_width=True, hide_index=True)
 
         if not df_punteggi.empty:

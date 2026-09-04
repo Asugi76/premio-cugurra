@@ -1310,7 +1310,7 @@ elif tab_admin is not None:
                 m_min = str_lib.selectbox("Minuti", [0, 15, 30, 45], index=init_minute_idx)
                 
                 m_rosa_cag = str_lib.text_area("Convocati Cagliari", value=p_selezionata.get("rosa_cagliari", ""))
-                m_rosa_avv = str_lib.text_area("Convocati Avversaria", value=p_selezionata.gray if "gray" in p_selezionata else p_selezionata.get("rosa_avversaria", ""))
+                m_rosa_avv = str_lib.text_area("Convocati Avversaria", value=p_selezionata.get("rosa_avversaria", ""))
 
                 col_mod1, col_mod2 = str_lib.columns(2)
                 with col_mod1:

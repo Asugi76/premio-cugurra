@@ -232,10 +232,6 @@ def check_limite_iscrizioni(fase_str):
     return True
 
 def ricalcola_punteggi_partita(id_partita):
-    """
-    Ricalcola e sovrascrive i punteggi di tutti gli utenti per una specifica partita
-    seguendo rigorosamente la gerarchia, le esclusive e le regole del regolamento.
-    """
     try:
         partita_res = db.table("partite").select("*").eq("id", id_partita).execute()
         if not partita_res.data:
@@ -903,7 +899,7 @@ if is_pronostici:
                     except Exception as db_err:
                         str_lib.error(f"Errore durante l'inserimento su Supabase: {db_err}")
 
-    # --- MENU A SCOMPARSA "RICEVUTE" (Storico gare omologate) ---
+    # --- MENU A SCOMPARSA "RICEVUTE" ---
     str_lib.markdown("---")
     with str_lib.expander("Ricevute (Storico Pronostici Gare Omologate)"):
         str_lib.write("Consulta lo storico dei pronostici relativi esclusivamente alle partite già omologate.")

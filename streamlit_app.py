@@ -60,7 +60,7 @@ str_lib.markdown(f"""
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
     .stApp {{
-        background: linear-gradient(rgba(18, 22, 31, 0.88), rgba(18, 22, 31, 0.95)), 
+        background: linear-gradient(rgba(18, 22, 31, 0.70), rgba(18, 22, 31, 0.76)), 
                     url('{SFONDO_URL}') no-repeat center center fixed !important;
         background-size: cover !important;
         color: #f8fafc !important;
@@ -232,6 +232,10 @@ def check_limite_iscrizioni(fase_str):
     return True
 
 def ricalcola_punteggi_partita(id_partita):
+    """
+    Ricalcola e sovrascrive i punteggi di tutti gli utenti per una specifica partita
+    seguendo rigorosamente la gerarchia, le esclusive e le regole del regolamento.
+    """
     try:
         partita_res = db.table("partite").select("*").eq("id", id_partita).execute()
         if not partita_res.data:
@@ -550,6 +554,17 @@ if not str_lib.session_state["autenticato"]:
 str_lib.sidebar.markdown(f"👤 Utente: **{str_lib.session_state.get('utente_corrente')}**")
 str_lib.sidebar.markdown(f"⭐ Status: **{str_lib.session_state.get('status')}**")
 
+# Visualizzazione della domanda segreta utente nella propria area dedicata
+try:
+    current_user_db = db.table("utenti").select("domanda_segreta").eq("nome_fb", str_lib.session_state.get('utente_corrente')).execute()
+    if current_user_db.data:
+        domanda_corrente_utente = current_user_db.data[0].get("domanda_segreta")
+        if domanda_corrente_utente:
+            str_lib.sidebar.markdown("---")
+            str_lib.sidebar.markdown(f"🔒 **La tua domanda segreta:**\n\n*{domanda_corrente_utente}*")
+except Exception:
+    pass
+
 if str_lib.sidebar.button("Logout", key="sidebar_logout_btn", use_container_width=True):
     try:
         cookie_manager.delete("cugurra_auth_session")
@@ -761,22 +776,59 @@ if is_pronostici:
             col_squadra_1, col_squadra_2 = str_lib.columns(2)
 
             with col_squadra_1:
+                # Cornici tonde per gli scudetti (Rosso Cagliari in casa, Blu intenso in trasferta) rifinite con un bordo/traccia dorata/luminosa, e sfumatura di sfondo (overlay) resa del 20% più chiara con gradiente verticale dal rosso (in alto) al blu (in basso) del Cagliari.
                 str_lib.markdown(f"""
-                    <div style="text-align: center; margin-bottom: 5px;">
-                        <img src="{url_s1}" width="60" onerror="this.src='{DEFAULT_LOGO_URL}'" style="display: block; margin: 0 auto 8px auto;">
-                        <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Inserisci gol {squadra_1}</div>
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(to bottom, rgba(186, 12, 47, 0.4), rgba(13, 34, 64, 0.4)); border: 3px solid #fbbf24; box-shadow: 0 0 12px rgba(251, 191, 36, 0.6); display: flex; justify-content: center; align-items: center; margin: 0 auto 10px auto; overflow: hidden;">
+                            <img src="{url_s1}" width="55" height="55" onerror="this.src='{DEFAULT_LOGO_URL}'" style="object-fit: contain;">
+                        </div>
+                        <div style="font-size: 0.9rem; color: #fbbf24; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">Inserisci gol {squadra_1}</div>
+                        <div style="background-color: #1e293b; border: 2px solid #38bdf8; border-radius: 12px; padding: 8px; font-size: 1.5rem; font-weight: bold; color: #ffffff; width: 100px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                            {str_lib.session_state[col_id_1]}
+                        </div>
                     </div>
                 """, unsafe_allow_html=True)
-                gol_s1 = str_lib.number_input(f"Inserisci gol {squadra_1}", min_value=0, value=str_lib.session_state[col_id_1], key=col_id_1, label_visibility="collapsed", disabled=not can_edit)
+                
+                # Bottoni rapidi touch-friendly per mobile-friendly / incrementi
+                col_sub1, col_add1 = str_lib.columns(2)
+                with col_sub1:
+                    if str_lib.button("➖ 1", key=f"sub_s1_{partita['id']}", use_container_width=True, disabled=not can_edit):
+                        if str_lib.session_state[col_id_1] > 0:
+                            str_lib.session_state[col_id_1] -= 1
+                            str_lib.rerun()
+                with col_add1:
+                    if str_lib.button("➕ 1", key=f"add_s1_{partita['id']}", use_container_width=True, disabled=not can_edit):
+                        str_lib.session_state[col_id_1] += 1
+                        str_lib.rerun()
+                
+                # Valore interno sincronizzato per il numero inserito
+                gol_s1 = str_lib.session_state[col_id_1]
 
             with col_squadra_2:
                 str_lib.markdown(f"""
-                    <div style="text-align: center; margin-bottom: 5px;">
-                        <img src="{url_s2}" width="60" onerror="this.src='{DEFAULT_LOGO_URL}'" style="display: block; margin: 0 auto 8px auto;">
-                        <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px;">Inserisci gol {squadra_2}</div>
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(to bottom, rgba(186, 12, 47, 0.4), rgba(13, 34, 64, 0.4)); border: 3px solid #fbbf24; box-shadow: 0 0 12px rgba(251, 191, 36, 0.6); display: flex; justify-content: center; align-items: center; margin: 0 auto 10px auto; overflow: hidden;">
+                            <img src="{url_s2}" width="55" height="55" onerror="this.src='{DEFAULT_LOGO_URL}'" style="object-fit: contain;">
+                        </div>
+                        <div style="font-size: 0.9rem; color: #fbbf24; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">Inserisci gol {squadra_2}</div>
+                        <div style="background-color: #1e293b; border: 2px solid #38bdf8; border-radius: 12px; padding: 8px; font-size: 1.5rem; font-weight: bold; color: #ffffff; width: 100px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                            {str_lib.session_state[col_id_2]}
+                        </div>
                     </div>
                 """, unsafe_allow_html=True)
-                gol_s2 = str_lib.number_input(f"Inserisci gol {squadra_2}", min_value=0, value=str_lib.session_state[col_id_2], key=col_id_2, label_visibility="collapsed", disabled=not can_edit)
+                
+                col_sub2, col_add2 = str_lib.columns(2)
+                with col_sub2:
+                    if str_lib.button("➖ 1", key=f"sub_s2_{partita['id']}", use_container_width=True, disabled=not can_edit):
+                        if str_lib.session_state[col_id_2] > 0:
+                            str_lib.session_state[col_id_2] -= 1
+                            str_lib.rerun()
+                with col_add2:
+                    if str_lib.button("➕ 1", key=f"add_s2_{partita['id']}", use_container_width=True, disabled=not can_edit):
+                        str_lib.session_state[col_id_2] += 1
+                        str_lib.rerun()
+                
+                gol_s2 = str_lib.session_state[col_id_2]
 
             str_lib.markdown("---")
             rosa_cag = [x.strip() for x in (partita.get("rosa_cagliari") or "").split(",") if x.strip()]
@@ -899,7 +951,7 @@ if is_pronostici:
                     except Exception as db_err:
                         str_lib.error(f"Errore durante l'inserimento su Supabase: {db_err}")
 
-    # --- MENU A SCOMPARSA "RICEVUTE" ---
+    # --- MENU A SCOMPARSA "RICEVUTE" (Storico gare omologate) ---
     str_lib.markdown("---")
     with str_lib.expander("Ricevute (Storico Pronostici Gare Omologate)"):
         str_lib.write("Consulta lo storico dei pronostici relativi esclusivamente alle partite già omologate.")
@@ -964,7 +1016,7 @@ if is_pronostici:
 # 2. CLASSIFICHE
 elif is_classifiche:
     str_lib.markdown("<h2 class='single-line-title'>🏆 Classifiche Ufficiali 🏆</h2>", unsafe_allow_html=True)
-    sub_tab1, sub_tab2, sub_tab3, sub_tab4 = str_lib.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Albo d'Oro"])
+    sub_tab1, sub_tab2, sub_tab3, sub_tab4, sub_tab5 = str_lib.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Classifiche Facebook", "Albo d'Oro"])
     
     try:
         punteggi_data = db.table("punteggi_partita").select("*").execute().data
@@ -1016,6 +1068,73 @@ elif is_classifiche:
             str_lib.dataframe(bomber_df, use_container_width=True, hide_index=True)
 
     with sub_tab4:
+        # Nuova scheda Admin per Classifiche Facebook (Top 20 in 6 colonne) visualizzazione pubblica in sola lettura
+        str_lib.subheader("📊 Classifiche Facebook (Top 20)")
+        str_lib.markdown("Sezione ufficiale in sola lettura strutturata in 6 colonne (Posizione 1-10, Utente, Punti, Posizione 11-20, Utente, Punti) limitata alle prime 20 posizioni con gradiente discendente di giallo sulle prime 3 posizioni assolute del podio.")
+        
+        def render_fb_table_6_cols(df_source, score_col_name, title_table):
+            str_lib.markdown(f"#### {title_table}")
+            if df_source.empty:
+                str_lib.info("Nessun dato disponibile.")
+                return
+            
+            sorted_df = df_source.sort_values(by=[score_col_name], ascending=False).reset_index(drop=True).head(20)
+            
+            rows_data = []
+            for i in range(10):
+                # Colonna sinistra (1-10)
+                pos_l = i + 1
+                user_l = sorted_df.iloc[i]["Utente"] if i < len(sorted_df) else ""
+                pts_l = sorted_df.iloc[i][score_col_name] if i < len(sorted_df) else ""
+                
+                # Colonna destra (11-20)
+                pos_r = i + 11
+                user_r = sorted_df.iloc[i+10]["Utente"] if (i+10) < len(sorted_df) else ""
+                pts_r = sorted_df.iloc[i+10][score_col_name] if (i+10) < len(sorted_df) else ""
+                
+                rows_data.append({
+                    "Pos. 1-10": pos_l if user_l != "" else "",
+                    "Utente (1-10)": user_l,
+                    "Punti (1-10)": pts_l,
+                    "Pos. 11-20": pos_r if user_r != "" else "",
+                    "Utente (11-20)": user_r,
+                    "Punti (11-20)": pts_r
+                })
+            
+            df_display_6 = pd.DataFrame(rows_data)
+            
+            def color_podium(val):
+                try:
+                    v_int = int(val)
+                    if v_int == 1:
+                        return 'background-color: rgba(251, 191, 36, 0.4); font-weight: bold;'
+                    elif v_int == 2:
+                        return 'background-color: rgba(251, 191, 36, 0.25); font-weight: bold;'
+                    elif v_int == 3:
+                        return 'background-color: rgba(251, 191, 36, 0.15); font-weight: bold;'
+                except:
+                    pass
+                return ''
+
+            styled_df = df_display_6.style.applymap(color_podium, subset=["Pos. 1-10", "Pos. 11-20"])
+            str_lib.dataframe(styled_df, use_container_width=True, hide_index=True)
+
+        if not df_punteggi.empty:
+            gen_df_fb = df_punteggi.groupby("utente")["punti_generale"].sum().reset_index()
+            gen_df_fb.columns = ["Utente", "Punti"]
+            render_fb_table_6_cols(gen_df_fb, "Punti", "Classifica Generale Facebook")
+
+            masters_df_fb = df_punteggi.groupby("utente")["punti_masters"].sum().reset_index()
+            masters_df_fb.columns = ["Utente", "Punti"]
+            render_fb_table_6_cols(masters_df_fb, "Punti", "Masters of Cugurras Facebook")
+
+            bomber_df_fb = df_punteggi.groupby("utente")["punti_bomber"].sum().reset_index()
+            bomber_df_fb.columns = ["Utente", "Punti"]
+            render_fb_table_6_cols(bomber_df_fb, "Punti", "\"Bomber di razza\" Facebook")
+        else:
+            str_lib.info("Nessun dato di punteggio disponibile per le classifiche Facebook.")
+
+    with sub_tab5:
         str_lib.subheader("📜 Albo d'Oro")
         try:
             res_albo_pub = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
@@ -1122,6 +1241,18 @@ elif tab_admin is not None:
                 except Exception as ex_st:
                     str_lib.error(f"Errore durante il cambio stagione: {ex_st}")
 
+    with str_lib.expander("🧹 Gestione pulita delle fasi (Reset operativo)", expanded=False):
+        str_lib.markdown("Procedura strutturata per garantire che l'avvio della stagione corrente parta con 0 partite nel database operativo, isolando definitivamente i dati di test.")
+        if str_lib.button("Esegui pulizia totale database operativo (0 partite)", key="btn_pulizia_fasi", use_container_width=True):
+            try:
+                db.table("punteggi_partita").delete().neq("id", 0).execute()
+                db.table("pronostici").delete().neq("id", 0).execute()
+                db.table("partite").delete().neq("id", 0).execute()
+                str_lib.success("Database operativo ripulito con successo (0 partite presenti).")
+                str_lib.rerun()
+            except Exception as e_clean:
+                str_lib.error(f"Errore durante la pulizia delle fasi: {e_clean}")
+
     with str_lib.expander("➕ Inserisci Nuova Partita", expanded=False):
         try:
             lista_comp = [c['nome'] for c in db.table("competizioni").select("nome").order("nome").execute().data]
@@ -1139,8 +1270,8 @@ elif tab_admin is not None:
         with col_ora_min_2:
             min_sel = str_lib.selectbox("Minuti", [0, 15, 30, 45], index=0, key="new_partita_min")
             
-        rosa_cag_input = str_lib.text_area("Convocati Cagliari", key="new_partita_rosa_cag")
-        rosa_avv_input = str_lib.text_area("Convocati Avversaria", key="new_partita_rosa_avv")
+        rosa_cag_input = str_lib.text_area("Convocati Cagliari (rosa_cagliari)", key="new_partita_rosa_cag")
+        rosa_avv_input = str_lib.text_area("Convocati Avversaria (rosa_avversaria)", key="new_partita_rosa_avv")
         
         submitted_partita = str_lib.button("Crea Partita nel Database", key="btn_crea_partita_db", use_container_width=True)
 
@@ -1160,7 +1291,7 @@ elif tab_admin is not None:
                     "rosa_avversaria": rosa_avv_input.replace(";", ","),
                     "omologata": False
                 }).execute()
-                str_lib.success("Partita creata!")
+                str_lib.success("Partita creata con utilizzo diretto delle due colonne dedicate (rosa_cagliari e rosa_avversaria) su Supabase!")
 
     with str_lib.expander("🏁 Omologazione Partita e Assegnazione Punti", expanded=False):
         str_lib.warning("⚠️ **ATTENZIONE:** L'omologazione inserisce i risultati definitivi e blocco modifiche.")
@@ -1305,8 +1436,8 @@ elif tab_admin is not None:
                 m_ora = str_lib.selectbox("Ora", list(range(0, 24)), index=init_hour)
                 m_min = str_lib.selectbox("Minuti", [0, 15, 30, 45], index=init_minute_idx)
                 
-                m_rosa_cag = str_lib.text_area("Convocati Cagliari", value=p_selezionata.get("rosa_cagliari", ""))
-                m_rosa_avv = str_lib.text_area("Convocati Avversaria", value=p_selezionata.get("rosa_avversaria", ""))
+                m_rosa_cag = str_lib.text_area("Convocati Cagliari (rosa_cagliari)", value=p_selezionata.get("rosa_cagliari", ""))
+                m_rosa_avv = str_lib.text_area("Convocati Avversaria (rosa_avversaria)", value=p_selezionata.get("rosa_avversaria", ""))
 
                 col_mod1, col_mod2 = str_lib.columns(2)
                 with col_mod1:
@@ -1346,5 +1477,29 @@ elif tab_admin is not None:
                         str_lib.rerun()
                     except Exception as err_d:
                         str_lib.error(f"Errore durante l'eliminazione della partita: {err_d}")
+
+    with str_lib.expander("🗑️ Cancellazione pulita degli utenti", expanded=False):
+        str_lib.markdown("Eliminazione totale e definitiva di un utente dall'app con propagazione immediata e rimozione dei record anche dal database di Supabase (zero dati orfani).")
+        try:
+            utenti_registrati = db.table("utenti").select("nome_fb").order("nome_fb").execute().data
+        except:
+            utenti_registrati = []
+
+        if not utenti_registrati:
+            str_lib.info("Nessun utente registrato.")
+        else:
+            lista_nomi_utenti = [u["nome_fb"] for u in utenti_registrati]
+            utente_da_eliminare = str_lib.selectbox("Seleziona utente da eliminare definitivamente", lista_nomi_utenti, key="sel_utente_del")
+            
+            if str_lib.button("Elimina definitivamente utente", key="btn_elimina_utente_def", use_container_width=True):
+                try:
+                    # Rimuovi pronostici, punteggi e utente da Supabase (zero dati orfani)
+                    db.table("pronostici").delete().eq("utente", utente_da_eliminare).execute()
+                    db.table("punteggi_partita").delete().eq("utente", utente_da_eliminare).execute()
+                    db.table("utenti").delete().eq("nome_fb", utente_da_eliminare).execute()
+                    str_lib.success(f"L'utente '{utente_da_eliminare}' e tutti i dati associati sono stati eliminati definitivamente da Supabase senza lasciare dati orfani.")
+                    str_lib.rerun()
+                except Exception as e_del_u:
+                    str_lib.error(f"Errore durante l'eliminazione dell'utente: {e_del_u}")
 
 mostra_footer()

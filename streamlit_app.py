@@ -123,11 +123,6 @@ str_lib.markdown(f"""
         box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
     }}
 
-    /* Regola personalizzata per il pulsante "Ajò a giocare" e "Convalida modifiche" (Sfondo rosso e testo bianco) */
-    div.stButton > button[kind="secondary"], div.stButton > button {{
-        /* Applichiamo selettori mirati tramite chiavi o classi se possibile, oppure gestiamo via logica Streamlit */
-    }}
-
     div.row-widget.stRadio > div {{
         flex-direction: row;
         justify-content: center;
@@ -378,7 +373,6 @@ if not str_lib.session_state["autenticato"]:
             nome_inserito = str_lib.text_input("Nome Utente Facebook", help="Inserisci nome e cognome come appare su Facebook")
             pin_inserito = str_lib.text_input("PIN personale (4 cifre)", type="password", max_chars=4)
             
-            # --- La domanda segreta compare all'accesso solo se il PIN inserito è corretto (esattamente 4 cifre) ---
             clean_pin_temp = pin_inserito.strip() if pin_inserito else ""
             if len(clean_pin_temp) == 4 and clean_pin_temp.isdigit():
                 clean_nome_temp = nome_inserito.strip() if nome_inserito else ""
@@ -402,10 +396,10 @@ if not str_lib.session_state["autenticato"]:
             
             str_lib.markdown("<br>", unsafe_allow_html=True)
             
-            # Pulsante "Ajò a giocare" con stile rosso e bianco personalizzato
+            # Pulsante "Ajò a giocare" con sfondo rosso e testo bianco
             str_lib.markdown("""
                 <style>
-                div.stButton > button[kind="primary"], div.stButton > button#btn_submit_accedi {
+                div.stButton > button#btn_submit_accedi {
                     background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
                     color: #ffffff !important;
                     border: 1px solid #f87171 !important;
@@ -472,6 +466,21 @@ if not str_lib.session_state["autenticato"]:
                     str_lib.markdown(f"**Domanda Segreta:** `{str_lib.session_state['reg_domanda']}`")
                     str_lib.markdown(f"**Risposta Segreta:** `{str_lib.session_state['reg_risposta']}`")
                     str_lib.markdown("<br>", unsafe_allow_html=True)
+                    
+                    # Pulsante "Ajò a giocare" con sfondo rosso e testo bianco
+                    str_lib.markdown("""
+                        <style>
+                        div.stButton > button#btn_ajo_giocare {
+                            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+                            color: #ffffff !important;
+                            border: 1px solid #f87171 !important;
+                        }
+                        div.stButton > button#btn_ajo_giocare:hover {
+                            background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
+                            border-color: #fca5a5 !important;
+                        }
+                        </style>
+                    """, unsafe_allow_html=True)
                     
                     if str_lib.button("Ajò a giocare", key="btn_ajo_giocare", use_container_width=True):
                         session_info = {
@@ -905,7 +914,7 @@ if is_pronostici:
             
             btn_label = "Convalida Modifiche" if pronostico_esistente else "Invia Pronostico"
             
-            # Stile rosso/bianco per "Convalida Modifiche" / "Invia Pronostico"
+            # Pulsante "Convalida Modifiche" con sfondo rosso e testo bianco
             str_lib.markdown("""
                 <style>
                 div.stButton > button#btn_invia_pronostico {
@@ -1154,7 +1163,7 @@ elif is_classifiche:
         except:
             str_lib.info("Albo d'oro non disponibile.")
 
-# 3. REGOLAMENTO (Ricompilato con il testo ufficiale rettificato)
+# 3. REGOLAMENTO (Aggiornato con il testo ufficiale richiesto)
 elif is_regolamento:
     regolamento_html = """
     <!DOCTYPE html>
@@ -1177,34 +1186,46 @@ elif is_regolamento:
     </style>
     </head>
     <body>
-        <h2>📜 Punteggi e Regolamento Ufficiale del Premio Cugurra</h2>
+        <h2>📜 Regolamento Ufficiale e Guida all'App</h2>
         
-        <h3>Limite per le iscrizioni stagionali:</h3>
+        <h3>1. Scadenze e Limitazioni di Partecipazione</h3>
         <ul>
-            <li>Le iscrizioni alla stagione in corso rimangono aperte fino al giorno <b>02 febbraio</b> (compreso) dell'anno solare in cui termina la stagione. Oltre questa data non sarà più possibile registrarsi come nuovi utenti per la stagione attiva.</li>
+            <li><b>Termine iscrizioni:</b> Le registrazioni per la nuova stagione rimangono aperte improrogabilmente fino al 2 febbraio (compreso) dell'anno in cui si conclude la stagione. Oltre questa data non è possibile creare nuovi account per la competizione attiva (ad eccezione della fase di test).</li>
+            <li><b>Blocco pronostici:</b> L'inserimento e la modifica dei pronostici sono consentiti esclusivamente fino al fischio d'inizio della singola partita. Allo scadere dell'orario ufficiale, il sistema blocca ogni operazione.</li>
+            <li><b>Coerenza dei gol:</b> In fase di pronostico, la somma dei gol assegnati tramite i singoli marcatori e autogol per ciascuna squadra deve corrispondere esattamente al numero totale dei gol inseriti nel punteggio della partita.</li>
+            <li><b>Credenziali d'accesso:</b> L'accesso richiede l'uso del nome utente Facebook, un PIN di sicurezza a 4 cifre e una domanda segreta impostata in fase di registrazione, utile anche per le procedure di recupero o reset del PIN.</li>
         </ul>
 
-        <h3>Punteggi assegnati nella Classifica Generale:</h3>
+        <h3>2. Sistema di Punteggio</h3>
+        <h3>Classifica Generale</h3>
         <ul>
-            <li><b>15 Punti:</b> Risultato e marcatori esatti di tutte e due le squadre.</li>
-            <li><b>10 Punti:</b> Risultato esatto della partita e marcatori esatti del Cagliari + eventuali autogol a favore dei rossoblu.</li>
-            <li><b>8 Punti:</b> Indovini lo 0-0.</li>
-            <li><b>5 Punti:</b> Indovini l'esito (1, X, 2).</li>
-            <li><b>3 Punti:</b> Tutti i marcatori del Cagliari indovinati.</li>
-            <li><b>0 Punti:</b> Non indovini nulla.</li>
-            <li><b>Bonus Espulsioni:</b> +1 punto per ogni giocatore espulso indovinato (fino a 3 per squadra).</li>
+            <li><b>15 Punti:</b> Pronostico perfetto comprensivo di risultato esatto e marcatori, riconosciuto anche quando il Cagliari non segna purché l'utente indovini correttamente gol, autogol ed espulsioni.</li>
+            <li><b>10 Punti:</b> Risultato esatto e marcatori azzeccati, compreso il caso in cui il Cagliari non realizza reti (0 gol del Cagliari) ma vengono correttamente previsti il risultato esatto e i marcatori avversari (oltre alle casistiche con gol dei rossoblù e autogol a favore).</li>
+            <li><b>8 Punti:</b> Corretta previsione di un pareggio a reti inviolate (0-0).</li>
+            <li><b>5 Punti:</b> Corretta previsione dell'esito finale dell'incontro (1, X, 2).</li>
+            <li><b>3 Punti:</b> Corretto inserimento di tutti i marcatori del Cagliari, indipendentemente dal risultato esatto.</li>
+            <li><b>0 Punti:</b> Nessun esito o marcatore indovinato.</li>
+            <li><b>Bonus Espulsioni:</b> +1 punto per ogni cartellino rosso assegnato a un giocatore correttamente individuato tra gli espulsi (fino a un massimo di 3 per squadra).</li>
         </ul>
 
-        <h3>Classifica Masters of Cugurras:</h3>
+        <h3>Classifica Masters of Cugurras</h3>
         <ul>
-            <li>Classifica dedicata a chi colleziona i pronostici da 10 punti.</li>
+            <li>Graduatoria speciale riservata agli utenti che totalizzano pronostici da 10 punti.</li>
         </ul>
 
-        <h3>Classifica Bomber di razza:</h3>
+        <h3>Classifica Bomber di razza</h3>
         <ul>
-            <li>1 punto per ogni marcatore del Cagliari indovinato.</li>
-            <li>Bonus: +1 punto a gol se si indovina anche il numero esatto di gol reali segnati da quel calciatore.</li>
+            <li>1 Punto per ogni marcatore del Cagliari azzeccato.</li>
+            <li>Bonus di +1 punto per ogni singola rete qualora si indovini anche il numero esatto di gol realizzati da quel calciatore nel corso del match.</li>
         </ul>
+
+        <h3>3. Funzionalità Disponibili per gli Utenti</h3>
+        <ul>
+            <li><b>Sezione Pronostici:</b> Area principale in cui consultare il countdown per il prossimo match, inserire i gol, selezionare i marcatori tramite rose aggiornate e inviare o modificare le proprie previsioni prima dell'inizio della gara.</li>
+            <li><b>Ricevute:</b> Storico personale che consente di verificare i pronostici inviati relativi esclusivamente alle partite già ufficialmente omologate.</li>
+            <li><b>Classifiche Ufficiali:</b> Consultazione in tempo reale delle graduatorie (Generale, Masters of Cugurras e Bomber di razza) e dell'Albo d'Oro con lo storico dei vincitori delle passate stagioni.</li>
+        </ul>
+        <p>Per dubbi, domande, perplessità, commentate nei vari post dedicati al Premio Cugurra nella pagina Facebook "Tifosi del Cagliari". Risponderemo se non avremo altro da fare, ma risponderemo… buon divertimento!</p>
     </body>
     </html>
     """
@@ -1248,7 +1269,6 @@ elif tab_admin is not None:
         str_lib.markdown("#### 🧹 Reset Operativo")
         str_lib.markdown("Elimina tutte le partite dal database operativo, isolando i dati.")
         
-        # Gestione del pulsante di reset spostato qui come terzo elemento (con checkbox di conferma/warning)
         conferma_warning_reset = str_lib.checkbox("⚠️ Confermo di voler eseguire la pulizia totale del database operativo (0 partite)", key="chk_warning_reset")
         if str_lib.button("Esegui pulizia totale database operativo (0 partite)", key="btn_pulizia_fasi", use_container_width=True):
             if not conferma_warning_reset:

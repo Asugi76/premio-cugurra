@@ -375,6 +375,21 @@ if not str_lib.session_state["autenticato"]:
             str_lib.subheader("Accedi al tuo account")
             nome_inserito = str_lib.text_input("Nome Utente Facebook", help="Inserisci nome e cognome come appare su Facebook")
             pin_inserito = str_lib.text_input("PIN personale (4 cifre)", type="password", max_chars=4)
+            
+            # --- Recupero e visualizzazione dinamica della domanda segreta in base al nome utente inserito ---
+            domanda_segreta_utente_corrente = None
+            clean_nome_temp = nome_inserito.strip() if nome_inserito else ""
+            if clean_nome_temp:
+                try:
+                    res_dom = db.table("utenti").select("domanda_segreta").eq("nome_fb", clean_nome_temp).execute()
+                    if res_dom.data:
+                        domanda_segreta_utente_corrente = res_dom.data[0].get("domanda_segreta")
+                except:
+                    pass
+            
+            if domanda_segreta_utente_corrente:
+                str_lib.markdown(f"🔒 **Domanda Segreta:** *{domanda_segreta_utente_corrente}*")
+            
             risposta_inserita = str_lib.text_input("Risposta alla tua Domanda Segreta", type="password", help="Inserisci la risposta segreta scelta in fase di registrazione")
             
             str_lib.markdown("<br>", unsafe_allow_html=True)
@@ -554,17 +569,6 @@ if not str_lib.session_state["autenticato"]:
 str_lib.sidebar.markdown(f"👤 Utente: **{str_lib.session_state.get('utente_corrente')}**")
 str_lib.sidebar.markdown(f"⭐ Status: **{str_lib.session_state.get('status')}**")
 
-# Visualizzazione della domanda segreta utente nella propria area dedicata
-try:
-    current_user_db = db.table("utenti").select("domanda_segreta").eq("nome_fb", str_lib.session_state.get('utente_corrente')).execute()
-    if current_user_db.data:
-        domanda_corrente_utente = current_user_db.data[0].get("domanda_segreta")
-        if domanda_corrente_utente:
-            str_lib.sidebar.markdown("---")
-            str_lib.sidebar.markdown(f"🔒 **La tua domanda segreta:**\n\n*{domanda_corrente_utente}*")
-except Exception:
-    pass
-
 if str_lib.sidebar.button("Logout", key="sidebar_logout_btn", use_container_width=True):
     try:
         cookie_manager.delete("cugurra_auth_session")
@@ -574,7 +578,6 @@ if str_lib.sidebar.button("Logout", key="sidebar_logout_btn", use_container_widt
     str_lib.rerun()
 
 # --- INTERFACCIA PRINCIPALE ---
-# Modifica Titolo Principale dinamicamente: Admin vede la dicitura specifica, gli altri la forma standard con emoji
 if str_lib.session_state.get("is_admin", False):
     str_lib.markdown(f"<h1>⚽ Premio Cugurra {stagione_attuale} (STAGIONE IN CORSO)</h1>", unsafe_allow_html=True)
 else:
@@ -780,7 +783,6 @@ if is_pronostici:
             col_squadra_1, col_squadra_2 = str_lib.columns(2)
 
             with col_squadra_1:
-                # Cornici con traccia bianca e spessore dimezzato (1.5px anziché 3px)
                 str_lib.markdown(f"""
                     <div style="text-align: center; margin-bottom: 15px;">
                         <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(to bottom, rgba(186, 12, 47, 0.4), rgba(13, 34, 64, 0.4)); border: 1.5px solid #ffffff; box-shadow: 0 0 12px rgba(255, 255, 255, 0.4); display: flex; justify-content: center; align-items: center; margin: 0 auto 10px auto; overflow: hidden;">
@@ -953,14 +955,12 @@ if is_pronostici:
                     except Exception as db_err:
                         str_lib.error(f"Errore durante l'inserimento su Supabase: {db_err}")
 
-    # --- MENU A SCOMPARSA "RICEVUTE" (Storico gare omologate con etichette condizionali) ---
+    # --- MENU A SCOMPARSA "RICEVUTE" ---
     str_lib.markdown("---")
     
     current_user_name = str_lib.session_state.get("utente_corrente")
     is_current_admin = str_lib.session_state.get("is_admin", False)
-    user_status = str_lib.session_state.get("status", "STANDARD")
     
-    # Intestazione condizionale dell'expander in base al ruolo utente
     expander_title = "Storico dei tuoi pronostici" if not is_current_admin else "Ricevute (Storico Pronostici Gare Omologate)"
     
     with str_lib.expander(expander_title):
@@ -974,7 +974,6 @@ if is_pronostici:
                 .select("id, utente, id_partita, gol_cagliari, gol_avversario, partite(avversario, omologata, risultato_cagliari, risultato_avversario, competizione, campo, casa_trasferta)") \
                 .eq("partite.omologata", True)
             
-            # Utenti non admin vedono solo le proprie ricevute
             if current_user_name is not None and not is_current_admin:
                 query = query.eq("utente", current_user_name)
             elif current_user_name is None:
@@ -1027,7 +1026,8 @@ if is_pronostici:
 # 2. CLASSIFICHE
 elif is_classifiche:
     str_lib.markdown("<h2 class='single-line-title'>🏆 Classifiche Ufficiali 🏆</h2>", unsafe_allow_html=True)
-    sub_tab1, sub_tab2, sub_tab3, sub_tab4, sub_tab5 = str_lib.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Classifiche Facebook", "Albo d'Oro"])
+    # Classifiche Facebook rimosse dalla visualizzazione pubblica utente come richiesto
+    sub_tab1, sub_tab2, sub_tab3, sub_tab4 = str_lib.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Albo d'Oro"])
     
     try:
         punteggi_data = db.table("punteggi_partita").select("*").execute().data
@@ -1079,10 +1079,6 @@ elif is_classifiche:
             str_lib.dataframe(bomber_df, use_container_width=True, hide_index=True)
 
     with sub_tab4:
-        # Sezione Classifiche Facebook visibile solo all'admin (spostata da tab pubblica a Gestione Admin)
-        str_lib.info("🔒 Le classifiche Facebook sono riservate esclusivamente alla visualizzazione dell'amministratore all'interno della sezione 'Gestione Admin'.")
-
-    with sub_tab5:
         str_lib.subheader("📜 Albo d'Oro")
         try:
             res_albo_pub = db.table("albo_doros").select("*").order("stagione", desc=True).execute()
@@ -1241,7 +1237,6 @@ elif tab_admin is not None:
                 }).execute()
                 str_lib.success("Partita creata con successo!")
 
-    # --- Sezione "Classifiche Facebook" spostata in Gestione Admin ---
     with str_lib.expander("📊 Classifiche Facebook (Top 20)", expanded=False):
         str_lib.markdown("Sezione ufficiale riservata all'Admin strutturata in 6 colonne (Posizione 1-10, Utente, Punti, Posizione 11-20, Utente, Punti) limitata alle prime 20 posizioni con gradiente discendente di giallo sulle prime 3 posizioni assolute del podio.")
         

@@ -1026,7 +1026,6 @@ if is_pronostici:
 # 2. CLASSIFICHE
 elif is_classifiche:
     str_lib.markdown("<h2 class='single-line-title'>🏆 Classifiche Ufficiali 🏆</h2>", unsafe_allow_html=True)
-    # Classifiche Facebook rimosse dalla visualizzazione pubblica utente come richiesto
     sub_tab1, sub_tab2, sub_tab3, sub_tab4 = str_lib.tabs(["Classifica Generale", "Masters of Cugurras", "Bomber di razza", "Albo d'Oro"])
     
     try:
@@ -1045,6 +1044,19 @@ elif is_classifiche:
     else:
         partita_counts = pd.DataFrame(columns=["utente", "Partite Giocate"])
 
+    def color_podium_standard(val):
+        try:
+            v_int = int(val)
+            if v_int == 1:
+                return 'background-color: rgba(251, 191, 36, 0.4); font-weight: bold;'
+            elif v_int == 2:
+                return 'background-color: rgba(251, 191, 36, 0.25); font-weight: bold;'
+            elif v_int == 3:
+                return 'background-color: rgba(251, 191, 36, 0.15); font-weight: bold;'
+        except:
+            pass
+        return ''
+
     with sub_tab1:
         if df_punteggi.empty:
             str_lib.info("In attesa delle prime partite omologate per la classifica generale.")
@@ -1052,9 +1064,11 @@ elif is_classifiche:
             gen_df = df_punteggi.groupby("utente")["punti_generale"].sum().reset_index()
             gen_df = pd.merge(gen_df, partita_counts, on="utente", how="left").fillna(0)
             gen_df["Partite Giocate"] = gen_df["Partite Giocate"].astype(int)
-            gen_df = gen_df.sort_values(by=["punti_generale", "Partite Giocate"], ascending=[False, False])
-            gen_df.columns = ["Utente", "Punti Totali", "Partite Giocate"]
-            str_lib.dataframe(gen_df, use_container_width=True, hide_index=True)
+            gen_df = gen_df.sort_values(by=["punti_generale", "Partite Giocate"], ascending=[False, False]).reset_index(drop=True)
+            gen_df.insert(0, "Posizione", gen_df.index + 1)
+            gen_df.columns = ["Posizione", "Utente", "Punti totali", "Partite giocate"]
+            styled_gen = gen_df.style.map(color_podium_standard, subset=["Posizione"])
+            str_lib.dataframe(styled_gen, use_container_width=True, hide_index=True)
 
     with sub_tab2:
         if df_punteggi.empty:
@@ -1063,9 +1077,11 @@ elif is_classifiche:
             masters_df = df_punteggi.groupby("utente")["punti_masters"].sum().reset_index()
             masters_df = pd.merge(masters_df, partita_counts, on="utente", how="left").fillna(0)
             masters_df["Partite Giocate"] = masters_df["Partite Giocate"].astype(int)
-            masters_df = masters_df.sort_values(by=["punti_masters", "Partite Giocate"], ascending=[False, False])
-            masters_df.columns = ["Utente", "Punti Masters", "Partite Giocate"]
-            str_lib.dataframe(masters_df, use_container_width=True, hide_index=True)
+            masters_df = masters_df.sort_values(by=["punti_masters", "Partite Giocate"], ascending=[False, False]).reset_index(drop=True)
+            masters_df.insert(0, "Posizione", masters_df.index + 1)
+            masters_df.columns = ["Posizione", "Utente", "Punti Masters", "Partite giocate"]
+            styled_masters = masters_df.style.map(color_podium_standard, subset=["Posizione"])
+            str_lib.dataframe(styled_masters, use_container_width=True, hide_index=True)
 
     with sub_tab3:
         if df_punteggi.empty:
@@ -1074,9 +1090,11 @@ elif is_classifiche:
             bomber_df = df_punteggi.groupby("utente")["punti_bomber"].sum().reset_index()
             bomber_df = pd.merge(bomber_df, partita_counts, on="utente", how="left").fillna(0)
             bomber_df["Partite Giocate"] = bomber_df["Partite Giocate"].astype(int)
-            bomber_df = bomber_df.sort_values(by=["punti_bomber", "Partite Giocate"], ascending=[False, False])
-            bomber_df.columns = ["Utente", "Punti Bomber", "Partite Giocate"]
-            str_lib.dataframe(bomber_df, use_container_width=True, hide_index=True)
+            bomber_df = bomber_df.sort_values(by=["punti_bomber", "Partite Giocate"], ascending=[False, False]).reset_index(drop=True)
+            bomber_df.insert(0, "Posizione", bomber_df.index + 1)
+            bomber_df.columns = ["Posizione", "Utente", "Punti Bomber", "Partite giocate"]
+            styled_bomber = bomber_df.style.map(color_podium_standard, subset=["Posizione"])
+            str_lib.dataframe(styled_bomber, use_container_width=True, hide_index=True)
 
     with sub_tab4:
         str_lib.subheader("📜 Albo d'Oro")

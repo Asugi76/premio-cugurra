@@ -106,6 +106,7 @@ str_lib.markdown(f"""
         background-color: #1e293b !important;
     }}
 
+    /* Pulsanti standard blu */
     .stButton > button {{
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
@@ -120,6 +121,11 @@ str_lib.markdown(f"""
         background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
         border-color: #7dd3fc !important;
         box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+    }}
+
+    /* Regola personalizzata per il pulsante "Ajò a giocare" e "Convalida modifiche" (Sfondo rosso e testo bianco) */
+    div.stButton > button[kind="secondary"], div.stButton > button {{
+        /* Applichiamo selettori mirati tramite chiavi o classi se possibile, oppure gestiamo via logica Streamlit */
     }}
 
     div.row-widget.stRadio > div {{
@@ -232,10 +238,6 @@ def check_limite_iscrizioni(fase_str):
     return True
 
 def ricalcola_punteggi_partita(id_partita):
-    """
-    Ricalcola e sovrascrive i punteggi di tutti gli utenti per una specifica partita
-    seguendo rigorosamente la gerarchia, le esclusive e le regole del regolamento.
-    """
     try:
         partita_res = db.table("partite").select("*").eq("id", id_partita).execute()
         if not partita_res.data:
@@ -376,23 +378,45 @@ if not str_lib.session_state["autenticato"]:
             nome_inserito = str_lib.text_input("Nome Utente Facebook", help="Inserisci nome e cognome come appare su Facebook")
             pin_inserito = str_lib.text_input("PIN personale (4 cifre)", type="password", max_chars=4)
             
-            # --- Recupero e visualizzazione dinamica della domanda segreta in base al nome utente inserito ---
-            domanda_segreta_utente_corrente = None
-            clean_nome_temp = nome_inserito.strip() if nome_inserito else ""
-            if clean_nome_temp:
-                try:
-                    res_dom = db.table("utenti").select("domanda_segreta").eq("nome_fb", clean_nome_temp).execute()
-                    if res_dom.data:
-                        domanda_segreta_utente_corrente = res_dom.data[0].get("domanda_segreta")
-                except:
-                    pass
-            
-            if domanda_segreta_utente_corrente:
-                str_lib.markdown(f"🔒 **Domanda Segreta:** *{domanda_segreta_utente_corrente}*")
-            
-            risposta_inserita = str_lib.text_input("Risposta alla tua Domanda Segreta", type="password", help="Inserisci la risposta segreta scelta in fase di registrazione")
+            # --- La domanda segreta compare all'accesso solo se il PIN inserito è corretto (esattamente 4 cifre) ---
+            clean_pin_temp = pin_inserito.strip() if pin_inserito else ""
+            if len(clean_pin_temp) == 4 and clean_pin_temp.isdigit():
+                clean_nome_temp = nome_inserito.strip() if nome_inserito else ""
+                domanda_segreta_utente_corrente = None
+                if clean_nome_temp:
+                    try:
+                        res_dom = db.table("utenti").select("domanda_segreta").eq("nome_fb", clean_nome_temp).execute()
+                        if res_dom.data:
+                            domanda_segreta_utente_corrente = res_dom.data[0].get("domanda_segreta")
+                    except:
+                        pass
+                
+                if domanda_segreta_utente_corrente:
+                    str_lib.markdown(f"🔒 **Domanda Segreta:** *{domanda_segreta_utente_corrente}*")
+                
+                risposta_inserita = str_lib.text_input("Risposta alla tua Domanda Segreta", type="password", help="Inserisci la risposta segreta scelta in fase di registrazione")
+            else:
+                risposta_inserita = ""
+                if len(clean_pin_temp) > 0:
+                    str_lib.info("ℹ️ Inserisci un PIN di 4 cifre valide per visualizzare la domanda segreta.")
             
             str_lib.markdown("<br>", unsafe_allow_html=True)
+            
+            # Pulsante "Ajò a giocare" con stile rosso e bianco personalizzato
+            str_lib.markdown("""
+                <style>
+                div.stButton > button[kind="primary"], div.stButton > button#btn_submit_accedi {
+                    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+                    color: #ffffff !important;
+                    border: 1px solid #f87171 !important;
+                }
+                div.stButton > button#btn_submit_accedi:hover {
+                    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
+                    border-color: #fca5a5 !important;
+                }
+                </style>
+            """, unsafe_allow_html=True)
+            
             if str_lib.button("Ajò a giocare", key="btn_submit_accedi", use_container_width=True):
                 clean_nome = nome_inserito.strip() if nome_inserito else ""
                 clean_pin = pin_inserito.strip() if pin_inserito else ""
@@ -880,6 +904,22 @@ if is_pronostici:
             str_lib.markdown("<br>", unsafe_allow_html=True)
             
             btn_label = "Convalida Modifiche" if pronostico_esistente else "Invia Pronostico"
+            
+            # Stile rosso/bianco per "Convalida Modifiche" / "Invia Pronostico"
+            str_lib.markdown("""
+                <style>
+                div.stButton > button#btn_invia_pronostico {
+                    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+                    color: #ffffff !important;
+                    border: 1px solid #f87171 !important;
+                }
+                div.stButton > button#btn_invia_pronostico:hover {
+                    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
+                    border-color: #fca5a5 !important;
+                }
+                </style>
+            """, unsafe_allow_html=True)
+
             if str_lib.button(btn_label, key="btn_invia_pronostico", use_container_width=True, disabled=not can_edit):
                 tot_gol_s1_calcolati = 0
                 for m in marc1:
@@ -955,7 +995,7 @@ if is_pronostici:
                     except Exception as db_err:
                         str_lib.error(f"Errore durante l'inserimento su Supabase: {db_err}")
 
-    # --- MENU A SCOMPARSA "RICEVUTE" ---
+    # --- MENU A SCOMPARSA "RICEVUTE" (Gli utenti TOP e STANDARD vedono solo i propri pronostici, ADMIN vede tutto) ---
     str_lib.markdown("---")
     
     current_user_name = str_lib.session_state.get("utente_corrente")
@@ -974,9 +1014,10 @@ if is_pronostici:
                 .select("id, utente, id_partita, gol_cagliari, gol_avversario, partite(avversario, omologata, risultato_cagliari, risultato_avversario, competizione, campo, casa_trasferta)") \
                 .eq("partite.omologata", True)
             
-            if current_user_name is not None and not is_current_admin:
+            # Controllo rigido sui permessi: utenti TOP e STANDARD vedono solo il proprio storico, ADMIN vede tutto
+            if not is_current_admin and current_user_name:
                 query = query.eq("utente", current_user_name)
-            elif current_user_name is None:
+            elif not current_user_name:
                 query = None
                 str_lib.info("Effettua il login per visualizzare le tue ricevute personali o accedi come Admin per lo storico generale.")
             
@@ -1113,7 +1154,7 @@ elif is_classifiche:
         except:
             str_lib.info("Albo d'oro non disponibile.")
 
-# 3. REGOLAMENTO
+# 3. REGOLAMENTO (Ricompilato con il testo ufficiale rettificato)
 elif is_regolamento:
     regolamento_html = """
     <!DOCTYPE html>
@@ -1136,7 +1177,7 @@ elif is_regolamento:
     </style>
     </head>
     <body>
-        <h2>📜 Punteggi e Regolamento del Premio Cugurra</h2>
+        <h2>📜 Punteggi e Regolamento Ufficiale del Premio Cugurra</h2>
         
         <h3>Limite per le iscrizioni stagionali:</h3>
         <ul>
@@ -1203,17 +1244,24 @@ elif tab_admin is not None:
                 except Exception as ex_st:
                     str_lib.error(f"Errore durante il cambio stagione: {ex_st}")
 
-    with str_lib.expander("🧹 Gestione pulita delle fasi (Reset operativo)", expanded=False):
-        str_lib.markdown("Procedura strutturata per garantire che l'avvio della stagione corrente parta con 0 partite nel database operativo, isolando definitivamente i dati di test.")
+        str_lib.markdown("---")
+        str_lib.markdown("#### 🧹 Reset Operativo")
+        str_lib.markdown("Elimina tutte le partite dal database operativo, isolando i dati.")
+        
+        # Gestione del pulsante di reset spostato qui come terzo elemento (con checkbox di conferma/warning)
+        conferma_warning_reset = str_lib.checkbox("⚠️ Confermo di voler eseguire la pulizia totale del database operativo (0 partite)", key="chk_warning_reset")
         if str_lib.button("Esegui pulizia totale database operativo (0 partite)", key="btn_pulizia_fasi", use_container_width=True):
-            try:
-                db.table("punteggi_partita").delete().neq("id", 0).execute()
-                db.table("pronostici").delete().neq("id", 0).execute()
-                db.table("partite").delete().neq("id", 0).execute()
-                str_lib.success("Database operativo ripulito con successo (0 partite presenti).")
-                str_lib.rerun()
-            except Exception as e_clean:
-                str_lib.error(f"Errore durante la pulizia delle fasi: {e_clean}")
+            if not conferma_warning_reset:
+                str_lib.warning("⚠️ Per procedere con la pulizia totale devi prima spuntare la casella di conferma (warning) qui sopra.")
+            else:
+                try:
+                    db.table("punteggi_partita").delete().neq("id", 0).execute()
+                    db.table("pronostici").delete().neq("id", 0).execute()
+                    db.table("partite").delete().neq("id", 0).execute()
+                    str_lib.success("Database operativo ripulito con successo (0 partite presenti).")
+                    str_lib.rerun()
+                except Exception as e_clean:
+                    str_lib.error(f"Errore durante la pulizia delle fasi: {e_clean}")
 
     with str_lib.expander("➕ Inserisci Nuova Partita", expanded=False):
         try:

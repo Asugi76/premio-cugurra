@@ -1577,27 +1577,57 @@ elif tab_admin is not None:
                     except Exception as err_d:
                         str_lib.error(f"Errore durante l'eliminazione della partita: {err_d}")
 
-    with str_lib.expander("🗑️ Cancellazione pulita degli utenti", expanded=False):
-        str_lib.markdown("Eliminazione totale e definitiva di un utente dall'app con propagazione immediata e rimozione dei record anche dal database di Supabase (zero dati orfani).")
+    with str_lib.expander("🛠️ Gestione Utenti", expanded=False):
+        str_lib.markdown("Pannello completo per la gestione degli utenti registrati: modifica dello status (da STANDARD a TOP e viceversa), modifica del PIN di accesso e cancellazione pulita.")
         try:
-            utenti_registrati = db.table("utenti").select("nome_fb").order("nome_fb").execute().data
+            utenti_registrati_gestione = db.table("utenti").select("*").order("nome_fb").execute().data
         except:
-            utenti_registrati = []
+            utenti_registrati_gestione = []
 
-        if not utenti_registrati:
-            str_lib.info("Nessun utente registrato.")
+        if not utenti_registrati_gestione:
+            str_lib.info("Nessun utente registrato nel sistema.")
         else:
-            lista_nomi_utenti = [u["nome_fb"] for u in utenti_registrati]
-            utente_da_eliminare = str_lib.selectbox("Seleziona utente da eliminare definitivamente", lista_nomi_utenti, key="sel_utente_del")
+            lista_nomi_gestione = [u["nome_fb"] for u in utenti_registrati_gestione]
+            utente_selezionato_gestione = str_lib.selectbox("Seleziona utente da gestire", lista_nomi_gestione, key="sel_utente_gestione_speciale")
             
-            if str_lib.button("Elimina definitivamente utente", key="btn_elimina_utente_def", use_container_width=True):
-                try:
-                    db.table("pronostici").delete().eq("utente", utente_da_eliminare).execute()
-                    db.table("punteggi_partita").delete().eq("utente", utente_da_eliminare).execute()
-                    db.table("utenti").delete().eq("nome_fb", utente_da_eliminare).execute()
-                    str_lib.success(f"L'utente '{utente_da_eliminare}' e tutti i dati associati sono stati eliminati definitivamente da Supabase senza lasciare dati orfani.")
-                    str_lib.rerun()
-                except Exception as e_del_u:
-                    str_lib.error(f"Errore durante l'eliminazione dell'utente: {e_del_u}")
+            dati_utente_selezionato = next((u for u in utenti_registrati_gestione if u["nome_fb"] == utente_selezionato_gestione), None)
+            
+            if dati_utente_selezionato:
+                str_lib.markdown(f"**Email associata:** `{dati_utente_selezionato.get('email', 'N/D')}`")
+                
+                status_attuale_u = dati_utente_selezionato.get("status", "STANDARD")
+                nuovo_status_u = str_lib.selectbox("Status Utente", ["STANDARD", "TOP"], index=["STANDARD", "TOP"].index(status_attuale_u) if status_attuale_u in ["STANDARD", "TOP"] else 0, key=f"status_sel_{utente_selezionato_gestione}")
+                
+                nuovo_pin_admin = str_lib.text_input("Nuovo PIN (lascia vuoto se non vuoi modificarlo, altrimenti 4 cifre)", type="password", max_chars=4, key=f"pin_admin_edit_{utente_selezionato_gestione}")
+
+                col_gu1, col_gu2 = str_lib.columns(2)
+                with col_gu1:
+                    if str_lib.button("Salva Modifiche Utente", key=f"btn_salva_mod_utente_{utente_selezionato_gestione}", use_container_width=True):
+                        try:
+                            payload_update = {"status": nuovo_status_u}
+                            clean_pin_admin = nuovo_pin_admin.strip() if nuovo_pin_admin else ""
+                            if clean_pin_admin:
+                                if not clean_pin_admin.isdigit() or len(clean_pin_admin) != 4:
+                                    str_lib.error("Il PIN deve essere composto esattamente da 4 cifre numeriche.")
+                                    str_lib.stop()
+                                else:
+                                    payload_update["pin"] = clean_pin_admin
+                            
+                            db.table("utenti").update(payload_update).eq("nome_fb", utente_selezionato_gestione).execute()
+                            str_lib.success(f"Dati dell'utente '{utente_selezionato_gestione}' aggiornati con successo!")
+                            str_lib.rerun()
+                        except Exception as e_upd_u:
+                            str_lib.error(f"Errore durante l'aggiornamento dell'utente: {e_upd_u}")
+                
+                with col_gu2:
+                    if str_lib.button("🗑️ Elimina Definitivamente Utente", key=f"btn_del_utente_{utente_selezionato_gestione}", use_container_width=True):
+                        try:
+                            db.table("pronostici").delete().eq("utente", utente_selezionato_gestione).execute()
+                            db.table("punteggi_partita").delete().eq("utente", utente_selezionato_gestione).execute()
+                            db.table("utenti").delete().eq("nome_fb", utente_selezionato_gestione).execute()
+                            str_lib.success(f"L'utente '{utente_selezionato_gestione}' e tutti i dati associati sono stati eliminati definitivamente da Supabase senza lasciare dati orfani.")
+                            str_lib.rerun()
+                        except Exception as e_del_u:
+                            str_lib.error(f"Errore durante l'eliminazione dell'utente: {e_del_u}")
 
 mostra_footer()

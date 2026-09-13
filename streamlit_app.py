@@ -396,7 +396,6 @@ if not str_lib.session_state["autenticato"]:
             
             str_lib.markdown("<br>", unsafe_allow_html=True)
             
-            # Pulsante "Ajò a giocare" con sfondo rosso e testo bianco
             str_lib.markdown("""
                 <style>
                 div.stButton > button#btn_submit_accedi {
@@ -467,7 +466,6 @@ if not str_lib.session_state["autenticato"]:
                     str_lib.markdown(f"**Risposta Segreta:** `{str_lib.session_state['reg_risposta']}`")
                     str_lib.markdown("<br>", unsafe_allow_html=True)
                     
-                    # Pulsante "Ajò a giocare" con sfondo rosso e testo bianco
                     str_lib.markdown("""
                         <style>
                         div.stButton > button#btn_ajo_giocare {
@@ -914,7 +912,6 @@ if is_pronostici:
             
             btn_label = "Convalida Modifiche" if pronostico_esistente else "Invia Pronostico"
             
-            # Pulsante "Convalida Modifiche" con sfondo rosso e testo bianco
             str_lib.markdown("""
                 <style>
                 div.stButton > button#btn_invia_pronostico {
@@ -1004,7 +1001,7 @@ if is_pronostici:
                     except Exception as db_err:
                         str_lib.error(f"Errore durante l'inserimento su Supabase: {db_err}")
 
-    # --- MENU A SCOMPARSA "RICEVUTE" (Gli utenti TOP e STANDARD vedono solo i propri pronostici, ADMIN vede tutto) ---
+    # --- MENU A SCOMPARSA "RICEVUTE" ---
     str_lib.markdown("---")
     
     current_user_name = str_lib.session_state.get("utente_corrente")
@@ -1023,7 +1020,6 @@ if is_pronostici:
                 .select("id, utente, id_partita, gol_cagliari, gol_avversario, partite(avversario, omologata, risultato_cagliari, risultato_avversario, competizione, campo, casa_trasferta)") \
                 .eq("partite.omologata", True)
             
-            # Controllo rigido sui permessi: utenti TOP e STANDARD vedono solo il proprio storico, ADMIN vede tutto
             if not is_current_admin and current_user_name:
                 query = query.eq("utente", current_user_name)
             elif not current_user_name:
@@ -1163,7 +1159,7 @@ elif is_classifiche:
         except:
             str_lib.info("Albo d'oro non disponibile.")
 
-# 3. REGOLAMENTO (Aggiornato con il testo ufficiale richiesto)
+# 3. REGOLAMENTO
 elif is_regolamento:
     regolamento_html = """
     <!DOCTYPE html>
@@ -1608,24 +1604,22 @@ elif tab_admin is not None:
                             clean_pin_admin = nuovo_pin_admin.strip() if nuovo_pin_admin else ""
                             if clean_pin_admin:
                                 if not clean_pin_admin.isdigit() or len(clean_pin_admin) != 4:
-                                    str_lib.error("Il PIN deve essere composto esattamente da 4 cifre numeriche.")
+                                    str_lib.error("Il PIN deve essere di 4 cifre numeriche.")
                                     str_lib.stop()
                                 else:
                                     payload_update["pin"] = clean_pin_admin
-                            
                             db.table("utenti").update(payload_update).eq("nome_fb", utente_selezionato_gestione).execute()
-                            str_lib.success(f"Dati dell'utente '{utente_selezionato_gestione}' aggiornati con successo!")
+                            str_lib.success("Utente aggiornato con successo!")
                             str_lib.rerun()
-                        except Exception as e_upd_u:
-                            str_lib.error(f"Errore durante l'aggiornamento dell'utente: {e_upd_u}")
-                
+                        except Exception as e_upd:
+                            str_lib.error(f"Errore durante l'aggiornamento dell'utente: {e_upd}")
                 with col_gu2:
-                    if str_lib.button("🗑️ Elimina Definitivamente Utente", key=f"btn_del_utente_{utente_selezionato_gestione}", use_container_width=True):
+                    if str_lib.button("Elimina Utente", key=f"btn_elimina_utente_{utente_selezionato_gestione}", use_container_width=True):
                         try:
                             db.table("pronostici").delete().eq("utente", utente_selezionato_gestione).execute()
                             db.table("punteggi_partita").delete().eq("utente", utente_selezionato_gestione).execute()
                             db.table("utenti").delete().eq("nome_fb", utente_selezionato_gestione).execute()
-                            str_lib.success(f"L'utente '{utente_selezionato_gestione}' e tutti i dati associati sono stati eliminati definitivamente da Supabase senza lasciare dati orfani.")
+                            str_lib.success(f"Utente {utente_selezionato_gestione} eliminato con successo.")
                             str_lib.rerun()
                         except Exception as e_del_u:
                             str_lib.error(f"Errore durante l'eliminazione dell'utente: {e_del_u}")
